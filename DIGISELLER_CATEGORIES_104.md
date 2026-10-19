@@ -39,3 +39,10 @@
 Следующий этап: получить и изучить артефакт исследовательской задачи, сопоставить названия категорий с типами Gift/Key/аккаунт и определить доступность связей категорий в публичных карточках товаров. Пока функциональная фильтрация по категориям в Android-приложении **не реализована**.
 
 Источники: https://api.digiseller.com/Help/Api/GET-api-dictionary-platforms-categories-id ; https://api.digiseller.com/Help/Api/GET-api-dictionary-platforms-subcategories-category_id ; https://api.digiseller.com/
+
+## Исследование связи категорий и карточек (коммит beae414)
+- Проба расширена: проверяет до 40 корневых категорий Plati и до восьми публичных карточек из реального `search2`. ID товаров используются только в оперативной памяти скрипта, в отчёт не сохраняются.
+- В отчёте появились `search.*.sample_category_metadata` и `product_details[].category_metadata` / `category_field_names`: позволяют установить, присутствуют ли `category_id`, `breadcrumbs`, `subcategory_id` или `owner` у реальных товаров.
+- **Результат GitHub Actions пока не удалось получить:** доступный GitHub-коннектор возвращает пустой список запусков по коммиту (его метод учитывает только PR-triggered runs), а для чтения артефактов нужен run ID. Поэтому реальные категории и их соответствие Gift/Key/аккаунтам **пока не подтверждены**. Не вводить произвольные ID категорий в Android-код.
+- Внешний доступ к api.digiseller.com из текущей рабочей среды не разрешился по DNS; это не свидетельствует о недоступности API в GitHub Actions.
+- Следующее действие: открыть https://github.com/Magral/Igrolov/actions/workflows/digiseller-categories.yml , получить `digiseller-category-probe` и изучить значения категорий и наличие связей в карточках. После этого реализовать обоснованную фильтрацию.
