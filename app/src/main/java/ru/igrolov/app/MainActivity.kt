@@ -492,6 +492,7 @@ class MainActivity : ComponentActivity() {
             } // конец вкладки товаров
             if (activeTab == 2 && !settingsOpen) {
             Text("Автоматическое отслеживание игр", style = MaterialTheme.typography.titleLarge)
+            Text("Минимум и уведомления рассчитываются только по предложениям с подтверждённым наличием (проверяются до пяти самых дешёвых).", style = MaterialTheme.typography.bodySmall)
             Text("Ищет новые предложения продавцов примерно раз в час. Android может задерживать проверки.", style = MaterialTheme.typography.bodySmall)
             OutlinedTextField(watchGame, { watchGame = it }, label = { Text("Название игры") },
                 singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -550,6 +551,7 @@ class MainActivity : ComponentActivity() {
                         if (w.has("error")) Text("Ошибка проверки: ${w.optString("error")}", style = MaterialTheme.typography.bodySmall)
                         if (w.optLong("checked", 0L) > 0L) {
                                         if (w.optInt("eligibleCount") == 0) Text("Подходящих предложений нет — это не ошибка сети.", style = MaterialTheme.typography.bodySmall)
+                                        else if (w.optInt("verifiedCount", 0) == 0) Text("Наличие подходящих предложений не подтверждено; уведомления не отправляются.", style = MaterialTheme.typography.bodySmall)
                         }
                         var resultsExpanded by remember(w.optString("name")) { mutableStateOf(false) }
                         val bestOffers = w.optJSONArray("topOffers") ?: JSONArray()
