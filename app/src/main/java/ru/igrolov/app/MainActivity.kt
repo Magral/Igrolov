@@ -700,7 +700,7 @@ class MainActivity : ComponentActivity() {
                 val currentRules = remember(query, rulesRevision) { GameRuleStore.read(this@MainActivity, query) }
                 val filteredOffers = remember(offers, selectedType, editionFilter, steamGame, currentRules, ignoredIds) {
                     offers.filter { (selectedType == "Все" || it.type == selectedType) &&
-                        OfferRules.eligible(it, editionFilter, selectedType, steamGame, currentRules) && it.id !in ignoredIds }
+                        OfferRules.eligible(it, editionFilter, selectedType, steamGame, currentRules, allowUnconfirmed = true) && it.id !in ignoredIds }
                 }
                 val visibleCount = filteredOffers.size
                 Text("Предложения по цене ↑ · $visibleCount", style = MaterialTheme.typography.titleMedium)
