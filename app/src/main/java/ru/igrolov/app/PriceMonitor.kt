@@ -457,7 +457,7 @@ object CatalogPageSettings {
 
 object OfferAvailability {
     /** Conservative confirmation: an absent field or failed request is not proof of stock. */
-    fun confirmedInStock(id: String): Boolean {
+    fun confirmedInStock(id: String, catalogPriceRub: Double): Boolean {
         if (!id.matches(Regex("[0-9]{4,12}"))) return false
         return try {
             val conn = URL("https://api.digiseller.com/api/products/$id/data?currency=RUB&lang=ru-RU")
@@ -472,8 +472,15 @@ object OfferAvailability {
                 val product = root.optJSONObject("product") ?: return false
                 // Do not alert on a teaser catalog price when the buyer must select a region.
                 // The region-specific price must be independently verified first.
+                val currentRub = product.optJSONObject("prices")?.optJSONObject("default")
+                    ?.optDouble("RUB", Double.NaN) ?: Double.NaN
+                // When Digiseller supplies a current RUB price, do not alert using a
+                // stale catalog price. Missing/invalid prices are not confirmation.
+                val priceMatches = catalogPriceRub.isFinite() && catalogPriceRub > 0 &&
+                    currentRub.isFinite() && currentRub > 0 &&
+                    kotlin.math.abs(currentRub - catalogPriceRub) <= 0.01
                 product.has("is_available") && product.optInt("is_available", 0) == 1 &&
-                    !RegionOptions.hasRegionSelector(product)
+                    !RegionOptions.hasRegionSelector(product) && priceMatches
             } finally { conn.disconnect() }
         } catch (_: Exception) { false }
     }
@@ -581,7 +588,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 val reliableOffers = mutableListOf<Offer>()
                 for (candidate in candidates.take(20)) {
                     if (isStopped) break
-                    if (OfferAvailability.confirmedInStock(candidate.id)) {
+                    if (OfferAvailability.confirmedInStock(candidate.id, candidate.price)) {
                         reliableOffers.add(candidate)
                         if (reliableOffers.size >= 3) break
                     }
