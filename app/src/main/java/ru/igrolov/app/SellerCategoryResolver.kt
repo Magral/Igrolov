@@ -4,7 +4,6 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
-import java.net.URLEncoder
 import java.util.Locale
 
 /**
@@ -61,8 +60,8 @@ object SellerCategoryResolver {
         val value = category.lowercase(Locale.ROOT).replace('ё', 'е')
         val words = value.split(Regex("[^\\p{L}\\p{N}]+")).filter { it.isNotEmpty() }.toSet()
         if (words.any { it in setOf("аккаунт", "аккаунты", "account", "accounts", "аренда", "rent", "rental") }) return "Excluded"
-        val gift = words.any { it in setOf("gift", "gifts", "гифт", "гифты", "подарки") }
-        val key = words.any { it in setOf("key", "keys", "ключ", "ключи") }
+        val gift = words.any { it in setOf("gift", "gifts", "гифт", "гифты", "подарки", "подарок") }
+        val key = words.any { it in setOf("key", "keys", "ключ", "ключи", "ключей") }
         return when {
             gift && !key -> "Gift"
             key && !gift -> "Key"
@@ -75,8 +74,9 @@ object SellerCategoryResolver {
             "Excluded" -> null
             "Gift", "Key" -> {
                 // A conflicting seller title is not proof of delivery type.
-                if (offer.type != "Не указан" && offer.type != categoryKind) offer.copy(type = "Не указан", categoryLabel = category)
-                else offer.copy(type = categoryKind, categoryLabel = category)
+                if (offer.type == "Не указан") offer.copy(categoryLabel = category)
+                else if (offer.type != categoryKind) offer.copy(type = "Не указан", categoryLabel = category)
+                else offer.copy(categoryLabel = category)
             }
             else -> offer.copy(categoryLabel = category)
         }
