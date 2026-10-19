@@ -36,12 +36,19 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 import java.util.Locale
+import java.util.concurrent.Executors
 
 data class Offer(val id: String, val name: String, val price: Double, val type: String, val rfStatus: String, val edition: String)
 
 data class Tracked(val id: String, val name: String, val price: Double?, val status: String, val url: String)
 
 class MainActivity : ComponentActivity() {
+    // Bound concurrent product detail requests so large watch lists do not spawn unlimited threads.
+    private val detailExecutor = Executors.newFixedThreadPool(4)
+    override fun onDestroy() {
+        detailExecutor.shutdownNow()
+        super.onDestroy()
+    }
     private val askNotifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
     private val prefs by lazy { getSharedPreferences("tracked_products", MODE_PRIVATE) }
     private fun loadIds(): List<String> = prefs.getString("ids", "")!!.split(",").filter { it.isNotBlank() }
@@ -67,7 +74,7 @@ class MainActivity : ComponentActivity() {
         setContent { MaterialTheme { Screen() } }
     }
     private fun fetch(id: String, callback: (Tracked) -> Unit) {
-        Thread {
+        detailExecutor.execute {
             val result = try {
                 val conn = (URL("https://api.digiseller.com/api/products/$id/data?currency=RUB&lang=ru-RU").openConnection() as HttpURLConnection)
                 conn.connectTimeout = 12000
@@ -84,7 +91,7 @@ class MainActivity : ComponentActivity() {
                 } finally { conn.disconnect() }
             } catch (e: Exception) { Tracked(id, "Товар $id", null, "Ошибка загрузки: ${e.message ?: "нет соединения"}", "https://plati.market/itm/$id") }
             runOnUiThread { callback(result) }
-        }.start()
+        }
     }
     // Network requests are performed only on background threads.
     // Retry transient DNS/timeout/server failures without duplicating search results.
