@@ -13,18 +13,31 @@ def get(path, params=None):
         return json.load(response)
 
 def rows(obj):
+    """Extract category arrays without silently assuming one API envelope."""
     if isinstance(obj, list):
         return obj
     if isinstance(obj, dict):
-        for key in ("content", "items", "categories", "result"):
+        for key in ("content", "items", "categories", "category", "result", "item", "data"):
             if key in obj:
-                nested = obj[key]
-                if isinstance(nested, dict) and "item" in nested:
-                    return rows(nested["item"])
-                result = rows(nested)
-                if result:
-                    return result
+                found = rows(obj[key])
+                if found:
+                    return found
     return []
+
+def structure(obj, depth=0):
+    """Record only envelope keys and JSON types, never seller or product values."""
+    if depth >= 4:
+        return {"type": type(obj).__name__}
+    if isinstance(obj, list):
+        return {"type": "list", "length": len(obj),
+                "first": structure(obj[0], depth + 1) if obj else None}
+    if isinstance(obj, dict):
+        return {"type": "dict", "fields": {
+            key: structure(value, depth + 1) for key, value in obj.items()
+            if key not in ("id", "seller_id", "id_goods", "product_id", "name",
+                           "title", "description", "text", "value")
+        }}
+    return {"type": type(obj).__name__}
 
 def safe_category(entry):
     if not isinstance(entry, dict):
@@ -57,7 +70,7 @@ try:
         try:
             sub = get("/api/dictionary/platforms/subcategories/" + str(cid))
             items = rows(sub)
-            subcategories.append({"parent_id": cid, "count": len(items),
+            subcategories.append({"parent_id": cid, "count": len(items), "response_structure": structure(sub),
                                   "items": [safe_category(x) for x in items][:100]})
         except Exception as exc:
             report["errors"].append("subcategory " + str(cid) + ": " + type(exc).__name__)
@@ -124,6 +137,7 @@ for index, (product_id, seller_id) in enumerate(seller_samples[:3], 1):
         sample["seller_categories"] = {
             "retval": data.get("retval") if isinstance(data, dict) else None,
             "count": len(categories),
+            "response_structure": structure(data),
             "labels": [
                 {key: value for key, value in safe_category(x).items()
                  if key in ("name", "title")}
