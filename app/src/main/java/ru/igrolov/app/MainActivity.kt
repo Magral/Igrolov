@@ -236,6 +236,7 @@ class MainActivity : ComponentActivity() {
         var searchMessage by remember { mutableStateOf("Нажмите «Искать на Plati» для запроса к каталогу") }
         var searching by remember { mutableStateOf(false) }
         var searchGeneration by remember { mutableIntStateOf(0) }
+        var visibleOfferLimit by remember { mutableIntStateOf(30) }
         var searchPage by remember { mutableIntStateOf(0) }
         var catalogLimit by remember { mutableIntStateOf(CatalogPageSettings.get(this@MainActivity)) }
         val searchTotalPages = catalogLimit / 100
@@ -411,6 +412,7 @@ class MainActivity : ComponentActivity() {
             Text("Проверка по заголовкам скрывает известные DLC и услуги. Состав издания и возможность активации в РФ обязательно уточняйте на странице товара.", style = MaterialTheme.typography.bodySmall)
             Button(onClick = {
                 searchGeneration++
+                visibleOfferLimit = 30
                 val generation = searchGeneration
                 searching = true
                 searchPage = 0
@@ -657,13 +659,15 @@ class MainActivity : ComponentActivity() {
             Spacer(Modifier.height(8.dp))
             if (offers.isNotEmpty()) {
                 val currentRules = remember(query, rulesRevision) { GameRuleStore.read(this@MainActivity, query) }
-                val visibleCount = offers.count { (selectedType == "Все" || it.type == selectedType) &&
-                    OfferRules.eligible(it, editionFilter, selectedType, steamGame, currentRules) && it.id !in ignoredIds }
+                val filteredOffers = remember(offers, selectedType, editionFilter, steamGame, currentRules, ignoredIds) {
+                    offers.filter { (selectedType == "Все" || it.type == selectedType) &&
+                        OfferRules.eligible(it, editionFilter, selectedType, steamGame, currentRules) && it.id !in ignoredIds }
+                }
+                val visibleCount = filteredOffers.size
                 Text("Предложения по цене ↑ · $visibleCount", style = MaterialTheme.typography.titleMedium)
                 if (visibleCount == 0) Text("По выбранным фильтрам предложений нет. Уточните название или проверьте регион в заголовках.", style = MaterialTheme.typography.bodySmall)
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    offers.filter { (selectedType == "Все" || it.type == selectedType) &&
-                        OfferRules.eligible(it, editionFilter, selectedType, steamGame, currentRules) && it.id !in ignoredIds }.forEach { offer ->
+                    filteredOffers.take(visibleOfferLimit).forEach { offer ->
                         ElevatedCard(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(10.dp)) {
                                 Text(offer.name, style = MaterialTheme.typography.bodyMedium)
@@ -696,6 +700,11 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             }
+                        }
+                    }
+                    if (visibleCount > visibleOfferLimit) {
+                        OutlinedButton(onClick = { visibleOfferLimit += 30 }, modifier = Modifier.fillMaxWidth()) {
+                            Text("Показать ещё 30 · отображено ${minOf(visibleOfferLimit, visibleCount)} из $visibleCount")
                         }
                     }
                 }
