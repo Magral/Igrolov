@@ -228,6 +228,7 @@ class MainActivity : ComponentActivity() {
         var directorySelectedAppId by remember { mutableStateOf<Int?>(null) }
         var searchMessage by remember { mutableStateOf("Нажмите «Искать на Plati» для запроса к каталогу") }
         var searching by remember { mutableStateOf(false) }
+        var searchGeneration by remember { mutableIntStateOf(0) }
         var searchPage by remember { mutableIntStateOf(0) }
         var catalogLimit by remember { mutableIntStateOf(CatalogPageSettings.get(this@MainActivity)) }
         val searchTotalPages = catalogLimit / 100
@@ -346,7 +347,7 @@ class MainActivity : ComponentActivity() {
         Column(Modifier.fillMaxSize()) {
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Игролов 1.0.3", style = MaterialTheme.typography.headlineSmall)
+                Text("Игролов 1.0.4", style = MaterialTheme.typography.headlineSmall)
                 IconButton(onClick = { settingsOpen = !settingsOpen; showDirectory = false }) {
                     Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                         color = MaterialTheme.colorScheme.onSurface)
@@ -402,6 +403,8 @@ class MainActivity : ComponentActivity() {
             }
             Text("Проверка по заголовкам скрывает известные DLC и услуги. Состав издания и возможность активации в РФ обязательно уточняйте на странице товара.", style = MaterialTheme.typography.bodySmall)
             Button(onClick = {
+                searchGeneration++
+                val generation = searchGeneration
                 searching = true
                 searchPage = 0
                 searchFound = 0
@@ -412,9 +415,12 @@ class MainActivity : ComponentActivity() {
                 searchPrefs.edit().putString("queries", JSONArray(queryHistory).toString()).apply()
                 steamGame = null
                 searchCatalog(requestedGame, searchTotalPages, { page, _, count ->
-                    searchPage = page
-                    searchFound = count
+                    if (generation == searchGeneration) {
+                        searchPage = page
+                        searchFound = count
+                    }
                 }) { found, failure ->
+                    if (generation != searchGeneration) return@searchCatalog
                     offers = found
                     searching = false
                     searchMessage = if (failure.isNotBlank()) "Ошибка поиска: $failure" else
@@ -422,7 +428,7 @@ class MainActivity : ComponentActivity() {
                     if (found.isNotEmpty()) Thread {
                         val game = SteamGameReference.lookup(this@MainActivity, requestedGame)
                         runOnUiThread {
-                            if (query.trim() == requestedGame) {
+                            if (generation == searchGeneration && query.trim() == requestedGame) {
                                 steamGame = game
                                 searchMessage = "Каталог: ${found.size} · справочник: ${game.source}. Проверка только по названиям."
                             }
