@@ -35,6 +35,7 @@ def safe_category(entry):
 
 report = {"marketplace": {}, "search": {}, "product_details": [], "errors": []}
 sample_product_ids = []
+seller_samples = []
 CATEGORY_FIELDS = ("category_id", "category", "breadcrumbs", "subcategory_id", "owner")
 def category_metadata(obj):
     if not isinstance(obj, dict):
@@ -82,7 +83,10 @@ for query in ("Hogwarts Legacy Steam", "Cyberpunk 2077 Steam"):
             product_id = str(item.get("id", item.get("id_goods", "")))
             if product_id.isdecimal() and len(product_id) <= 12 and product_id not in sample_product_ids:
                 sample_product_ids.append(product_id)
-            if len(sample_product_ids) >= 8:
+            seller_id = str(item.get("seller_id", ""))
+            if seller_id.isdecimal() and product_id.isdecimal() and seller_id not in [x[1] for x in seller_samples]:
+                seller_samples.append((product_id, seller_id))
+            if len(sample_product_ids) >= 8 and len(seller_samples) >= 3:
                 break
         report["search"][query] = {
             "retval": data.get("retval") if isinstance(data, dict) else None,
@@ -108,6 +112,43 @@ for product_id in sample_product_ids[:8]:
         })
     except Exception as exc:
         report["errors"].append("product detail: " + type(exc).__name__)
+
+# Seller-specific category trees and seller-scoped product cards.
+# Seller/product IDs are only used in memory, never saved in the report.
+report["seller_samples"] = []
+for index, (product_id, seller_id) in enumerate(seller_samples[:3], 1):
+    sample = {"sample": index}
+    try:
+        data = get("/api/categories", {"seller_id": seller_id})
+        categories = rows(data)
+        sample["seller_categories"] = {
+            "retval": data.get("retval") if isinstance(data, dict) else None,
+            "count": len(categories),
+            "labels": [
+                {key: value for key, value in safe_category(x).items()
+                 if key in ("name", "title")}
+                for x in categories[:20]
+            ]
+        }
+    except Exception as exc:
+        sample["categories_error"] = type(exc).__name__
+    try:
+        data = get("/api/products/" + product_id + "/data", {
+            "seller_id": seller_id, "currency": "RUB", "lang": "ru-RU"
+        })
+        product = data.get("product", {}) if isinstance(data, dict) else {}
+        metadata = category_metadata(product)
+        sample["product_with_seller"] = {
+            "retval": data.get("retval") if isinstance(data, dict) else None,
+            "category_id_present": "category_id" in metadata,
+            "category_id_nonzero": str(metadata.get("category_id", "0")) not in ("0", "", "None"),
+            "breadcrumb_count": len(metadata.get("breadcrumbs", [])) if isinstance(metadata.get("breadcrumbs"), list) else 0,
+            "category_field_names": sorted(k for k in product if
+                any(term in k.lower() for term in ("categor", "breadcrumb", "owner")))
+        }
+    except Exception as exc:
+        sample["product_error"] = type(exc).__name__
+    report["seller_samples"].append(sample)
 
 with open("digiseller_category_probe.json", "w", encoding="utf-8") as file:
     json.dump(report, file, ensure_ascii=False, indent=2)
