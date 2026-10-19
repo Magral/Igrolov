@@ -163,6 +163,19 @@ class MainActivity : ComponentActivity() {
                         val total = result?.optInt("total", 0) ?: 0
                         if (total > 0) error("Каталог нашёл $total товаров, но изменил формат ответа")
                     } else {
+                        // Inspect public search2 schema without logging product or user data.
+                        if (page == 1 && rawItems.length() > 0) {
+                            val sample = rawItems.optJSONObject(0)
+                            if (sample != null) {
+                                val keys = sample.keys().asSequence().filter {
+                                    it.contains("categor", ignoreCase = true) ||
+                                        it.contains("seller", ignoreCase = true) ||
+                                        it.contains("owner", ignoreCase = true) ||
+                                        it.contains("platform", ignoreCase = true)
+                                }.sorted().toList()
+                                android.util.Log.i("IgrolovCatalog", "search2 category field names: ${keys.joinToString(",")}")
+                            }
+                        }
                         for (i in 0 until rawItems.length()) {
                             val item = rawItems.optJSONObject(i) ?: continue
                             val id = item.optString("id", item.optString("id_goods", ""))
