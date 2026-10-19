@@ -10,8 +10,8 @@ android {
         applicationId = "ru.igrolov.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 105
-        versionName = "1.0.3"
+        versionCode = 106
+        versionName = "1.0.4"
     }
     // Temporary workaround for AGP Lint service crash on release builds.
     // Re-enable release lint before Google Play publication.
