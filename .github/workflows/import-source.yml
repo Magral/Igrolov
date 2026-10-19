@@ -29,5 +29,6 @@ jobs:
           git add app build.gradle.kts settings.gradle.kts gradle.properties README.md .gitignore CHANGELOG* IGROLOV_RENAME_NOTES.md
           if ! git diff --cached --quiet; then
             git commit -m "Import Igrolov Android source into repository"
-            git push
+            git pull --rebase origin main
+            git push origin HEAD:main
           fi
