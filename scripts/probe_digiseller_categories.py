@@ -33,7 +33,15 @@ def safe_category(entry):
     return {k: entry[k] for k in ("id", "category_id", "name", "title", "parent_id")
             if k in entry and isinstance(entry[k], (str, int, float, list))}
 
-report = {"marketplace": {}, "search": {}, "errors": []}
+report = {"marketplace": {}, "search": {}, "product_details": [], "errors": []}
+sample_product_ids = []
+CATEGORY_FIELDS = ("category_id", "category", "breadcrumbs", "subcategory_id", "owner")
+def category_metadata(obj):
+    if not isinstance(obj, dict):
+        return {}
+    return {key: obj[key] for key in CATEGORY_FIELDS
+            if key in obj and isinstance(obj[key], (int, float, str, list, dict))}
+
 try:
     data = get("/api/dictionary/platforms/categories/plati")
     categories = rows(data)
@@ -41,7 +49,7 @@ try:
     report["marketplace"]["root_categories"] = [safe_category(x) for x in categories][:100]
     report["marketplace"]["root_count"] = len(categories)
     subcategories = []
-    for category in categories[:8]:
+    for category in categories[:40]:
         cid = category.get("category_id", category.get("id")) if isinstance(category, dict) else None
         if not isinstance(cid, int):
             continue
@@ -67,15 +75,39 @@ for query in ("Hogwarts Legacy Steam", "Cyberpunk 2077 Steam"):
         relevant = ("categor", "cataloguer", "seller", "owner", "platform")
         names = sorted({key for item in items if isinstance(item, dict)
                         for key in item if any(term in key.lower() for term in relevant)})
+        # IDs are used in memory only to fetch public product details.
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            product_id = str(item.get("id", item.get("id_goods", "")))
+            if product_id.isdecimal() and len(product_id) <= 12 and product_id not in sample_product_ids:
+                sample_product_ids.append(product_id)
+            if len(sample_product_ids) >= 8:
+                break
         report["search"][query] = {
             "retval": data.get("retval") if isinstance(data, dict) else None,
             "item_count": len(items), "metadata_field_names": names,
+            "sample_category_metadata": [category_metadata(item) for item in items if category_metadata(item)][:10],
             "items_with_category_fields": sum(
                 any("categor" in k.lower() for k in item)
                 for item in items if isinstance(item, dict)),
         }
     except Exception as exc:
         report["errors"].append("search: " + type(exc).__name__ + ": " + str(exc)[:160])
+
+# Correlate search results with their public product-detail category metadata.
+for product_id in sample_product_ids[:8]:
+    try:
+        data = get("/api/products/" + product_id + "/data", {"currency": "RUB", "lang": "ru-RU"})
+        product = data.get("product", {}) if isinstance(data, dict) else {}
+        report["product_details"].append({
+            "retval": data.get("retval") if isinstance(data, dict) else None,
+            "category_metadata": category_metadata(product),
+            "category_field_names": sorted(k for k in product if
+                any(term in k.lower() for term in ("categor", "breadcrumb", "owner")))
+        })
+    except Exception as exc:
+        report["errors"].append("product detail: " + type(exc).__name__)
 
 with open("digiseller_category_probe.json", "w", encoding="utf-8") as file:
     json.dump(report, file, ensure_ascii=False, indent=2)
