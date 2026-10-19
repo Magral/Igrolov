@@ -559,9 +559,16 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 val candidates = offers.filterNot { OfferRules.variablePrice(it.name) }
                     .filter { SteamGameReference.isMainGame(it, reference, rules) }
                     .sortedBy { it.price }
-                // Only verified available offers may set the minimum or trigger alerts.
-                // Limit detail calls to five cheapest candidates to avoid excessive API traffic.
-                val reliableOffers = candidates.take(5).filter { OfferAvailability.confirmedInStock(it.id) }
+                // Scan up to 20 cheapest candidates until three in-stock offers are found.
+                // A fixed first-five limit missed available offers further down the list.
+                val reliableOffers = mutableListOf<Offer>()
+                for (candidate in candidates.take(20)) {
+                    if (isStopped) break
+                    if (OfferAvailability.confirmedInStock(candidate.id)) {
+                        reliableOffers.add(candidate)
+                        if (reliableOffers.size >= 3) break
+                    }
+                }
                 val cheapest = reliableOffers.minByOrNull { it.price }
                 val checkedAt = System.currentTimeMillis()
                 watch.put("last", cheapest?.price ?: -1.0)
