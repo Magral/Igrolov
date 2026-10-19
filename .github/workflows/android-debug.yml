@@ -45,6 +45,8 @@ jobs:
           mkdir -p signing
           base64 --decode signing/igrolov-debug.jks.base64 > signing/igrolov-debug.jks
           keytool -list -keystore signing/igrolov-debug.jks -storepass android -alias igrolov-debug > /dev/null
+      - name: Test seller category classification
+        run: gradle --no-daemon :app:testDebugUnitTest
       - name: Build Debug APK
         run: |
           if [ -f settings.gradle.kts ]; then
