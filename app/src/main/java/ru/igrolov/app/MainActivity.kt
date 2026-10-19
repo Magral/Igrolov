@@ -163,18 +163,34 @@ class MainActivity : ComponentActivity() {
                         val total = result?.optInt("total", 0) ?: 0
                         if (total > 0) error("Каталог нашёл $total товаров, но изменил формат ответа")
                     } else {
-                        // Inspect public search2 schema without logging product or user data.
-                        if (page == 1 && rawItems.length() > 0) {
-                            val sample = rawItems.optJSONObject(0)
-                            if (sample != null) {
-                                val keys = sample.keys().asSequence().filter {
-                                    it.contains("categor", ignoreCase = true) ||
-                                        it.contains("seller", ignoreCase = true) ||
-                                        it.contains("owner", ignoreCase = true) ||
-                                        it.contains("platform", ignoreCase = true)
-                                }.sorted().toList()
-                                android.util.Log.i("IgrolovCatalog", "search2 category field names: ${keys.joinToString(",")}")
+                        // Search responses may vary by seller and product: inspect every item
+                        // on the first page, but log only field names, never values or IDs.
+                        if (page == 1) {
+                            val fieldNames = sortedSetOf<String>()
+                            var itemsWithCategoryFields = 0
+                            var itemsWithSellerFields = 0
+                            for (index in 0 until rawItems.length()) {
+                                val sample = rawItems.optJSONObject(index) ?: continue
+                                var categoryFound = false
+                                var sellerFound = false
+                                val iterator = sample.keys()
+                                while (iterator.hasNext()) {
+                                    val key = iterator.next()
+                                    val isCategory = key.contains("categor", ignoreCase = true) ||
+                                        key.contains("cataloguer", ignoreCase = true)
+                                    val isSeller = key.contains("seller", ignoreCase = true) ||
+                                        key.contains("owner", ignoreCase = true)
+                                    if (isCategory || isSeller || key.contains("platform", ignoreCase = true)) {
+                                        fieldNames.add(key)
+                                        categoryFound = categoryFound || isCategory
+                                        sellerFound = sellerFound || isSeller
+                                    }
+                                }
+                                if (categoryFound) itemsWithCategoryFields++
+                                if (sellerFound) itemsWithSellerFields++
                             }
+                            android.util.Log.i("IgrolovCatalog",
+                                "search2 fields=${fieldNames.joinToString(",")}; categoryItems=$itemsWithCategoryFields; sellerItems=$itemsWithSellerFields; total=${rawItems.length()}")
                         }
                         for (i in 0 until rawItems.length()) {
                             val item = rawItems.optJSONObject(i) ?: continue
