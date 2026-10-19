@@ -500,8 +500,7 @@ object CatalogCheck {
             }
         }
         val response = root ?: error("Нет ответа каталога")
-        if (true) {
-
+        {
             if (response.optInt("retval",0) != 0) error(response.optString("retdesc", "Ошибка API"))
             val result = response.optJSONObject("result")
             val raw = response.optJSONObject("items")?.optJSONArray("item")
