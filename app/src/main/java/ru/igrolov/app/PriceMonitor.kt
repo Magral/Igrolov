@@ -163,6 +163,15 @@ object RegionOptions {
         val t = value.lowercase(Locale.ROOT)
         return listOf("стран", "регион", "country", "region", "аккаунт steam").any { it in t }
     }
+    /** A region selector means the catalog price may be for another country. */
+    fun hasRegionSelector(product: JSONObject): Boolean {
+        val options = product.optJSONObject("options")?.let { objects(it.opt("option")) }
+            ?: objects(product.opt("options"))
+        return options.any { option ->
+            val question = label(option.opt("name")).ifBlank { label(option.opt("text")) }
+            isRegionQuestion(question)
+        }
+    }
     fun inspect(id: String, base: Double): Info {
         val conn = URL("https://api.digiseller.com/api/products/$id/data?currency=RUB&lang=ru-RU").openConnection() as HttpURLConnection
         conn.connectTimeout = 6500; conn.readTimeout = 6500
@@ -459,7 +468,10 @@ object OfferAvailability {
                 val root = JSONObject(conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
                 if (root.optInt("retval", -1) != 0) return false
                 val product = root.optJSONObject("product") ?: return false
-                product.has("is_available") && product.optInt("is_available", 0) == 1
+                // Do not alert on a teaser catalog price when the buyer must select a region.
+                // The region-specific price must be independently verified first.
+                product.has("is_available") && product.optInt("is_available", 0) == 1 &&
+                    !RegionOptions.hasRegionSelector(product)
             } finally { conn.disconnect() }
         } catch (_: Exception) { false }
     }
