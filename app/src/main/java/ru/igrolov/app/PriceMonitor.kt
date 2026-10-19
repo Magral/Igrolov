@@ -570,7 +570,10 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 }
                 // Catalog prices for selectable editions/regions may be teaser prices.
                 // Display them, but do not use them as verified price-alert triggers.
+                // Unknown or contradictory delivery types are useful for manual review,
+                // but must not trigger automatic Gift/Key price alerts.
                 val candidates = offers.filterNot { OfferRules.variablePrice(it.name) }
+                    .filter { it.type == "Gift" || it.type == "Key" }
                     .filter { SteamGameReference.isMainGame(it, reference, rules) }
                     .sortedBy { it.price }
                 // Scan up to 20 cheapest candidates until three in-stock offers are found.
