@@ -13,6 +13,15 @@ android {
         versionCode = 106
         versionName = "1.0.4"
     }
+    // Fixed DEVELOPMENT signing identity. Never use this key for production releases.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = rootProject.file("signing/igrolov-debug.jks")
+            storePassword = "android"
+            keyAlias = "igrolov-debug"
+            keyPassword = "android"
+        }
+    }
     // Temporary workaround for AGP Lint service crash on release builds.
     // Re-enable release lint before Google Play publication.
     lint { checkReleaseBuilds = false }
