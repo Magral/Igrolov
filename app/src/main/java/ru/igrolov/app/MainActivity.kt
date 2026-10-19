@@ -45,7 +45,11 @@ data class Tracked(val id: String, val name: String, val price: Double?, val sta
 class MainActivity : ComponentActivity() {
     // Bound concurrent product detail requests so large watch lists do not spawn unlimited threads.
     private val detailExecutor = Executors.newFixedThreadPool(4)
+    private val catalogExecutor = Executors.newSingleThreadExecutor()
+    private val activeCatalogGeneration = java.util.concurrent.atomic.AtomicInteger(0)
     override fun onDestroy() {
+        activeCatalogGeneration.incrementAndGet()
+        catalogExecutor.shutdownNow()
         detailExecutor.shutdownNow()
         super.onDestroy()
     }
@@ -124,8 +128,8 @@ class MainActivity : ComponentActivity() {
         throw last ?: java.io.IOException("Нет соединения")
     }
 
-    private fun searchCatalog(query: String, pageCount: Int, progress: (Int, Int, Int) -> Unit, callback: (List<Offer>, String) -> Unit) {
-        Thread {
+    private fun searchCatalog(query: String, pageCount: Int, generation: Int, progress: (Int, Int, Int) -> Unit, callback: (List<Offer>, String) -> Unit) {
+        catalogExecutor.execute {
             val found = mutableListOf<Offer>()
             val seenIds = mutableSetOf<String>()
             var failure = ""
@@ -133,6 +137,7 @@ class MainActivity : ComponentActivity() {
                 // Marketplace-wide search endpoint used by the Plati site ecosystem.
                 // It is not the seller-specific shop_search.asp interface.
                 for (page in 1..pageCount) {
+                if (generation != activeCatalogGeneration.get() || Thread.currentThread().isInterrupted) return@execute
                 val params = linkedMapOf(
                     "query" to query,
                     "searchmode" to "10",
@@ -173,11 +178,15 @@ class MainActivity : ComponentActivity() {
 
                     }
                 }
-                runOnUiThread { progress(page, pageCount, found.size) }
+                if (generation == activeCatalogGeneration.get()) runOnUiThread {
+                    if (generation == activeCatalogGeneration.get()) progress(page, pageCount, found.size)
+                }
                 }
             } catch (e: Exception) { failure = e.message ?: "Не удалось подключиться к каталогу" }
-            runOnUiThread { callback(found.distinctBy { it.id }.sortedBy { it.price }, failure) }
-        }.start()
+            if (generation == activeCatalogGeneration.get()) runOnUiThread {
+                if (generation == activeCatalogGeneration.get()) callback(found.distinctBy { it.id }.sortedBy { it.price }, failure)
+            }
+        }
     }
 
     // Steam store search, ordered by top sellers; free-to-play is excluded by Steam's filter.
@@ -412,6 +421,7 @@ class MainActivity : ComponentActivity() {
             Text("Проверка по заголовкам скрывает известные DLC и услуги. Состав издания и возможность активации в РФ обязательно уточняйте на странице товара.", style = MaterialTheme.typography.bodySmall)
             Button(onClick = {
                 searchGeneration++
+                activeCatalogGeneration.set(searchGeneration)
                 visibleOfferLimit = 30
                 val generation = searchGeneration
                 searching = true
@@ -423,7 +433,7 @@ class MainActivity : ComponentActivity() {
                 queryHistory = (listOf(requestedGame) + queryHistory.filterNot { it.equals(requestedGame, ignoreCase = true) }).take(20)
                 searchPrefs.edit().putString("queries", JSONArray(queryHistory).toString()).apply()
                 steamGame = null
-                searchCatalog(requestedGame, searchTotalPages, { page, _, count ->
+                searchCatalog(requestedGame, searchTotalPages, generation, { page, _, count ->
                     if (generation == searchGeneration) {
                         searchPage = page
                         searchFound = count
