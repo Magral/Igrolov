@@ -36,6 +36,10 @@ jobs:
             mkdir -p project
             unzip -q Igrolov_v1.0.3_GitHub_Actions_source.zip -d project
           fi
+      - name: Verify 1.0.4 version metadata
+        run: |
+          grep -F 'versionName = "1.0.4"' app/build.gradle.kts
+          grep -F 'Text("Игролов 1.0.4"' app/src/main/java/ru/igrolov/app/MainActivity.kt
       - name: Build Debug APK
         run: |
           if [ -f settings.gradle.kts ]; then
@@ -48,9 +52,9 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: Igrolov-debug-apk
+          name: Igrolov-v1.0.4-debug-${{ github.sha }}
           path: |
             app/build/outputs/apk/debug/*.apk
             project/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 90
