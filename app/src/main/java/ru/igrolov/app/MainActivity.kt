@@ -132,6 +132,7 @@ class MainActivity : ComponentActivity() {
         catalogExecutor.execute {
             val found = mutableListOf<Offer>()
             val seenIds = mutableSetOf<String>()
+            val sellerIds = mutableMapOf<String, String>()
             var failure = ""
             try {
                 // Marketplace-wide search endpoint used by the Plati site ecosystem.
@@ -202,7 +203,10 @@ class MainActivity : ComponentActivity() {
                             val price = priceText.replace(',', '.').replace(" ", "").toDoubleOrNull()
                             if (!id.matches(Regex("[0-9]{4,12}")) || name.isBlank() || price == null || !price.isFinite() || price <= 0) continue
                             val type = OfferRules.classifySteamGame(name, query) ?: continue
-                            if (seenIds.add(id)) found.add(Offer(id, name, price, type, OfferRules.rfStatus(name), OfferRules.editionType(name, query)))
+                            if (seenIds.add(id)) {
+                                found.add(Offer(id, name, price, type, OfferRules.rfStatus(name), OfferRules.editionType(name, query)))
+                                sellerIds[id] = item.optString("seller_id")
+                            }
                         }
 
                     }
@@ -212,8 +216,22 @@ class MainActivity : ComponentActivity() {
                 }
                 }
             } catch (e: Exception) { failure = e.message ?: "Не удалось подключиться к каталогу" }
+            // Resolve only a small, cheapest subset. Seller-scoped categories are optional:
+            // network failure or category_id=0 never removes an otherwise valid offer.
+            val sorted = found.distinctBy { it.id }.sortedBy { it.price }
+            val sellerCache = mutableMapOf<String, Map<String, String>>()
+            val enriched = if (failure.isEmpty() && generation == activeCatalogGeneration.get()) {
+                sorted.mapIndexedNotNull { index, offer ->
+                    if (index >= 12 || generation != activeCatalogGeneration.get()) offer
+                    else {
+                        val seller = sellerIds[offer.id].orEmpty()
+                        val label = SellerCategoryResolver.label(offer.id, seller, sellerCache)
+                        if (label == null) offer else SellerCategoryResolver.refine(offer, label)
+                    }
+                }
+            } else sorted
             if (generation == activeCatalogGeneration.get()) runOnUiThread {
-                if (generation == activeCatalogGeneration.get()) callback(found.distinctBy { it.id }.sortedBy { it.price }, failure)
+                if (generation == activeCatalogGeneration.get()) callback(enriched, failure)
             }
         }
     }
