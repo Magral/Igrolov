@@ -38,7 +38,7 @@ import java.net.URLEncoder
 import java.util.Locale
 import java.util.concurrent.Executors
 
-data class Offer(val id: String, val name: String, val price: Double, val type: String, val rfStatus: String, val edition: String)
+data class Offer(val id: String, val name: String, val price: Double, val type: String, val rfStatus: String, val edition: String, val categoryLabel: String = "")
 
 data class Tracked(val id: String, val name: String, val price: Double?, val status: String, val url: String)
 
