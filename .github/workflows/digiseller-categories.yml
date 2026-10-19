@@ -1,0 +1,30 @@
+name: Digiseller category API research
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/probe_digiseller_categories.py"
+      - ".github/workflows/digiseller-categories.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Probe public category and search endpoints
+        run: python scripts/probe_digiseller_categories.py
+      - name: Upload sanitized API research
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: digiseller-category-probe
+          path: digiseller_category_probe.json
+          if-no-files-found: warn
