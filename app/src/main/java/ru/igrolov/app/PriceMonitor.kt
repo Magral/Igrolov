@@ -444,6 +444,27 @@ object CatalogPageSettings {
     fun pages(context: Context): Int = get(context) / 100
 }
 
+object OfferAvailability {
+    /** Conservative confirmation: an absent field or failed request is not proof of stock. */
+    fun confirmedInStock(id: String): Boolean {
+        if (!id.matches(Regex("[0-9]{4,12}"))) return false
+        return try {
+            val conn = URL("https://api.digiseller.com/api/products/$id/data?currency=RUB&lang=ru-RU")
+                .openConnection() as HttpURLConnection
+            conn.connectTimeout = 8000
+            conn.readTimeout = 8000
+            conn.setRequestProperty("Accept", "application/json")
+            try {
+                if (conn.responseCode !in 200..299) return false
+                val root = JSONObject(conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
+                if (root.optInt("retval", -1) != 0) return false
+                val product = root.optJSONObject("product") ?: return false
+                product.has("is_available") && product.optInt("is_available", 0) == 1
+            } finally { conn.disconnect() }
+        } catch (_: Exception) { false }
+    }
+}
+
 object CatalogCheck {
     /** The same first-page search as v0.5.3; it is not a guarantee of exhaustive marketplace coverage. */
     fun find(name: String, pageCount: Int): List<Offer> {
@@ -454,16 +475,37 @@ object CatalogCheck {
             "query" to name, "searchmode" to "10", "sortmode" to "2", "pagesize" to "100",
             "pagenum" to page.toString(), "owner" to "1", "details" to "1", "checkhidesales" to "1", "host" to "plati.market"
         ).entries.joinToString("&") { (k,v) -> "${URLEncoder.encode(k,"UTF-8") }=${URLEncoder.encode(v,"UTF-8")}" }
-        val conn = URL("https://api.digiseller.com/api/products/search2?$params").openConnection() as HttpURLConnection
-        conn.connectTimeout = 15000; conn.readTimeout = 20000
-        conn.setRequestProperty("Accept", "application/json")
-        try {
-            if (conn.responseCode !in 200..299) error("HTTP ${conn.responseCode}")
-            val root = JSONObject(conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
-            if (root.optInt("retval",0) != 0) error(root.optString("retdesc", "Ошибка API"))
-            val result = root.optJSONObject("result")
-            val raw = root.optJSONObject("items")?.optJSONArray("item")
-                ?: root.optJSONArray("items") ?: result?.optJSONArray("items")
+        var root: JSONObject? = null
+        for (attempt in 0..2) {
+            try {
+                val conn = URL("https://api.digiseller.com/api/products/search2?$params").openConnection() as HttpURLConnection
+                conn.connectTimeout = 15000; conn.readTimeout = 20000
+                conn.setRequestProperty("Accept", "application/json")
+                try {
+                    val status = conn.responseCode
+                    if (status !in 200..299) {
+                        if (status == 429 || status in 500..599) throw java.io.IOException("HTTP $status")
+                        error("HTTP $status")
+                    }
+                    root = JSONObject(conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
+                    break
+                } finally { conn.disconnect() }
+            } catch (e: Exception) {
+                val retryable = e is java.net.UnknownHostException ||
+                    e is java.net.SocketTimeoutException ||
+                    e is java.net.ConnectException ||
+                    (e is java.io.IOException && (e.message?.startsWith("HTTP 5") == true || e.message == "HTTP 429"))
+                if (!retryable || attempt == 2) throw e
+                Thread.sleep(400L * (attempt + 1))
+            }
+        }
+        val response = root ?: error("Нет ответа каталога")
+        run {
+
+            if (response.optInt("retval",0) != 0) error(response.optString("retdesc", "Ошибка API"))
+            val result = response.optJSONObject("result")
+            val raw = response.optJSONObject("items")?.optJSONArray("item")
+                ?: response.optJSONArray("items") ?: result?.optJSONArray("items")
                 ?: continue
             for (i in 0 until raw.length()) {
                 val item = raw.optJSONObject(i) ?: continue
@@ -475,7 +517,7 @@ object CatalogCheck {
                 val type = OfferRules.classifySteamGame(title,name) ?: continue
                 if (seen.add(id)) offers.add(Offer(id,title,p,type,OfferRules.rfStatus(title),OfferRules.editionType(title,name)))
             }
-        } finally { conn.disconnect() }
+        }
         }
         return offers.distinctBy { it.id }.sortedBy { it.price }
     }
