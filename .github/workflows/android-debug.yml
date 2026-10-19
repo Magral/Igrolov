@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -40,6 +40,11 @@ jobs:
         run: |
           grep -F 'versionName = "1.0.4"' app/build.gradle.kts
           grep -F 'Text("Игролов 1.0.4"' app/src/main/java/ru/igrolov/app/MainActivity.kt
+      - name: Restore pinned debug signing key
+        run: |
+          mkdir -p signing
+          base64 --decode signing/igrolov-debug.jks.base64 > signing/igrolov-debug.jks
+          keytool -list -keystore signing/igrolov-debug.jks -storepass android -alias igrolov-debug > /dev/null
       - name: Build Debug APK
         run: |
           if [ -f settings.gradle.kts ]; then
