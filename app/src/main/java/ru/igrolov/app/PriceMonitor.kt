@@ -557,17 +557,22 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 }
                 // Catalog prices for selectable editions/regions may be teaser prices.
                 // Display them, but do not use them as verified price-alert triggers.
-                val reliableOffers = offers.filterNot { OfferRules.variablePrice(it.name) }
+                val candidates = offers.filterNot { OfferRules.variablePrice(it.name) }
                     .filter { SteamGameReference.isMainGame(it, reference, rules) }
+                    .sortedBy { it.price }
+                // Only verified available offers may set the minimum or trigger alerts.
+                // Limit detail calls to five cheapest candidates to avoid excessive API traffic.
+                val reliableOffers = candidates.take(5).filter { OfferAvailability.confirmedInStock(it.id) }
                 val cheapest = reliableOffers.minByOrNull { it.price }
                 val checkedAt = System.currentTimeMillis()
                 watch.put("last", cheapest?.price ?: -1.0)
                 watch.put("checked", checkedAt)
                 watch.put("totalCount", catalog.size)
                 watch.put("eligibleCount", offers.size)
+                watch.put("verifiedCount", reliableOffers.size)
                 watch.put("bestId", cheapest?.id ?: "")
                 val topOffers = JSONArray()
-                offers.sortedBy { it.price }.take(3).forEach { offer ->
+                reliableOffers.take(3).forEach { offer ->
                     topOffers.put(JSONObject().put("id", offer.id).put("name", offer.name)
                         .put("price", offer.price).put("type", offer.type))
                 }
