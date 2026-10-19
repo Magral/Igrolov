@@ -86,6 +86,37 @@ class MainActivity : ComponentActivity() {
             runOnUiThread { callback(result) }
         }.start()
     }
+    // Network requests are performed only on background threads.
+    // Retry transient DNS/timeout/server failures without duplicating search results.
+    private fun getCatalogJson(url: String): JSONObject {
+        var last: Exception? = null
+        repeat(3) { attempt ->
+            try {
+                val conn = URL(url).openConnection() as HttpURLConnection
+                conn.connectTimeout = 15000
+                conn.readTimeout = 20000
+                conn.setRequestProperty("Accept", "application/json")
+                try {
+                    val status = conn.responseCode
+                    if (status !in 200..299) {
+                        if (status == 429 || status in 500..599) throw java.io.IOException("HTTP $status")
+                        error("HTTP $status: поиск каталога недоступен")
+                    }
+                    return JSONObject(conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
+                } finally { conn.disconnect() }
+            } catch (e: Exception) {
+                val retryable = e is java.net.UnknownHostException ||
+                    e is java.net.SocketTimeoutException ||
+                    e is java.net.ConnectException ||
+                    (e is java.io.IOException && (e.message?.startsWith("HTTP 5") == true || e.message == "HTTP 429"))
+                if (!retryable || attempt == 2) throw e
+                last = e
+                Thread.sleep(400L * (attempt + 1))
+            }
+        }
+        throw last ?: java.io.IOException("Нет соединения")
+    }
+
     private fun searchCatalog(query: String, pageCount: Int, progress: (Int, Int, Int) -> Unit, callback: (List<Offer>, String) -> Unit) {
         Thread {
             val found = mutableListOf<Offer>()
@@ -108,15 +139,8 @@ class MainActivity : ComponentActivity() {
                 ).entries.joinToString("&") { (k, v) ->
                     "${URLEncoder.encode(k, "UTF-8") }=${URLEncoder.encode(v, "UTF-8") }"
                 }
-                val conn = (URL("https://api.digiseller.com/api/products/search2?$params")
-                    .openConnection() as HttpURLConnection)
-                conn.connectTimeout = 15000
-                conn.readTimeout = 20000
-                conn.setRequestProperty("Accept", "application/json")
-                try {
-                    val status = conn.responseCode
-                    if (status !in 200..299) error("HTTP $status: поиск каталога недоступен")
-                    val root = JSONObject(conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
+                val root = getCatalogJson("https://api.digiseller.com/api/products/search2?$params")
+                run {
                     val result = root.optJSONObject("result")
                     val retval = root.optInt("retval", 0)
                     if (retval != 0) error(root.optString("retdesc", "Ошибка API: $retval"))
@@ -141,7 +165,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                     }
-                } finally { conn.disconnect() }
+                }
                 runOnUiThread { progress(page, pageCount, found.size) }
                 }
             } catch (e: Exception) { failure = e.message ?: "Не удалось подключиться к каталогу" }
