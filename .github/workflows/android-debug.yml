@@ -30,7 +30,7 @@ jobs:
           gradle-version: '8.9'
       - name: Unpack project source
         run: |
-          unzip -q Igrolov_v1.0.3_GitHub_Actions_source.zip -d project
+          if [ -f Igrolov_v1.0.4_test_source.zip ]; then\n            unzip -q Igrolov_v1.0.4_test_source.zip -d project\n          else\n            unzip -q Igrolov_v1.0.3_GitHub_Actions_source.zip -d project\n          fi
       - name: Build Debug APK
         working-directory: project
         run: gradle --no-daemon :app:assembleDebug
