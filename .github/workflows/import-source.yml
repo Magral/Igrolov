@@ -1,0 +1,33 @@
+name: Import Android source into repository
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/import-source.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Unpack existing source archive
+        run: |
+          unzip -o Igrolov_v1.0.3_GitHub_Actions_source.zip -d . -x '.github/*'
+          test -f settings.gradle.kts
+          test -f app/src/main/java/ru/igrolov/app/MainActivity.kt
+      - name: Commit extracted Android project
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app build.gradle.kts settings.gradle.kts gradle.properties README.md .gitignore CHANGELOG* IGROLOV_RENAME_NOTES.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Import Igrolov Android source into repository"
+            git push
+          fi
