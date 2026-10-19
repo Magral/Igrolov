@@ -130,8 +130,10 @@ object OfferRules {
     ))
 
     fun eligible(offer: Offer, edition: String, kind: String, game: SteamGameReference.Game?, rules: JSONObject = JSONObject(), allowUnconfirmed: Boolean = false): Boolean {
-        if (offer.rfStatus != "РФ указана в названии") return false
-        // Unknown region is visible for manual verification, but never described as confirmed.
+        // Excluded regions never qualify. Unconfirmed regions may be shown in manual
+        // search for verification, but must never trigger automated price alerts.
+        if (offer.rfStatus == "РФ исключена") return false
+        if (!allowUnconfirmed && offer.rfStatus != "РФ указана в названии") return false
         if (kind != "Все" && offer.type != kind) return false
         if (edition == "Игра") {
             if (game != null && !SteamGameReference.isMainGame(offer, game, rules)) return false
