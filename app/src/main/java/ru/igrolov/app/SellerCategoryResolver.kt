@@ -42,9 +42,13 @@ object SellerCategoryResolver {
             val category = array.optJSONObject(index) ?: continue
             val id = category.optString("id").ifBlank { category.optString("category_id") }
             val name = category.optString("name").ifBlank { category.optString("title") }.trim()
-            if (id.matches(Regex("[0-9]+")) && id != "0" && name.isNotBlank()) names[id] = name
+            if (id.matches(Regex("[0-9]+")) && id != "0" && name.isNotBlank()) {
+                // Duplicate category IDs with conflicting names are ambiguous, not proof.
+                if (id in names && names[id] != name) names[id] = ""
+                else if (id !in names) names[id] = name
+            }
         }
-        return names
+        return names.filterValues { it.isNotBlank() }
     }
 
     private fun categoryNames(sellerId: String): Map<String, String> {
@@ -84,6 +88,9 @@ object SellerCategoryResolver {
         val value = category.lowercase(Locale.ROOT).replace('ё', 'е')
         val words = value.split(Regex("[^\\p{L}\\p{N}]+")).filter { it.isNotEmpty() }.toSet()
         if (words.any { it in setOf("аккаунт", "аккаунты", "account", "accounts", "аренда", "rent", "rental") }) return "Excluded"
+        // Account/rental products may be labeled as profiles, offline access or shared access.
+        if (words.any { it in setOf("акк", "акки", "профиль", "профили", "profile", "profiles",
+                "offline", "оффлайн", "офлайн", "прокат") }) return "Excluded"
         val gift = words.any { it in setOf("gift", "gifts", "гифт", "гифты", "подарки", "подарок") }
         val key = words.any { it in setOf("key", "keys", "ключ", "ключи", "ключей") }
         return when {
