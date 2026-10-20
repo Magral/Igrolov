@@ -49,6 +49,9 @@ object ManualPurchaseProof {
         val plan=plan(product,canonical)
         if(!plan.valid) return Proof(null,true,"Вариант и цена не подтверждены")
         if(plan.pairs.isEmpty()) {
+            // Some sellers advertise an edition selector but omit its data in the public card.
+            val title=product.optString("name")
+            if(OfferRules.variablePrice(title) || Regex("(?iu)\\bвыбор\\b").containsMatchIn(title)) return Proof(null,true,"Выбор варианта не представлен в API")
             val price=product.optJSONObject("prices")?.optJSONObject("default")?.optDouble("RUB",Double.NaN)
                 ?.takeIf { it.isFinite() && it>0 }
             return Proof(price,true,if(price==null) "Нет актуальной цены RUB" else "Актуальная цена карточки · RUB")

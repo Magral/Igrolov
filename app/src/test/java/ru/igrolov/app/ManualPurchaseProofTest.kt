@@ -76,4 +76,8 @@ class ManualPurchaseProofTest {
         assertEquals(listOf(1000.0,2000.0),result.map { it.price })
         assertTrue(result.all { ManualContentRules.visible(it,"Игра","Key") })
     }
+    @Test fun advertisedEditionChoiceWithoutApiOptionsCannotUseTheBasePrice() {
+        val p=card().put("name","Stellaris Steam Gift · Выбор издания")
+        assertNull(ManualPurchaseProof.inspect(p,"Stellaris") {null}.price)
+    }
 }

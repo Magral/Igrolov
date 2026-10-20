@@ -54,5 +54,7 @@ class StellarisRegressionTest {
         assertEquals(4914.0,selected.price,0.001)
         assertTrue("Variant selection must identify the base game",ManualContentRules.visible(selected,"Игра","Все"))
         assertEquals(visible.map {it.price}.sorted(),visible.map {it.price})
+        println("Stellaris recorded-page regression: ${samples.size} search rows, ${offers.size} Steam candidates, ${visible.size} verified base-game offers")
+        visible.forEach { println("Kept ${it.id}: ${it.name} / ${it.price} RUB / ${it.purchaseNote}") }
     }
 }
