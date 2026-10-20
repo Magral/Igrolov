@@ -34,7 +34,7 @@ class ReleaseSmokeTest {
         assertEquals("2500",ManualSearchSettings.read(context).maxPrice)
         WatchStore.write(context,org.json.JSONArray())
         ManualSearchSettings.save(context,ManualSearchFilters())
-        assertEquals(112,context.packageManager.getPackageInfo(context.packageName,0).longVersionCode)
+        assertEquals(113,context.packageManager.getPackageInfo(context.packageName,0).longVersionCode)
     }
     @Test fun launchAndNavigateFiltersSettingsAndMonitoring() {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
