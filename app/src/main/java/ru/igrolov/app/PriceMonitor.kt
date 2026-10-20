@@ -256,13 +256,8 @@ object AlertJournal {
 
 object WatchStore {
     val lock = Any()
-    private const val KEY = "game_watches"
-    fun read(context: Context): JSONArray = try {
-        JSONArray(context.getSharedPreferences(KEY, Context.MODE_PRIVATE).getString("watches", "[]"))
-    } catch (_: Exception) { JSONArray() }
-    fun write(context: Context, array: JSONArray) {
-        context.getSharedPreferences(KEY, Context.MODE_PRIVATE).edit().putString("watches", array.toString()).apply()
-    }
+    fun read(context: Context): JSONArray = MonitorRoomStore.read(context)
+    fun write(context: Context, array: JSONArray) = MonitorRoomStore.write(context, array)
     fun add(context: Context, name: String, kind: String, limit: Double, rf: Boolean = true, appId:Int?=null) = synchronized(lock) {
         val arr = read(context)
         for (i in 0 until arr.length()) {
