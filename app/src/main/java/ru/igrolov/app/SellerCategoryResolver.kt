@@ -46,7 +46,10 @@ object SellerCategoryResolver {
             val level = pending.removeFirst()
             for (index in 0 until level.length()) {
             val category = level.optJSONObject(index) ?: continue
-            category.optJSONArray("sub")?.let { pending.add(it) }
+            when (val children = category.opt("sub")) {
+                is JSONArray -> pending.add(children)
+                is JSONObject -> pending.add(JSONArray().put(children))
+            }
             val id = category.optString("id").ifBlank { category.optString("category_id") }
             val name = category.optString("name").ifBlank { category.optString("title") }.trim()
             if (id.matches(Regex("[0-9]+")) && id != "0" && name.isNotBlank()) {
@@ -121,3 +124,4 @@ object SellerCategoryResolver {
         }
     }
 }
+

@@ -145,4 +145,9 @@ class SellerCategoryResolverTest {
         assertEquals("Key", SellerCategoryResolver.refine(original, "Steam")?.type)
         assertEquals("Steam", SellerCategoryResolver.refine(original, "Steam")?.categoryLabel)
     }
+    @Test fun singleObjectSubcategoryIsSupported() {
+        val root=JSONObject("""{"retval":0,"category":[{"id":1,"name":"Steam","sub":{"id":7,"name":"Steam Gifts"}}]}""")
+        assertEquals("Steam Gifts",SellerCategoryResolver.parseCategoryNames(root)["7"])
+    }
 }
+
