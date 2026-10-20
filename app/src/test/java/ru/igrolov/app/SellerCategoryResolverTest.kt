@@ -23,7 +23,7 @@ class SellerCategoryResolverTest {
     }
 
     @Test fun accountsAndRentalExcluded() {
-        for (category in listOf("Аккаунты Steam", "Steam Accounts", "Аренда", "Steam Rental")) {
+        for (category in listOf("Аккаунты Steam", "Steam Accounts", "Аренда", "Steam Rental", "Steam Profiles", "Профили Steam", "Оффлайн Steam")) {
             assertEquals("Excluded", SellerCategoryResolver.kind(category))
             assertNull(SellerCategoryResolver.refine(offer("Gift"), category))
         }
@@ -93,6 +93,25 @@ class SellerCategoryResolverTest {
         val error = JSONObject("""{"retval":1,"category":[{"id":7,"name":"Steam Gifts"}]}""")
         assertTrue(SellerCategoryResolver.parseCategoryNames(error).isEmpty())
         assertTrue(SellerCategoryResolver.parseCategoryNames(JSONObject("""{"retval":0}""")).isEmpty())
+    }
+
+    @Test fun duplicateCategoryIdsCannotBeTrusted() {
+        val response = JSONObject("""{"retval":0,"category":[
+            {"id":7,"name":"Steam Gifts"},
+            {"id":7,"name":"Аккаунты Steam"},
+            {"id":8,"name":"Стим Ключи"}
+        ]}""")
+        val names = SellerCategoryResolver.parseCategoryNames(response)
+        assertFalse(names.containsKey("7"))
+        assertEquals("Стим Ключи", names["8"])
+    }
+
+    @Test fun sameDuplicateCategoryDoesNotBecomeAmbiguous() {
+        val response = JSONObject("""{"retval":0,"category":[
+            {"id":7,"name":"Steam Gifts"},
+            {"id":7,"name":"Steam Gifts"}
+        ]}""")
+        assertEquals("Steam Gifts", SellerCategoryResolver.parseCategoryNames(response)["7"])
     }
 
     @Test fun noCategoryMeansNoChange() {
