@@ -5,7 +5,8 @@ import java.util.Locale
 
 /** Manual search only. Does not alter the price-monitoring rules. */
 object ManualOfferClassifier {
-    private fun text(value: String): String = value
+    private fun text(value: String): String = OfferRules.normalize(value)
+        .replace(Regex("(?<=\\p{L})'(?=\\p{L})"), "")
         .replace(Regex("(?is)<(script|style)\\b[^>]*>.*?</\\1>"), " ")
         .replace(Regex("<[^>]*>"), " ")
         .replace("&nbsp;", " ").replace("&amp;", "&")
@@ -24,7 +25,9 @@ object ManualOfferClassifier {
         val cleaned = withoutNegation(name)
         if (any(cleaned, listOf("профиль", "профили", "аккаунта", "аккаунтом", "аккаунтов", "акки", "аккаунты", "account", "accounts",
                 "аренду", "аренды", "rent", "rental", "offline", "оффлайн", "офлайн", "прокат", "shared", "family sharing"))) return null
-        return OfferRules.classifySteamGame(cleaned, query)
+        val type = OfferRules.classifySteamGame(cleaned, query) ?: return null
+        // A bonus gift bundled with a key is not the delivery method of the game.
+        return if (type == "Gift" && !any(cleaned, listOf("gift", "гифт", "подарочная копия"))) "Не указан" else type
     }
     fun excludedDescription(info: String): Boolean = any(withoutNegation(info), listOf(
         "вы получите аккаунт", "вы получаете аккаунт", "вы получите данные аккаунта", "продажа аккаунта",
@@ -32,7 +35,7 @@ object ManualOfferClassifier {
         "you will receive an account", "you receive an account", "account credentials",
         "аккаунт в аренду", "аренда аккаунта", "аренда игры", "оффлайн активация", "офлайн активация",
         "offline activation", "offline account", "общий аккаунт", "общий steam аккаунт", "shared account", "семейный доступ",
-        "смена региона", "сменой региона", "мы заходим на ваш аккаунт", "логин и пароль от вашего"
+        "смена региона", "сменой региона", "смену региона", "меняем регион", "мы заходим на ваш аккаунт", "логин и пароль от вашего"
     ))
     fun descriptionType(info: String): String? {
         val gift = any(info, listOf("steam gift", "steam gifts", "в виде подарка", "подарком в steam", "подарок в steam", "стим гифт"))
@@ -40,7 +43,7 @@ object ManualOfferClassifier {
         return when { gift && !key -> "Gift"; key && !gift -> "Key"; else -> null }
     }
     fun refine(offer: Offer, product: JSONObject?, category: String?): Offer? {
-        if (product == null) return offer.copy(categoryLabel = "По названию · карточка недоступна", detailsChecked = false)
+        if (product == null) return offer.copy(type = "Не указан", categoryLabel = "Карточка недоступна · способ передачи не подтверждён", detailsChecked = false)
         val actualName = product.optString("name").ifBlank { offer.name }
         // A changed title must not reintroduce a known account or rental.
         if (titleType(actualName, "") == null && any(actualName, listOf("аккаунт", "аккаунты", "account", "профиль", "аренда", "offline", "оффлайн"))) return null

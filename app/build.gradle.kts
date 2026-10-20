@@ -40,6 +40,7 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.work:work-runtime-ktx:2.9.1")
+    androidTestImplementation("androidx.work:work-testing:2.9.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")

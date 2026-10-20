@@ -14,4 +14,6 @@ run_test seedUpgradeData
 adb install -r current/app-debug.apk
 run_test verifyUpgradeData
 run_test launchAndNavigateFiltersSettingsAndMonitoring
+adb shell am instrument -w -r -e class ru.igrolov.app.MonitorRegressionTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/monitor.txt
+rg 'OK \(1 test\)' device-results/monitor.txt
 adb shell dumpsys package ru.igrolov.app > device-results/package.txt

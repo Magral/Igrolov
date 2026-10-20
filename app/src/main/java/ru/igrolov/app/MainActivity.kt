@@ -185,6 +185,8 @@ class MainActivity : ComponentActivity() {
                 if (generation == activeCatalogGeneration.get()) runOnUiThread {
                     if (generation == activeCatalogGeneration.get()) progress(page, pageCount, found.size)
                 }
+                val totalPages = root.optJSONObject("result")?.optInt("total_pages", pageCount) ?: pageCount
+                if (page >= totalPages) break
                 }
             } catch (e: Exception) { failure = e.message ?: "Не удалось подключиться к каталогу" }
             val sorted = found.distinctBy { it.id }.sortedBy { it.price }
@@ -412,7 +414,14 @@ class MainActivity : ComponentActivity() {
                 if (historyExpanded) {
                     queryHistory.forEach { savedQuery ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            TextButton(onClick = { query = savedQuery }, modifier = Modifier.weight(1f)) {
+                            TextButton(onClick = {
+                                searchGeneration++
+                                activeCatalogGeneration.set(searchGeneration)
+                                searching = false
+                                offers = emptyList()
+                                steamGame = null
+                                query = savedQuery
+                            }, modifier = Modifier.weight(1f)) {
                                 Text(savedQuery, maxLines = 1)
                             }
                             TextButton(onClick = {
@@ -753,6 +762,10 @@ class MainActivity : ComponentActivity() {
                 if (topError.isNotBlank()) Text(topError, color = MaterialTheme.colorScheme.error)
                 topGames.forEachIndexed { index, game ->
                     TextButton(onClick = {
+                        searchGeneration++
+                        activeCatalogGeneration.set(searchGeneration)
+                        searching = false
+                        steamGame = null
                         query = game
                         offers = emptyList()
                         searchMessage = "Игра выбрана из лидеров продаж. Нажмите «Искать на Plati»."
