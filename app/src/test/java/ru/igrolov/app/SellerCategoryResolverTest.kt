@@ -114,6 +114,32 @@ class SellerCategoryResolverTest {
         assertEquals("Steam Gifts", SellerCategoryResolver.parseCategoryNames(response)["7"])
     }
 
+    @Test fun nestedSellerSubcategoriesAreResolvedWithoutInheritingParentType() {
+        val response = JSONObject("""{"retval":0,"category":[
+            {"id":1,"name":"Steam","sub":[
+                {"id":7,"name":"Steam Gifts"},
+                {"id":8,"name":"Аккаунты Steam","sub":[{"id":9,"name":"Other"}]}
+            ]}
+        ]}""")
+        val names = SellerCategoryResolver.parseCategoryNames(response)
+        assertEquals("Steam Gifts", names["7"])
+        assertEquals("Excluded", SellerCategoryResolver.kind(names.getValue("8")))
+        assertNull(SellerCategoryResolver.kind(names.getValue("9")))
+        assertNull(SellerCategoryResolver.refine(offer("Key"), names.getValue("8")))
+        assertEquals("Steam Gifts",
+            SellerCategoryResolver.matchCategory("101", "7", mapOf("101" to names)))
+    }
+
+    @Test fun conflictingIdsAcrossTreeLevelsRemainUntrusted() {
+        val response = JSONObject("""{"retval":0,"category":[
+            {"id":7,"name":"Steam Gifts","sub":[{"id":7,"name":"Аккаунты Steam"}]},
+            {"id":8,"name":"Steam Keys"}
+        ]}""")
+        val names = SellerCategoryResolver.parseCategoryNames(response)
+        assertFalse(names.containsKey("7"))
+        assertEquals("Steam Keys", names["8"])
+    }
+
     @Test fun noCategoryMeansNoChange() {
         val original = offer("Key")
         assertEquals("Key", SellerCategoryResolver.refine(original, "Steam")?.type)

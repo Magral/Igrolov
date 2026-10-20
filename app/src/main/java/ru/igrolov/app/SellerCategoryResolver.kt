@@ -38,8 +38,15 @@ object SellerCategoryResolver {
         if (root.optInt("retval", -1) != 0) return emptyMap()
         val array = categoryArray(root) ?: return emptyMap()
         val names = mutableMapOf<String, String>()
-        for (index in 0 until array.length()) {
-            val category = array.optJSONObject(index) ?: continue
+        // Real seller responses contain nested categories in `sub`.
+        // Walk iteratively so malformed deep trees cannot overflow the stack.
+        val pending = java.util.ArrayDeque<JSONArray>()
+        pending.add(array)
+        while (pending.isNotEmpty()) {
+            val level = pending.removeFirst()
+            for (index in 0 until level.length()) {
+            val category = level.optJSONObject(index) ?: continue
+            category.optJSONArray("sub")?.let { pending.add(it) }
             val id = category.optString("id").ifBlank { category.optString("category_id") }
             val name = category.optString("name").ifBlank { category.optString("title") }.trim()
             if (id.matches(Regex("[0-9]+")) && id != "0" && name.isNotBlank()) {
@@ -47,6 +54,7 @@ object SellerCategoryResolver {
                 if (id in names && names[id] != name) names[id] = ""
                 else if (id !in names) names[id] = name
             }
+        }
         }
         return names.filterValues { it.isNotBlank() }
     }
