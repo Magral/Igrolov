@@ -136,7 +136,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    if: startsWith(github.event.head_commit.message, 'release: publish 1.0.4')
+    if: "startsWith(github.event.head_commit.message, 'release: publish 1.0.4')"
     needs: [build, device]
     runs-on: ubuntu-latest
     permissions:
