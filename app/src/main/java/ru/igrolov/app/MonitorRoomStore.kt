@@ -117,7 +117,7 @@ internal object MonitorRoomStore {
     private const val AUX_MIGRATION_KEY = "shared_preferences_product_cache_and_alerts_v1"
     private const val ROOM_FAILED_KEY = "room_watch_history_v1_failed"
     private const val AUX_FAILED_KEY = "room_auxiliary_data_v1_failed"
-    private val MIGRATION_1_2 = object : Migration(1, 2) {
+    internal val MIGRATION_1_2 = object : Migration(1, 2) {
         override fun migrate(database: SupportSQLiteDatabase) {
             database.execSQL("CREATE TABLE IF NOT EXISTS tracked_product_cache (productId TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(productId))")
             database.execSQL("CREATE TABLE IF NOT EXISTS price_alert_journal (rowId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, payload TEXT NOT NULL)")

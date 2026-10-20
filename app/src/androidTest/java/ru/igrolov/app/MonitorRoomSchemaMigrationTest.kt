@@ -28,7 +28,8 @@ class MonitorRoomSchemaMigrationTest {
         old.version = 1
         old.close()
 
-        val upgraded = Room.databaseBuilder(context, MonitorDatabase::class.java, name).build()
+        val upgraded = Room.databaseBuilder(context, MonitorDatabase::class.java, name)
+            .addMigrations(MonitorRoomStore.MIGRATION_1_2).build()
         val dao = upgraded.monitorDao()
         assertEquals(1, dao.watches().size)
         assertEquals("Stellaris", dao.watches().single().name)
