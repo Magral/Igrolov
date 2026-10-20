@@ -51,8 +51,31 @@ class SellerCategoryResolverTest {
         assertEquals("Gift", result?.type)
     }
 
+
+    @Test fun sellerScopedIdMatch() {
+        val categories = mapOf(
+            "101" to mapOf("7" to "Steam Gifts", "8" to "Стим Ключи"),
+            "202" to mapOf("7" to "Аккаунты Steam")
+        )
+        assertEquals("Steam Gifts", SellerCategoryResolver.matchCategory("101", "7", categories))
+        assertEquals("Аккаунты Steam", SellerCategoryResolver.matchCategory("202", "7", categories))
+        assertEquals("Стим Ключи", SellerCategoryResolver.matchCategory("101", "8", categories))
+        assertNull(SellerCategoryResolver.matchCategory("303", "7", categories))
+        assertNull(SellerCategoryResolver.matchCategory("202", "8", categories))
+    }
+
+    @Test fun missingOrZeroCategoryNeverClassifies() {
+        val categories = mapOf("101" to mapOf("0" to "Steam Gifts", "7" to "Steam Gifts"))
+        assertNull(SellerCategoryResolver.matchCategory("101", "0", categories))
+        assertNull(SellerCategoryResolver.matchCategory("101", null, categories))
+        assertNull(SellerCategoryResolver.matchCategory("", "7", categories))
+        assertNull(SellerCategoryResolver.matchCategory("abc", "7", categories))
+        assertNull(SellerCategoryResolver.matchCategory("101", "invalid", categories))
+    }
+
     @Test fun noCategoryMeansNoChange() {
-        assertEquals(offer("Key"), offer("Key"))
-        assertEquals("Key", SellerCategoryResolver.refine(offer("Key"), "Steam")?.type)
+        val original = offer("Key")
+        assertEquals("Key", SellerCategoryResolver.refine(original, "Steam")?.type)
+        assertEquals("Steam", SellerCategoryResolver.refine(original, "Steam")?.categoryLabel)
     }
 }
