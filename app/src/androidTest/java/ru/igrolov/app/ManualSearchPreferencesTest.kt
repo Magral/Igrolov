@@ -30,7 +30,6 @@ class ManualSearchPreferencesTest {
         val fields=device.findObjects(By.clazz("android.widget.EditText"))
         // Price is the last visible text field; the query field may have scrolled away.
         fields.last().text="2500"
-        device.pressBack()
         assertTrue(scroll.scrollTextIntoView("DLC"))
         device.findObject(By.text("DLC")).click()
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()

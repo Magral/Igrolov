@@ -783,7 +783,7 @@ class MainActivity : ComponentActivity() {
                                 if (offer.categoryLabel.isNotBlank()) Text(offer.categoryLabel, style = MaterialTheme.typography.bodySmall)
                                 if (offer.purchaseNote.isNotBlank()) Text(offer.purchaseNote, style = MaterialTheme.typography.bodySmall)
                                 Text("${offer.type} · ${offer.rfStatus} · " + String.format(Locale("ru", "RU"), "%.2f ₽", offer.price))
-                                Text(if (offer.variablePrice || OfferRules.variablePrice(offer.name)) "Цена варианта не подтверждена" else offer.edition, style = MaterialTheme.typography.bodySmall)
+                                Text(if (offer.variablePrice) "Цена варианта не подтверждена" else offer.edition, style = MaterialTheme.typography.bodySmall)
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                     TextButton(onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://plati.market/itm/${offer.id}"))) },
                                         modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp)) { Text("Открыть", maxLines = 1) }
