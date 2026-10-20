@@ -115,7 +115,7 @@ internal object MonitorRoomStore {
         }
     }
 
-    fun write(context: Context, array: JSONArray) = synchronized(WatchStore.lock) {
+    fun write(context: Context, array: JSONArray): Unit = synchronized(WatchStore.lock) {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         try {
             writeSnapshot(db(context), array)
@@ -125,6 +125,7 @@ internal object MonitorRoomStore {
             // Keep the 1.0.6-compatible copy usable if the local database cannot be opened.
             prefs.edit().putString(JSON_KEY, array.toString()).putBoolean(ROOM_FAILED_KEY, true).commit()
         }
+        Unit
     }
 
     internal fun writeSnapshot(database: MonitorDatabase, array: JSONArray) {
