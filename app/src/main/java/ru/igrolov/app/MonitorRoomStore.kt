@@ -7,6 +7,8 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.Insert
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
@@ -47,6 +49,12 @@ data class StoredPricePoint(
 @Entity(tableName = "monitor_migrations")
 data class MonitorMigrationMarker(@PrimaryKey val migrationKey: String)
 
+@Entity(tableName = "tracked_product_cache")
+data class StoredTrackedProduct(@PrimaryKey val productId: String, val payload: String)
+
+@Entity(tableName = "price_alert_journal")
+data class StoredPriceAlert(@PrimaryKey(autoGenerate = true) val rowId: Long = 0, val payload: String)
+
 @Dao
 interface MonitorDao {
     @Query("SELECT EXISTS(SELECT 1 FROM monitor_migrations WHERE migrationKey = :key)")
@@ -72,9 +80,30 @@ interface MonitorDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun putHistory(rows: List<StoredPricePoint>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun putTrackedProduct(row: StoredTrackedProduct)
+
+    @Query("SELECT payload FROM tracked_product_cache WHERE productId = :id")
+    fun trackedProduct(id: String): String?
+
+    @Query("DELETE FROM tracked_product_cache WHERE productId = :id")
+    fun deleteTrackedProduct(id: String)
+
+    @Query("SELECT payload FROM price_alert_journal ORDER BY rowId DESC LIMIT 200")
+    fun alerts(): List<String>
+
+    @Insert
+    fun putAlert(row: StoredPriceAlert)
+
+    @Query("DELETE FROM price_alert_journal WHERE rowId NOT IN (SELECT rowId FROM price_alert_journal ORDER BY rowId DESC LIMIT 200)")
+    fun trimAlerts()
+
+    @Query("DELETE FROM price_alert_journal")
+    fun clearAlerts()
 }
 
-@Database(entities = [StoredWatch::class, StoredPricePoint::class, MonitorMigrationMarker::class], version = 1, exportSchema = false)
+@Database(entities = [StoredWatch::class, StoredPricePoint::class, MonitorMigrationMarker::class, StoredTrackedProduct::class, StoredPriceAlert::class], version = 2, exportSchema = false)
 abstract class MonitorDatabase : RoomDatabase() {
     abstract fun monitorDao(): MonitorDao
 }
@@ -85,13 +114,21 @@ internal object MonitorRoomStore {
     private const val PREFS = "game_watches"
     private const val JSON_KEY = "watches"
     private const val MIGRATION_KEY = "shared_preferences_watch_snapshot_v1"
+    private const val AUX_MIGRATION_KEY = "shared_preferences_product_cache_and_alerts_v1"
     private const val ROOM_FAILED_KEY = "room_watch_history_v1_failed"
+    private const val AUX_FAILED_KEY = "room_auxiliary_data_v1_failed"
+    private val MIGRATION_1_2 = object : Migration(1, 2) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("CREATE TABLE IF NOT EXISTS tracked_product_cache (productId TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(productId))")
+            database.execSQL("CREATE TABLE IF NOT EXISTS price_alert_journal (rowId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, payload TEXT NOT NULL)")
+        }
+    }
     @Volatile private var instance: MonitorDatabase? = null
 
     private fun db(context: Context): MonitorDatabase = instance ?: synchronized(this) {
         instance ?: Room.databaseBuilder(
             context.applicationContext, MonitorDatabase::class.java, DATABASE
-        ).allowMainThreadQueries().build().also { instance = it }
+        ).addMigrations(MIGRATION_1_2).build().also { instance = it }
     }
 
     private fun legacy(context: Context): JSONArray = try {
@@ -126,6 +163,91 @@ internal object MonitorRoomStore {
             prefs.edit().putString(JSON_KEY, array.toString()).putBoolean(ROOM_FAILED_KEY, true).commit()
         }
         Unit
+    }
+
+    /** Import old preference payloads once, while retaining the preference copy for rollback. */
+    @Synchronized private fun ensureAuxiliaryImported(context: Context, database: MonitorDatabase) {
+        val dao = database.monitorDao()
+        if (dao.isMigrationComplete(AUX_MIGRATION_KEY)) return
+        val prefs = context.getSharedPreferences("tracked_products", Context.MODE_PRIVATE)
+        val journal = context.getSharedPreferences("price_alert_journal", Context.MODE_PRIVATE)
+        database.runInTransaction(Runnable {
+            for ((key, value) in prefs.all) {
+                if (key.startsWith("product_cache_") && value is String) {
+                    dao.putTrackedProduct(StoredTrackedProduct(key.removePrefix("product_cache_"), value))
+                }
+            }
+            val oldAlerts = try { JSONArray(journal.getString("entries", "[]")) } catch (_: Exception) { JSONArray() }
+            for (i in oldAlerts.length() - 1 downTo 0) {
+                oldAlerts.optJSONObject(i)?.let { dao.putAlert(StoredPriceAlert(payload = it.toString())) }
+            }
+            dao.markMigrationComplete(MonitorMigrationMarker(AUX_MIGRATION_KEY))
+        })
+    }
+
+    fun readTrackedProduct(context: Context, id: String): String? {
+        val prefs = context.getSharedPreferences("tracked_products", Context.MODE_PRIVATE)
+        if (prefs.getBoolean(AUX_FAILED_KEY, false)) return prefs.getString("product_cache_$id", null)
+        return try {
+            val database = db(context)
+            ensureAuxiliaryImported(context, database)
+            database.monitorDao().trackedProduct(id) ?: prefs.getString("product_cache_$id", null)
+        } catch (_: Exception) {
+            prefs.edit().putBoolean(AUX_FAILED_KEY, true).apply()
+            prefs.getString("product_cache_$id", null)
+        }
+    }
+
+    fun writeTrackedProduct(context: Context, id: String, payload: String?) {
+        val prefs = context.getSharedPreferences("tracked_products", Context.MODE_PRIVATE)
+        try {
+            val database = db(context)
+            ensureAuxiliaryImported(context, database)
+            if (payload == null) database.monitorDao().deleteTrackedProduct(id)
+            else database.monitorDao().putTrackedProduct(StoredTrackedProduct(id, payload))
+            prefs.edit().remove(AUX_FAILED_KEY).apply()
+        } catch (_: Exception) { prefs.edit().putBoolean(AUX_FAILED_KEY, true).apply() }
+    }
+
+    fun readAlerts(context: Context): JSONArray {
+        val prefs = context.getSharedPreferences("price_alert_journal", Context.MODE_PRIVATE)
+        if (prefs.getBoolean(AUX_FAILED_KEY, false)) return try { JSONArray(prefs.getString("entries", "[]")) } catch (_: Exception) { JSONArray() }
+        return try {
+            val database = db(context)
+            ensureAuxiliaryImported(context, database)
+            JSONArray().also { result -> database.monitorDao().alerts().forEach { raw -> result.put(JSONObject(raw)) } }
+        } catch (_: Exception) {
+            prefs.edit().putBoolean(AUX_FAILED_KEY, true).apply()
+            try { JSONArray(prefs.getString("entries", "[]")) } catch (_: Exception) { JSONArray() }
+        }
+    }
+
+    fun recordAlert(context: Context, alert: JSONObject) {
+        val prefs = context.getSharedPreferences("price_alert_journal", Context.MODE_PRIVATE)
+        try {
+            val database = db(context)
+            ensureAuxiliaryImported(context, database)
+            database.runInTransaction(Runnable {
+                database.monitorDao().putAlert(StoredPriceAlert(payload = alert.toString()))
+                database.monitorDao().trimAlerts()
+            })
+            prefs.edit().putString("entries", readAlerts(context).toString()).remove(AUX_FAILED_KEY).commit()
+        } catch (_: Exception) {
+            val existing = try { JSONArray(prefs.getString("entries", "[]")) } catch (_: Exception) { JSONArray() }
+            val fallback = JSONArray().put(alert)
+            for (i in 0 until minOf(existing.length(), 199)) fallback.put(existing.opt(i))
+            prefs.edit().putString("entries", fallback.toString()).putBoolean(AUX_FAILED_KEY, true).commit()
+        }
+    }
+
+    fun clearAlerts(context: Context) {
+        val prefs = context.getSharedPreferences("price_alert_journal", Context.MODE_PRIVATE)
+        try {
+            val database = db(context)
+            ensureAuxiliaryImported(context, database)
+            database.monitorDao().clearAlerts()
+            prefs.edit().remove("entries").remove(AUX_FAILED_KEY).commit()
+        } catch (_: Exception) { prefs.edit().remove("entries").putBoolean(AUX_FAILED_KEY, true).commit() }
     }
 
     internal fun writeSnapshot(database: MonitorDatabase, array: JSONArray) {

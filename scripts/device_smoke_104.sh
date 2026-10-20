@@ -22,6 +22,8 @@ grep -E 'OK \(1 test\)' device-results/monitor.txt
 adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class ru.igrolov.app.MonitorRoomMigrationTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/room-migration.txt
 grep -E 'OK \(1 test\)' device-results/room-migration.txt
+adb shell am instrument -w -r -e class ru.igrolov.app.MonitorRoomSchemaMigrationTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/room-schema-migration.txt
+grep -E 'OK \(1 test\)' device-results/room-schema-migration.txt
 adb shell dumpsys package ru.igrolov.app > device-results/package.txt
 adb shell am instrument -w -r -e class ru.igrolov.app.StellarisUiRegressionTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/stellaris-ui.txt
 grep -E 'OK \(1 test\)' device-results/stellaris-ui.txt

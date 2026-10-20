@@ -64,6 +64,7 @@ class TrackedTransferUiRegressionTest {
         return device
     }
     private fun cached(id:String)=TrackedPriceCache.decode(id,context.getSharedPreferences("tracked_products",0).getString("product_cache_$id",null))
+    private fun cachedFromRoom(id:String)=TrackedPriceCache.decode(id,MonitorRoomStore.readTrackedProduct(context,id))
 
     @Test fun addFromSearchRefreshPriceAndKeepItOnNetworkFailure() {
         val price=AtomicInteger(4914);val offline=AtomicBoolean(false)
@@ -83,6 +84,9 @@ class TrackedTransferUiRegressionTest {
         device.findObject(By.text("Товары")).click()
         assertTrue(device.wait(Until.hasObject(By.text("4914,00 ₽")),10000))
         assertEquals("Stellaris",cached("123456").canonical);assertEquals(281990,cached("123456").steamAppId)
+        val roomDeadline=android.os.SystemClock.uptimeMillis()+10000
+        while(cachedFromRoom("123456").price!=4914.0 && android.os.SystemClock.uptimeMillis()<roomDeadline)Thread.sleep(100)
+        assertEquals(4914.0,cachedFromRoom("123456").price!!,0.001)
         price.set(5200)
         if(!device.hasObject(By.text("Обновить цены")))assertTrue(scroll.scrollTextIntoView("Обновить цены"))
         device.findObject(By.text("Обновить цены")).click()
@@ -92,6 +96,7 @@ class TrackedTransferUiRegressionTest {
         assertTrue(device.wait(Until.hasObject(By.textContains("Нет связи")),10000))
         assertTrue(device.hasObject(By.text("5200,00 ₽")))
         device.takeScreenshot(File(context.getExternalFilesDir(null),"tracked-transfer.png"))
+        MonitorRoomStore.writeTrackedProduct(context,"123456",null)
     }
     @Test fun restartKeepsContextAndRepairsLegacyTrackedItemWithoutReadding() {
         installApi(AtomicInteger(5300))
@@ -110,5 +115,6 @@ class TrackedTransferUiRegressionTest {
         if(!device.hasObject(By.textContains("ID 123457")))assertTrue(scroll.scrollIntoView(UiSelector().textContains("ID 123457")))
         device.takeScreenshot(File(context.getExternalFilesDir(null),"tracked-restart.png"))
         context.getSharedPreferences("tracked_products",0).edit().putString("ids","").remove("product_cache_123456").remove("product_cache_123457").commit()
+        MonitorRoomStore.writeTrackedProduct(context,"123456",null);MonitorRoomStore.writeTrackedProduct(context,"123457",null)
     }
 }

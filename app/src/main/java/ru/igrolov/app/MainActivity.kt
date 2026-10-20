@@ -46,6 +46,7 @@ data class Tracked(val id: String, val name: String, val price: Double?, val sta
 class MainActivity : ComponentActivity() {
     // Bound concurrent product detail requests so large watch lists do not spawn unlimited threads.
     private val detailExecutor = Executors.newFixedThreadPool(4)
+    private val ioExecutor = Executors.newSingleThreadExecutor()
     private val catalogExecutor = Executors.newSingleThreadExecutor()
     private val suggestionExecutor = Executors.newSingleThreadExecutor()
     private val watchSuggestionGeneration=java.util.concurrent.atomic.AtomicInteger(0)
@@ -58,16 +59,19 @@ class MainActivity : ComponentActivity() {
         watchSuggestionGeneration.incrementAndGet()
         suggestionExecutor.shutdownNow()
         detailExecutor.shutdownNow()
+        ioExecutor.shutdownNow()
         super.onDestroy()
     }
     private val askNotifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
     private val prefs by lazy { getSharedPreferences("tracked_products", MODE_PRIVATE) }
     private fun loadIds(): List<String> = prefs.getString("ids", "")!!.split(",").filter { it.isNotBlank() }
     private fun saveIds(ids: List<String>) = prefs.edit().putString("ids", ids.distinct().joinToString(",")).apply()
-    private fun cachedTracked(id:String)=TrackedPriceCache.decode(id,prefs.getString("product_cache_$id",null))
+    private fun cachedTracked(id:String)=TrackedPriceCache.decode(id,MonitorRoomStore.readTrackedProduct(this,id))
+    private fun cachedTrackedFromPreferences(id:String)=TrackedPriceCache.decode(id,prefs.getString("product_cache_$id",null))
     private fun cacheTracked(item:Tracked) {
         val cached=TrackedPriceCache.encode(item) ?: return
         prefs.edit().putString("product_cache_${item.id}",cached).apply()
+        ioExecutor.execute { MonitorRoomStore.writeTrackedProduct(this,item.id,cached) }
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -313,7 +317,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        var items by remember { mutableStateOf(loadIds().map { cachedTracked(it) }) }
+        var items by remember { mutableStateOf(loadIds().map { cachedTrackedFromPreferences(it) }) }
         var message by remember { mutableStateOf("Вставьте ссылку на товар Plati или его ID") }
         var busy by remember { mutableStateOf(false) }
         var watchGame by remember { mutableStateOf("") }
@@ -349,13 +353,24 @@ class MainActivity : ComponentActivity() {
                 (0 until saved.length()).map { saved.optString(it) }.filter { it.isNotBlank() }
             } catch (_: Exception) { emptyList<String>() })
         }
-        var watches by remember { mutableStateOf(WatchStore.read(this@MainActivity).toString()) }
-        var alertLog by remember { mutableStateOf(AlertJournal.read(this@MainActivity).toString()) }
+        var watches by remember { mutableStateOf("[]") }
+        var alertLog by remember { mutableStateOf("[]") }
         var showAlertLog by remember { mutableStateOf(true) }
         var watchMessage by remember { mutableStateOf("Укажите название игры и цену в рублях") }
         fun reloadWatches() {
-            watches = WatchStore.read(this@MainActivity).toString()
-            alertLog = AlertJournal.read(this@MainActivity).toString()
+            ioExecutor.execute {
+                val latestWatches=WatchStore.read(this@MainActivity).toString()
+                val latestAlerts=AlertJournal.read(this@MainActivity).toString()
+                runOnUiThread { watches=latestWatches; alertLog=latestAlerts }
+            }
+        }
+        LaunchedEffect(Unit) {
+            reloadWatches()
+            val ids=loadIds()
+            ioExecutor.execute {
+                val restored=ids.map { id -> TrackedPriceCache.decode(id,MonitorRoomStore.readTrackedProduct(this@MainActivity,id)) }
+                runOnUiThread { items=items.map { current -> restored.firstOrNull { it.id==current.id } ?: current } }
+            }
         }
         DisposableEffect(Unit) {
             val live = WorkManager.getInstance(this@MainActivity)
@@ -630,7 +645,7 @@ class MainActivity : ComponentActivity() {
                             Text(item.price?.let { String.format(Locale("ru", "RU"), "%.2f ₽", it) } ?: "Цена недоступна", style = MaterialTheme.typography.titleLarge)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 TextButton(onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.url))) }) { Text("Открыть Plati") }
-                                TextButton(onClick = { items = items.filterNot { it.id == item.id }; saveIds(items.map { it.id }); prefs.edit().remove("product_cache_${item.id}").apply() }) { Text("Удалить") }
+                                TextButton(onClick = { items = items.filterNot { it.id == item.id }; saveIds(items.map { it.id }); prefs.edit().remove("product_cache_${item.id}").apply(); ioExecutor.execute { MonitorRoomStore.writeTrackedProduct(this@MainActivity,item.id,null) } }) { Text("Удалить") }
                             }
                         }
                     }
@@ -674,12 +689,17 @@ class MainActivity : ComponentActivity() {
                         watchMessage="Выберите точную игру Steam"
                         return@Button
                     }
-                    WatchStore.add(this@MainActivity,identity?.name ?: watchGame.trim(),watchType,amount,watchRf,identity?.appId)
-                    WatchScheduler.start(this@MainActivity)
-                    WatchScheduler.checkNow(this@MainActivity)
-                    if (Build.VERSION.SDK_INT >= 33) askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    reloadWatches()
-                    watchMessage = "Игра добавлена. Проверка запрошена; фоновые проверки — примерно раз в час."
+                    watchMessage="Добавляем игру…"
+                    ioExecutor.execute {
+                        WatchStore.add(this@MainActivity,identity?.name ?: watchGame.trim(),watchType,amount,watchRf,identity?.appId)
+                        runOnUiThread {
+                            WatchScheduler.start(this@MainActivity)
+                            WatchScheduler.checkNow(this@MainActivity)
+                            if (Build.VERSION.SDK_INT >= 33) askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            reloadWatches()
+                            watchMessage = "Игра добавлена. Проверка запрошена; фоновые проверки — примерно раз в час."
+                        }
+                    }
                 }
             },enabled=!watchSuggesting) { Text("Отслеживать игру") }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -776,7 +796,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         }
-                        TextButton(onClick = { WatchStore.remove(this@MainActivity, wi); reloadWatches() }) { Text("Удалить отслеживание") }
+                        TextButton(onClick = { ioExecutor.execute { WatchStore.remove(this@MainActivity, wi); runOnUiThread { reloadWatches() } } }) { Text("Удалить отслеживание") }
                     }
                 }
             }
@@ -812,7 +832,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 if (alerts.length() > 0) {
-                    TextButton(onClick = { AlertJournal.clear(this@MainActivity); reloadWatches() }) {
+                    TextButton(onClick = { ioExecutor.execute { AlertJournal.clear(this@MainActivity); runOnUiThread { reloadWatches() } } }) {
                         Text("Очистить журнал")
                     }
                 }

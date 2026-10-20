@@ -232,26 +232,14 @@ object IgnoredStore {
 
 /** Persistent local log of offers that met a configured threshold. */
 object AlertJournal {
-    private const val PREFS = "price_alert_journal"
-    private const val KEY = "entries"
     private val lock = Any()
-    fun read(context: Context): JSONArray = synchronized(lock) {
-        try { JSONArray(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, "[]")) }
-        catch (_: Exception) { JSONArray() }
-    }
+    fun read(context: Context): JSONArray = synchronized(lock) { MonitorRoomStore.readAlerts(context) }
     fun record(context: Context, game: String, offer: Offer, limit: Double) = synchronized(lock) {
-        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val existing = try { JSONArray(prefs.getString(KEY, "[]")) } catch (_: Exception) { JSONArray() }
-        val updated = JSONArray()
-        updated.put(JSONObject().put("id", offer.id).put("game", game)
+        MonitorRoomStore.recordAlert(context, JSONObject().put("id", offer.id).put("game", game)
             .put("name", offer.name).put("price", offer.price).put("type", offer.type)
             .put("limit", limit).put("at", System.currentTimeMillis()))
-        for (i in 0 until minOf(existing.length(), 199)) updated.put(existing.get(i))
-        prefs.edit().putString(KEY, updated.toString()).commit()
     }
-    fun clear(context: Context) = synchronized(lock) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(KEY).commit()
-    }
+    fun clear(context: Context) = synchronized(lock) { MonitorRoomStore.clearAlerts(context) }
 }
 
 object WatchStore {
