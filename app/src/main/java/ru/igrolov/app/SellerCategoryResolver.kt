@@ -23,21 +23,33 @@ object SellerCategoryResolver {
         } finally { conn.disconnect() }
     } catch (_: Exception) { null }
 
-    private fun categoryArray(root: JSONObject): JSONArray? =
-        root.optJSONArray("category") ?: root.optJSONArray("categories")
-            ?: root.optJSONObject("result")?.optJSONArray("category")
+    /** Digiseller may wrap seller categories in content.category, not root.category. */
+    fun categoryArray(root: JSONObject): JSONArray? {
+        for (envelope in listOfNotNull(root, root.optJSONObject("content"),
+                root.optJSONObject("result"), root.optJSONObject("data"))) {
+            for (key in listOf("category", "categories", "items")) {
+                envelope.optJSONArray(key)?.let { return it }
+            }
+        }
+        return null
+    }
 
-    private fun categoryNames(sellerId: String): Map<String, String> {
-        val root = request("/api/categories?seller_id=$sellerId") ?: return emptyMap()
+    fun parseCategoryNames(root: JSONObject): Map<String, String> {
+        if (root.optInt("retval", -1) != 0) return emptyMap()
         val array = categoryArray(root) ?: return emptyMap()
         val names = mutableMapOf<String, String>()
         for (index in 0 until array.length()) {
             val category = array.optJSONObject(index) ?: continue
             val id = category.optString("id").ifBlank { category.optString("category_id") }
-            val name = category.optString("name").trim()
-            if (id.matches(Regex("[0-9]+")) && name.isNotBlank()) names[id] = name
+            val name = category.optString("name").ifBlank { category.optString("title") }.trim()
+            if (id.matches(Regex("[0-9]+")) && id != "0" && name.isNotBlank()) names[id] = name
         }
         return names
+    }
+
+    private fun categoryNames(sellerId: String): Map<String, String> {
+        val root = request("/api/categories?seller_id=$sellerId") ?: return emptyMap()
+        return parseCategoryNames(root)
     }
 
     private fun categoryId(productId: String, sellerId: String): String? {
