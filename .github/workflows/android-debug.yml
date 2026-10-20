@@ -47,6 +47,16 @@ jobs:
           keytool -list -keystore signing/igrolov-debug.jks -storepass android -alias igrolov-debug > /dev/null
       - name: Test seller category classification
         run: gradle --no-daemon :app:testDebugUnitTest
+      - name: Upload unit test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Igrolov-unit-tests-${{ github.sha }}
+          path: |
+            app/build/test-results/testDebugUnitTest/
+            app/build/reports/tests/testDebugUnitTest/
+          if-no-files-found: ignore
+          retention-days: 30
       - name: Build Debug APK
         run: |
           if [ -f settings.gradle.kts ]; then
