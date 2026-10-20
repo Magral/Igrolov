@@ -25,7 +25,7 @@ class MultiGameRegressionTest {
             val price=s.optString("catalog_price").toDoubleOrNull() ?: return@mapNotNull null
             Offer(s.getString("id"),name,price,type,OfferRules.rfStatus(name),OfferRules.editionType(name,game.canonical))
         }
-        val client=ManualCatalogEnricher {path ->
+        val request:(String)->JSONObject? = {path ->
             when {
                 path.startsWith("/api/categories") -> JSONObject("""{"retval":0,"category":[]}""")
                 path.startsWith("/api/products/price/calc") -> {
@@ -37,6 +37,7 @@ class MultiGameRegressionTest {
                 else -> JSONObject().put("retval",0).put("product",samples[path.substringAfter("/products/").substringBefore('/')]?.optJSONObject("product"))
             }
         }
+        val client=ManualCatalogEnricher(request)
         val enriched=client.enrich(offers,samples.mapValues {it.value.optString("seller")},{true},reference=game)
         val visible=enriched.filter {ManualContentRules.visible(it,"Игра","Все")}
         println("Recorded ${root.getString("query")}: ${samples.size} rows, ${offers.size} candidates, ${visible.size} verified main games")
@@ -52,6 +53,10 @@ class MultiGameRegressionTest {
             val actual=if(calc==null)s.getJSONObject("product").getJSONObject("prices").getJSONObject("default").getDouble("RUB") else calc.getDouble("amount")+calc.getDouble("commission")
             assertEquals("Catalog teaser must not replace actual price",actual,offer.price,0.001)
         }
+        val automatic=VerifiedMonitorCheck.run(CatalogCheck.Snapshot(offers,samples.mapValues {it.value.optString("seller")}),game,"Все",JSONObject(),emptySet(),{true},request).verified
+        assertTrue(automatic.all {it.id in visible.map {v->v.id}})
+        assertTrue("Automatic monitoring must retain genuine RF offers",automatic.size>=minimum)
+        println("Automatic monitor ${root.getString("query")}: ${automatic.size} verified RF Gift/Key main games")
         assertEquals(visible.map {it.price}.sorted(),visible.map {it.price})
     }
 }

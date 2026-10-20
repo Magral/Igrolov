@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  APP_VERSION: 1.0.5
+  APP_VERSION: 1.0.6
 
 permissions:
   contents: read
@@ -116,7 +116,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download v1.0.4.1 --repo "$GITHUB_REPOSITORY" --pattern Igrolov-1.0.4.1.apk -D baseline
+          if gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/12239577930/zip" > baseline.zip; then
+            mkdir -p baseline
+            unzip -q baseline.zip -d baseline
+          else
+            gh release download v1.0.4.1 --repo "$GITHUB_REPOSITORY" --pattern Igrolov-1.0.4.1.apk -D baseline
+          fi
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules

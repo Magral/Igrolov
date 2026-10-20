@@ -8,29 +8,8 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
-/** All candidates are checked, using at most four concurrent requests and a per-search seller cache. */
-class ManualCatalogEnricher(private val request: (String) -> JSONObject? = ::getJson) {
-    companion object {
-        private fun getJson(path: String): JSONObject? {
-            repeat(2) { attempt ->
-                if (Thread.currentThread().isInterrupted) return null
-                var connection: HttpURLConnection? = null
-                try {
-                    connection = URL("https://api.digiseller.com$path").openConnection() as HttpURLConnection
-                    connection.connectTimeout = 3000
-                    connection.readTimeout = 5000
-                    connection.setRequestProperty("Accept", "application/json")
-                    val status = connection.responseCode
-                    if (status in 200..299) return JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
-                        .takeIf { it.optInt("retval", -1) == 0 }
-                    if (status != 429 && status !in 500..599) return null
-                } catch (_: Exception) {
-                    if (attempt == 1) return null
-                } finally { connection?.disconnect() }
-            }
-            return null
-        }
-    }
+/** Shared by search and price monitoring. All candidates are checked, using at most four concurrent requests and a per-search seller cache. */
+class ManualCatalogEnricher(private val request: (String) -> JSONObject? = { CatalogApi.get(it) }) {
     fun enrich(offers: List<Offer>, sellerIds: Map<String, String>, active: () -> Boolean,
                reference: ManualGameReference.Game? = null,
                progress: (Int, Int) -> Unit = { _, _ -> }): List<Offer> {
@@ -71,7 +50,7 @@ class ManualCatalogEnricher(private val request: (String) -> JSONObject? = ::get
                                 var content = reference?.let { ManualContentRules.classify(product?.optString("name")?.ifBlank { offer.name } ?: offer.name,
                                     listOf(product?.optString("info"), product?.optString("add_info")).joinToString("\n"), it) } ?: refined.edition
                                 if(content == "Не подтверждено" && proof.price != null && proof.gameSelected) content="Игра"
-                                val rfStatus = if (proof.label.contains("Россия") && refined.rfStatus != "РФ исключена") "РФ выбрана в параметрах" else refined.rfStatus
+                                val rfStatus = if (proof.russiaSelected && refined.rfStatus != "РФ исключена") "РФ выбрана в параметрах" else refined.rfStatus
                                 results[index] = refined.copy(price = proof.price ?: refined.price,
                                     available = proof.available, priceVerified = proof.price != null,
                                     variablePrice = proof.price == null, purchaseNote = proof.label, edition = content, rfStatus = rfStatus)

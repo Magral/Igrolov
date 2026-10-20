@@ -18,6 +18,8 @@ import org.junit.runner.RunWith
 class ReleaseSmokeTest {
     private val context get() = ApplicationProvider.getApplicationContext<Context>()
     @Test fun seedUpgradeData() {
+        assertTrue(context.getSharedPreferences("game_watches",0).edit().putString("watches","""[{"name":"Cyberpunk 2077","kind":"Key","limit":1000,"rf":true,"notified":["10005"],"history":[{"at":1792468800000,"price":500,"count":1}]}]""").commit())
+        assertTrue(context.getSharedPreferences("manual_search_105",0).edit().putString("filters","""{"type":"Gift","edition":"Игра","maxPrice":"2500","confirmedRf":false}""").commit())
         assertTrue(context.getSharedPreferences("release_upgrade_probe",0).edit().putString("sentinel","keep-104").commit())
         assertTrue(context.getSharedPreferences("search_history",0).edit().putString("queries","[\"Cyberpunk 2077\"]").commit())
         assertTrue(context.getSharedPreferences("game_rule_overrides",0).edit().putString("cyberpunk 2077","{\"canonical\":\"Cyberpunk 2077\"}").commit())
@@ -26,12 +28,18 @@ class ReleaseSmokeTest {
         assertEquals("keep-104",context.getSharedPreferences("release_upgrade_probe",0).getString("sentinel",null))
         assertEquals("[\"Cyberpunk 2077\"]",context.getSharedPreferences("search_history",0).getString("queries",null))
         assertTrue(context.getSharedPreferences("game_rule_overrides",0).contains("cyberpunk 2077"))
-        assertEquals(109,context.packageManager.getPackageInfo(context.packageName,0).longVersionCode)
+        val watch=WatchStore.read(context).getJSONObject(0)
+        assertEquals("10005",watch.getJSONArray("notified").getString(0))
+        assertEquals(500.0,watch.getJSONArray("history").getJSONObject(0).getDouble("price"),0.001)
+        assertEquals("2500",ManualSearchSettings.read(context).maxPrice)
+        WatchStore.write(context,org.json.JSONArray())
+        ManualSearchSettings.save(context,ManualSearchFilters())
+        assertEquals(110,context.packageManager.getPackageInfo(context.packageName,0).longVersionCode)
     }
     @Test fun launchAndNavigateFiltersSettingsAndMonitoring() {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.0.5")),15000))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.0.6")),15000))
         device.findObject(By.text("Gift")).click()
         device.findObject(By.text("Key")).click()
         UiScrollable(UiSelector().scrollable(true)).scrollTextIntoView("DLC")

@@ -32,7 +32,7 @@ class ManualPurchaseProofTest {
             path=it; JSONObject("""{"retval":0,"data":{"price":1,"amount":1500,"commission":50,"count":1,"currency":"RUB"}}""")
         }
         assertTrue(path.contains("options%5B%5D=13%3A22"))
-        assertEquals(1550.0,proof.price!!,0.001); assertTrue(proof.label.contains("Россия"))
+        assertEquals(1550.0,proof.price!!,0.001); assertTrue(proof.label.contains("Россия")); assertTrue(proof.russiaSelected)
     }
     @Test fun unsupportedChoicesNoRussiaHiddenVariantsAndUnknownVariantStockAreRejected() {
         for (option in listOf(

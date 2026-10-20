@@ -15,6 +15,14 @@ class ManualCatalogTest {
         assertNull(ManualOfferClassifier.refine(offer(), JSONObject().put("info", "Покупая товар вы получаете общий STEAM аккаунт. LOGIN:PASSWORD"), null))
         assertEquals("Gift", ManualOfferClassifier.refine(offer(), JSONObject().put("info", "Это не аккаунт. Игра в виде подарка на ваш аккаунт Steam"), null)?.type)
     }
+    @Test fun freshTitleOverridesObsoleteDeliveryAndRegionFromSearch() {
+        val old=offer(type="Key").copy(rfStatus="РФ указана в названии")
+        val changed=ManualOfferClassifier.refine(old,JSONObject().put("name","Cyberpunk 2077 Steam Gift"),null)!!
+        assertEquals("Gift",changed.type)
+        assertEquals("Регион РФ не подтвержден",changed.rfStatus)
+        assertEquals("Cyberpunk 2077 Steam Gift",changed.name)
+        assertNull(ManualOfferClassifier.refine(old,JSONObject().put("name","Cyberpunk 2077 Xbox Key РФ"),null))
+    }
     @Test fun conflictsNeverBecomeGiftOrKey() {
         assertEquals("Не указан", ManualOfferClassifier.refine(offer(type="Key"), JSONObject().put("info", "Steam Gift"), "Steam Keys")?.type)
         assertEquals("Key", ManualOfferClassifier.refine(offer(), JSONObject().put("info", "Цифровой ключ. Активация Steam"), null)?.type)

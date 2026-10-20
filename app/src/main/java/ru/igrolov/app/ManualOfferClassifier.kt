@@ -48,13 +48,15 @@ object ManualOfferClassifier {
     fun refine(offer: Offer, product: JSONObject?, category: String?): Offer? {
         if (product == null) return offer.copy(type = "Не указан", categoryLabel = "Карточка недоступна · способ передачи не подтверждён", detailsChecked = false)
         val actualName = product.optString("name").ifBlank { offer.name }
-        // A changed title must not reintroduce a known account or rental.
-        if (titleType(actualName, "") == null && any(actualName, listOf("аккаунт", "аккаунты", "account", "профиль", "аренда", "offline", "оффлайн"))) return null
+        // Re-read title evidence from the fresh card, rather than trusting obsolete search metadata.
+        val freshType=titleType(actualName,withoutNegation(actualName))
+        if(freshType==null && titleType("$actualName Steam",withoutNegation(actualName))==null)return null
+        val titleEvidence=if(product.optString("name").isBlank())offer.type else freshType
         val info = listOf(product.optString("info"), product.optString("add_info")).joinToString("\n")
         if (excludedDescription(info)) return null
         val categoryKind = category?.let(SellerCategoryResolver::kind)
         if (categoryKind == "Excluded") return null
-        val evidence = listOfNotNull(offer.type.takeIf { it == "Gift" || it == "Key" },
+        val evidence = listOfNotNull(titleEvidence?.takeIf { it == "Gift" || it == "Key" },
             descriptionType(info), categoryKind?.takeIf { it == "Gift" || it == "Key" }).toSet()
         val resolved = if (evidence.size == 1) evidence.first() else "Не указан"
         val source = when {
@@ -64,10 +66,10 @@ object ManualOfferClassifier {
         }
         val descriptionRegion = when {
             any(info, listOf("недоступно для россии", "недоступно в россии", "кроме россии", "без россии", "не активируется в россии", "не для россии")) -> "РФ исключена"
-            else -> offer.rfStatus
+            else -> OfferRules.rfStatus(actualName)
         }
         val variable = product.optJSONArray("options")?.length()?.let { it > 0 } ?: false
-        return offer.copy(type = resolved, categoryLabel = source, detailsChecked = true, rfStatus = descriptionRegion,
+        return offer.copy(name=actualName, type = resolved, categoryLabel = source, detailsChecked = true, rfStatus = descriptionRegion,
             variablePrice = variable, available = if (product.has("is_available")) product.optInt("is_available") != 0 else null)
     }
 }

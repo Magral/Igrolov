@@ -4,10 +4,10 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URLEncoder
 
-/** A catalog teaser price is never used as a verified, purchasable offer. Manual search only. */
+/** A catalog teaser price is never used as a verified, purchasable offer. Shared by search, tracked cards and automatic monitoring. */
 object ManualPurchaseProof {
-    data class Plan(val pairs: List<String>, val labels: List<String>, val valid: Boolean, val gameSelected: Boolean = false)
-    data class Proof(val price: Double?, val available: Boolean, val label: String, val gameSelected: Boolean = false)
+    data class Plan(val pairs: List<String>, val labels: List<String>, val valid: Boolean, val gameSelected: Boolean = false, val russiaSelected:Boolean=false)
+    data class Proof(val price: Double?, val available: Boolean, val label: String, val gameSelected: Boolean = false, val russiaSelected:Boolean=false)
     private fun rows(value: Any?): List<JSONObject> = when(value) {
         is JSONArray -> (0 until value.length()).mapNotNull { value.optJSONObject(it) }
         is JSONObject -> rows(value.opt("option") ?: value.opt("variant") ?: JSONArray().put(value))
@@ -16,7 +16,7 @@ object ManualPurchaseProof {
     fun options(product: JSONObject)=rows(product.opt("options"))
     private fun normalized(value: String)=OfferRules.normalize(value).replace(Regex("[^\\p{L}\\p{N}]+")," ").trim()
     fun plan(product: JSONObject, canonical: String): Plan {
-        val pairs=mutableListOf<String>(); val labels=mutableListOf<String>(); var gameSelected=false
+        val pairs=mutableListOf<String>(); val labels=mutableListOf<String>(); var gameSelected=false; var russiaSelected=false
         for(option in options(product)) {
             val type=option.optString("type").lowercase()
             val variants=rows(option.opt("variants"))
@@ -39,9 +39,10 @@ object ManualPurchaseProof {
             val value=selected.optString("value")
             if(!id.matches(Regex("[1-9][0-9]*")) || !value.matches(Regex("[1-9][0-9]*"))) return Plan(pairs,labels,false)
             pairs.add("$id:$value");labels.add(selected.optString("text"))
+            if(listOf("стран","регион","country","region").any {it in question}) russiaSelected=true
             if (normalized(selected.optString("text")) in setOf(normalized(canonical),normalized("$canonical Standard Edition"),"standard","standard edition","стандартное издание","базовая игра")) gameSelected=true
         }
-        return Plan(pairs,labels,true,gameSelected)
+        return Plan(pairs,labels,true,gameSelected,russiaSelected)
     }
     fun inspect(product: JSONObject?, canonical: String, request: (String)->JSONObject?): Proof {
         if(product==null || product.optInt("is_available",-1)!=1) return Proof(null,false,"Наличие не подтверждено")
@@ -67,6 +68,6 @@ object ManualPurchaseProof {
         val commission=data.optDouble("commission",Double.NaN)
         val count=data.optDouble("count",Double.NaN)
         val price=(amount+commission).takeIf { currency=="RUB" && count==1.0 && commission.isFinite() && commission>=0 && it.isFinite() && it>0 }
-        return Proof(price,price!=null,"Вариант: ${plan.labels.joinToString(" · ")} · расчёт Digiseller RUB",plan.gameSelected)
+        return Proof(price,price!=null,"Вариант: ${plan.labels.joinToString(" · ")} · расчёт Digiseller RUB",plan.gameSelected,plan.russiaSelected)
     }
 }

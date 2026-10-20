@@ -263,17 +263,33 @@ object WatchStore {
     fun write(context: Context, array: JSONArray) {
         context.getSharedPreferences(KEY, Context.MODE_PRIVATE).edit().putString("watches", array.toString()).apply()
     }
-    fun add(context: Context, name: String, kind: String, limit: Double, rf: Boolean = true) = synchronized(lock) {
+    fun add(context: Context, name: String, kind: String, limit: Double, rf: Boolean = true, appId:Int?=null) = synchronized(lock) {
         val arr = read(context)
         for (i in 0 until arr.length()) {
             val obj = arr.optJSONObject(i) ?: continue
             if (obj.optString("name").equals(name, true) && obj.optString("kind") == kind) {
                 obj.put("limit", limit).put("rf", rf)
+                if(appId!=null && appId>0)obj.put("steamAppId",appId)
                 write(context, arr); return
             }
         }
-        arr.put(JSONObject().put("name", name).put("kind", kind).put("limit", limit).put("rf", rf).put("last", -1.0).put("notified", JSONArray()))
+        val watch=JSONObject().put("watchId",java.util.UUID.randomUUID().toString()).put("name", name).put("kind", kind).put("limit", limit).put("rf", rf).put("last", -1.0).put("notified", JSONArray())
+        if(appId!=null && appId>0)watch.put("steamAppId",appId)
+        arr.put(watch)
         write(context, arr)
+    }
+    private fun identity(w:JSONObject)=w.optString("watchId").ifBlank {
+        java.util.UUID.nameUUIDFromBytes((w.optString("name").lowercase(Locale.ROOT)+"|"+w.optString("kind")).toByteArray(Charsets.UTF_8)).toString()
+    }
+    private fun config(w:JSONObject)=listOf(w.optString("name"),w.optString("kind"),w.optDouble("limit"),w.optBoolean("rf",true),w.optInt("steamAppId"))
+    /** Only the short local merge is locked. Deleted/edited watches cannot be resurrected by a slow request. */
+    fun updateIfCurrent(context:Context,snapshot:JSONObject,update:(JSONObject)->Unit):Boolean = synchronized(lock) {
+        val watches=read(context)
+        val current=(0 until watches.length()).mapNotNull {watches.optJSONObject(it)}.firstOrNull {identity(it)==identity(snapshot)} ?: return false
+        if(config(current)!=config(snapshot))return false
+        update(current)
+        write(context,watches)
+        true
     }
     fun remove(context: Context, index: Int) = synchronized(lock) {
         val old = read(context); val result = JSONArray()
@@ -455,45 +471,17 @@ object CatalogPageSettings {
     fun pages(context: Context): Int = get(context) / 100
 }
 
-object OfferAvailability {
-    /** Conservative confirmation: an absent field or failed request is not proof of stock. */
-    fun confirmedInStock(id: String, catalogPriceRub: Double): Boolean {
-        if (!id.matches(Regex("[0-9]{4,12}"))) return false
-        return try {
-            val conn = URL("https://api.digiseller.com/api/products/$id/data?currency=RUB&lang=ru-RU")
-                .openConnection() as HttpURLConnection
-            conn.connectTimeout = 8000
-            conn.readTimeout = 8000
-            conn.setRequestProperty("Accept", "application/json")
-            try {
-                if (conn.responseCode !in 200..299) return false
-                val root = JSONObject(conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
-                if (root.optInt("retval", -1) != 0) return false
-                val product = root.optJSONObject("product") ?: return false
-                // Do not alert on a teaser catalog price when the buyer must select a region.
-                // The region-specific price must be independently verified first.
-                val currentRub = product.optJSONObject("prices")?.optJSONObject("default")
-                    ?.optDouble("RUB", Double.NaN) ?: Double.NaN
-                // When Digiseller supplies a current RUB price, do not alert using a
-                // stale catalog price. Missing/invalid prices are not confirmation.
-                val priceMatches = catalogPriceRub.isFinite() && catalogPriceRub > 0 &&
-                    currentRub.isFinite() && currentRub > 0 &&
-                    kotlin.math.abs(currentRub - catalogPriceRub) <= 0.01
-                product.has("is_available") && product.optInt("is_available", 0) == 1 &&
-                    !RegionOptions.hasRegionSelector(product) && priceMatches
-            } finally { conn.disconnect() }
-        } catch (_: Exception) { false }
-    }
-}
-
 object CatalogCheck {
-    /** The same first-page search as v0.5.3; it is not a guarantee of exhaustive marketplace coverage. */
-    fun find(name: String, pageCount: Int): List<Offer> {
+    data class Snapshot(val offers:List<Offer>,val sellers:Map<String,String>)
+    fun find(name: String, pageCount: Int, reference:ManualGameReference.Game?=null): Snapshot {
         val offers = mutableListOf<Offer>()
         val seen = mutableSetOf<String>()
+        val sellers=mutableMapOf<String,String>()
+        val terms=(listOf(name)+reference?.aliases.orEmpty()).distinct()
+        val marketQuery=reference?.aliases?.firstOrNull {it.isNotBlank() && it.all {c->c.code<128}} ?: name
         for (page in 1..pageCount) {
         val params = linkedMapOf(
-            "query" to name, "searchmode" to "10", "sortmode" to "2", "pagesize" to "100",
+            "query" to marketQuery, "searchmode" to "10", "sortmode" to "2", "pagesize" to "100",
             "pagenum" to page.toString(), "owner" to "1", "details" to "1", "checkhidesales" to "1", "host" to "plati.market"
         ).entries.joinToString("&") { (k,v) -> "${URLEncoder.encode(k,"UTF-8") }=${URLEncoder.encode(v,"UTF-8")}" }
         var root: JSONObject? = null
@@ -526,7 +514,7 @@ object CatalogCheck {
             val result = response.optJSONObject("result")
             val raw = response.optJSONObject("items")?.optJSONArray("item")
                 ?: response.optJSONArray("items") ?: result?.optJSONArray("items")
-                ?: continue
+                ?: if(result?.optInt("total",-1)==0) JSONArray() else error("Неполный ответ каталога")
             for (i in 0 until raw.length()) {
                 val item = raw.optJSONObject(i) ?: continue
                 val id = item.optString("id",item.optString("id_goods",""))
@@ -534,29 +522,37 @@ object CatalogCheck {
                 val p = item.optString("price_rur", "").ifBlank { item.optString("price_rub", "") }
                     .ifBlank { item.optString("price", "") }.replace(',', '.').replace(" ", "").toDoubleOrNull()
                 if (!id.matches(Regex("[0-9]{4,12}")) || title.isEmpty() || p == null || !p.isFinite() || p <= 0) continue
-                val type = OfferRules.classifySteamGame(title,name) ?: continue
-                if (seen.add(id)) offers.add(Offer(id,title,p,type,OfferRules.rfStatus(title),OfferRules.editionType(title,name)))
+                val type = terms.firstNotNullOfOrNull {ManualOfferClassifier.titleType(title,it)} ?: continue
+                if (seen.add(id)) {
+                    offers.add(Offer(id,title,p,type,OfferRules.rfStatus(title),OfferRules.editionType(title,name)))
+                    sellers[id]=item.optString("seller_id")
+                }
             }
         }
         }
-        return offers.distinctBy { it.id }.sortedBy { it.price }
+        return Snapshot(offers.distinctBy {it.id},sellers)
     }
 }
 
 object WatchScheduler {
+    private val connected=androidx.work.Constraints.Builder().setRequiredNetworkType(androidx.work.NetworkType.CONNECTED).build()
     fun checkNow(context: Context) {
-        val request = OneTimeWorkRequestBuilder<PriceWatchWorker>().build()
-        WorkManager.getInstance(context).enqueueUniqueWork("plati_manual_price_check", ExistingWorkPolicy.REPLACE, request)
+        val request = OneTimeWorkRequestBuilder<PriceWatchWorker>().setConstraints(connected)
+            .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL,30,TimeUnit.SECONDS).build()
+        WorkManager.getInstance(context).enqueueUniqueWork("plati_manual_price_check", ExistingWorkPolicy.KEEP, request)
     }
     fun start(context: Context) {
-        val request = PeriodicWorkRequestBuilder<PriceWatchWorker>(1, TimeUnit.HOURS).build()
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork("plati_game_price_watch", ExistingPeriodicWorkPolicy.KEEP, request)
+        val request = PeriodicWorkRequestBuilder<PriceWatchWorker>(1, TimeUnit.HOURS).setConstraints(connected)
+            .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL,30,TimeUnit.SECONDS).build()
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork("plati_game_price_watch", ExistingPeriodicWorkPolicy.UPDATE, request)
     }
 }
 
 class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    companion object {private val runLock=java.util.concurrent.locks.ReentrantLock()}
     override suspend fun doWork(): Result {
-        return synchronized(WatchStore.lock) { runChecks() }
+        if(!runLock.tryLock())return Result.retry()
+        return try {runChecks()} finally {runLock.unlock()}
     }
     private fun runChecks(): Result {
         val watches = WatchStore.read(applicationContext)
@@ -567,88 +563,68 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
             val watch = watches.optJSONObject(i) ?: continue
             val name = watch.optString("name")
             setProgressAsync(workDataOf("done" to i, "total" to watches.length(), "game" to name))
+            val checkStarted=System.currentTimeMillis()
             try {
                 val kind = watch.optString("kind", "Все")
-                val catalog = CatalogCheck.find(name, CatalogPageSettings.pages(applicationContext))
-                val reference = SteamGameReference.lookup(applicationContext, name)
-                val rules = GameRuleStore.read(applicationContext, name)
-                val offers = catalog.filter { offer ->
-                    offer.id !in ignored && OfferRules.eligible(offer, "Игра", kind, reference, rules, allowUnconfirmed = false)
-                }
-                // Catalog prices for selectable editions/regions may be teaser prices.
-                // Display them, but do not use them as verified price-alert triggers.
-                // Unknown or contradictory delivery types are useful for manual review,
-                // but must not trigger automatic Gift/Key price alerts.
-                val candidates = offers.filterNot { OfferRules.variablePrice(it.name) }
-                    .filter { it.type == "Gift" || it.type == "Key" }
-                    .filter { SteamGameReference.isMainGame(it, reference, rules) }
-                    .sortedBy { it.price }
-                // Scan up to 20 cheapest candidates until three in-stock offers are found.
-                // A fixed first-five limit missed available offers further down the list.
-                val reliableOffers = mutableListOf<Offer>()
-                for (candidate in candidates.take(20)) {
-                    if (isStopped) break
-                    if (OfferAvailability.confirmedInStock(candidate.id, candidate.price)) {
-                        reliableOffers.add(candidate)
-                        if (reliableOffers.size >= 3) break
-                    }
-                }
+                val selectedId=watch.optInt("steamAppId").takeIf {it>0}
+                    ?: GameSearchResolver.exact(name,ManualSearchSettings.games(applicationContext)+GameSearchResolver.seeds)?.appId
+                val reference=ManualGameReference.lookup(name,selectedId)
+                if(reference.appId<=0) error("Steam не подтвердил основную игру; предыдущий результат сохранён")
+                val catalog=CatalogCheck.find(name,CatalogPageSettings.pages(applicationContext),reference)
+                val rules=GameRuleStore.read(applicationContext,name)
+                val result=VerifiedMonitorCheck.run(catalog,reference,kind,rules,ignored,{!isStopped})
+                val reliableOffers=result.verified.take(3)
+                WatchStore.updateIfCurrent(applicationContext,watch) {current ->
+                if(current.optLong("checked",0L)>checkStarted)return@updateIfCurrent
+                current.put("steamAppId",reference.appId)
                 val cheapest = reliableOffers.minByOrNull { it.price }
                 val checkedAt = System.currentTimeMillis()
-                watch.put("last", cheapest?.price ?: -1.0)
-                watch.put("checked", checkedAt)
-                watch.put("totalCount", catalog.size)
-                watch.put("eligibleCount", offers.size)
-                watch.put("verifiedCount", reliableOffers.size)
-                watch.put("bestId", cheapest?.id ?: "")
+                current.put("last", cheapest?.price ?: -1.0)
+                current.put("checked", checkedAt)
+                current.put("totalCount", catalog.offers.size)
+                current.put("eligibleCount", result.verified.size)
+                current.put("rejectedCount",result.rejected)
+                current.put("verifiedCount", result.verified.size)
+                current.put("bestId", cheapest?.id ?: "")
                 val topOffers = JSONArray()
                 reliableOffers.take(3).forEach { offer ->
                     topOffers.put(JSONObject().put("id", offer.id).put("name", offer.name)
-                        .put("price", offer.price).put("type", offer.type))
+                        .put("price", offer.price).put("type", offer.type).put("note",offer.purchaseNote))
                 }
-                watch.put("topOffers", topOffers)
-                // Store one real marketplace minimum per successful check, locally on the device.
-                // A null price means the search succeeded but no eligible offer was found.
-                val oldHistory = watch.optJSONArray("history") ?: JSONArray()
-                val history = JSONArray()
-                val cutoff = checkedAt - 90L * 24 * 60 * 60 * 1000
-                for (h in 0 until oldHistory.length()) {
-                    val sample = oldHistory.optJSONObject(h) ?: continue
-                    if (sample.optLong("at", 0L) >= cutoff) history.put(sample)
+                current.put("topOffers", topOffers)
+                current.put("history",WatchHistory.append(current.optJSONArray("history") ?: JSONArray(),checkedAt,cheapest?.price,result.verified.size))
+                current.remove("error")
+                current.remove("failedAt")
+                val alerts=MonitorPolicy.alerts(reliableOffers,current.optDouble("limit",0.0),
+                    current.optJSONObject("notifiedPrices") ?: JSONObject(),current.optJSONArray("notified") ?: JSONArray())
+                if(alerts.offers.isNotEmpty()) {
+                    alerts.offers.forEach {AlertJournal.record(applicationContext,name,it,current.optDouble("limit"))}
+                    runCatching {sendNotification(alerts.offers.minByOrNull {it.price}!!,name,i)}
+                        .onFailure {current.put("notificationError",it.message ?: "Уведомление недоступно; находка сохранена в журнале")}
                 }
-                val point = JSONObject().put("at", checkedAt).put("count", offers.size)
-                if (cheapest != null) point.put("price", cheapest.price)
-                history.put(point)
-                // Limit stored data if the user triggers many manual checks.
-                val capped = JSONArray()
-                for (h in maxOf(0, history.length() - 400) until history.length()) capped.put(history.get(h))
-                watch.put("history", capped)
-                watch.remove("error")
-                val limit = watch.optDouble("limit", 0.0)
-                if (limit > 0) {
-                    val already = watch.optJSONArray("notified") ?: JSONArray()
-                    val known = (0 until already.length()).map { already.optString(it) }.toSet()
-                    val newOffers = reliableOffers.filter { it.price <= limit && it.id !in known }
-                    if (newOffers.isNotEmpty()) {
-                        val best = newOffers.minByOrNull { it.price }!!
-                        // Keep a history even if Android notifications are disabled.
-                        newOffers.forEach { AlertJournal.record(applicationContext, name, it, limit) }
-                        sendNotification(best, name, i)
-                        // Mark all qualifying offers, preventing repeated notifications on every run.
-                        newOffers.forEach { already.put(it.id) }
-                        watch.put("notified", already)
-                    }
+                current.put("notifiedPrices",alerts.prices)
+                // Migration completed once observed legacy IDs have a price baseline.
+                val legacy=current.optJSONArray("notified") ?: JSONArray()
+                val remaining=JSONArray()
+                for(n in 0 until minOf(legacy.length(),500)) {
+                    val id=legacy.optString(n)
+                    if(!alerts.prices.has(id))remaining.put(id)
+                }
+                current.put("notified",remaining)
                 }
             } catch (e: Exception) {
-                failed = true
-                watch.put("error", e.message ?: "Ошибка сети")
-                watch.put("failedAt", System.currentTimeMillis())
+                if(isStopped)return Result.success()
+                val retained=WatchStore.updateIfCurrent(applicationContext,watch) {current ->
+                    if(current.optLong("checked",0L)<=checkStarted) {
+                        current.put("error", e.message ?: "Ошибка сети")
+                        current.put("failedAt", System.currentTimeMillis())
+                    }
+                }
+                failed=failed || retained
             }
-            WatchStore.write(applicationContext, watches)
             setProgressAsync(workDataOf("done" to (i + 1), "total" to watches.length(), "game" to name))
         }
-        WatchStore.write(applicationContext,watches)
-        return if (failed) Result.retry() else Result.success()
+        return if (failed) {if(runAttemptCount<5) Result.retry() else Result.failure()} else Result.success()
     }
     private fun sendNotification(offer: Offer, game: String, index: Int) {
         val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
