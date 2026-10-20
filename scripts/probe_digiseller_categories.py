@@ -78,7 +78,8 @@ try:
 except Exception as exc:
     report["errors"].append("platform categories: " + type(exc).__name__ + ": " + str(exc)[:160])
 
-for query in ("Hogwarts Legacy Steam", "Cyberpunk 2077 Steam"):
+for query in ("Hogwarts Legacy Steam", "Cyberpunk 2077 Steam",
+              "Steam Gift игра", "Steam Key игра", "Steam аккаунт игра"):
     try:
         data = get("/api/products/search2", {
             "query": query, "searchmode": 10, "sortmode": 2, "pagesize": 30,
@@ -99,7 +100,7 @@ for query in ("Hogwarts Legacy Steam", "Cyberpunk 2077 Steam"):
             seller_id = str(item.get("seller_id", ""))
             if seller_id.isdecimal() and product_id.isdecimal() and seller_id not in [x[1] for x in seller_samples]:
                 seller_samples.append((product_id, seller_id))
-            if len(sample_product_ids) >= 8 and len(seller_samples) >= 3:
+            if len(sample_product_ids) >= 8 and len(seller_samples) >= 12:
                 break
         report["search"][query] = {
             "retval": data.get("retval") if isinstance(data, dict) else None,
@@ -129,7 +130,7 @@ for product_id in sample_product_ids[:8]:
 # Seller-specific category trees and seller-scoped product cards.
 # Seller/product IDs are only used in memory, never saved in the report.
 report["seller_samples"] = []
-for index, (product_id, seller_id) in enumerate(seller_samples[:3], 1):
+for index, (product_id, seller_id) in enumerate(seller_samples[:12], 1):
     sample = {"sample": index}
     categories = []
     metadata = {}
@@ -177,6 +178,14 @@ for index, (product_id, seller_id) in enumerate(seller_samples[:3], 1):
         "name": matches[0][:100] if len(matches) == 1 else None,
         "matches": len(matches)
     }
+    label = matches[0] if len(matches) == 1 else ""
+    tokens = set(label.lower().replace("ё", "е").replace("-", " ").split())
+    sample["matched_category"]["kind"] = (
+        "Excluded" if tokens & {"аккаунт", "аккаунты", "accounts", "account", "профили", "профиль", "offline", "аренда"}
+        else "Gift" if tokens & {"gift", "gifts", "гифт", "гифты"} and not tokens & {"key", "keys", "ключ", "ключи"}
+        else "Key" if tokens & {"key", "keys", "ключ", "ключи"} and not tokens & {"gift", "gifts", "гифт", "гифты"}
+        else "Unknown"
+    )
     report["seller_samples"].append(sample)
 
 with open("digiseller_category_probe.json", "w", encoding="utf-8") as file:
