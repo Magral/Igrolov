@@ -358,21 +358,42 @@ class MainActivity : ComponentActivity() {
         DisposableEffect(Unit) {
             val live = WorkManager.getInstance(this@MainActivity)
                 .getWorkInfosForUniqueWorkLiveData("plati_manual_price_check")
+            var manualRunning=false
+            var periodicRunning=false
             val observer = Observer<List<WorkInfo>> { infos ->
                 val running = infos.any { it.state == WorkInfo.State.RUNNING || it.state == WorkInfo.State.ENQUEUED }
-                checkingNow = running
+                manualRunning=running
+                checkingNow = manualRunning || periodicRunning
                 val info = infos.firstOrNull { it.state == WorkInfo.State.RUNNING } ?: infos.firstOrNull()
-                monitorDone = info?.progress?.getInt("done", 0) ?: 0
-                monitorTotal = info?.progress?.getInt("total", 0) ?: 0
-                monitorCurrent = info?.progress?.getString("game") ?: ""
-                if (infos.isNotEmpty() && !running) {
+                if(manualRunning || !periodicRunning) {
+                    monitorDone = info?.progress?.getInt("done", 0) ?: 0
+                    monitorTotal = info?.progress?.getInt("total", 0) ?: 0
+                    monitorCurrent = info?.progress?.getString("game") ?: ""
+                }
+                if (infos.isNotEmpty() && !running && !periodicRunning) {
                     reloadWatches()
                     watchMessage = if (infos.any { it.state == WorkInfo.State.SUCCEEDED })
                         "Проверка завершена. Минимальные цены обновлены." else "Проверка не завершилась. Посмотрите ошибку в карточке."
                 }
             }
+            val periodic=WorkManager.getInstance(this@MainActivity).getWorkInfosForUniqueWorkLiveData("plati_game_price_watch")
+            val periodicObserver=Observer<List<WorkInfo>> {infos->
+                val running=infos.firstOrNull {it.state==WorkInfo.State.RUNNING}
+                periodicRunning=running!=null
+                checkingNow=manualRunning || periodicRunning
+                if(running!=null) {
+                    monitorDone=running.progress.getInt("done",0)
+                    monitorTotal=running.progress.getInt("total",0)
+                    monitorCurrent=running.progress.getString("game") ?: ""
+                    watchMessage="Автоматическая проверка цен…"
+                } else {
+                    reloadWatches()
+                    if(!manualRunning && infos.isNotEmpty())watchMessage="Результаты и ошибки проверки — в карточках отслеживания."
+                }
+            }
             live.observe(this@MainActivity, observer)
-            onDispose { live.removeObserver(observer) }
+            periodic.observe(this@MainActivity,periodicObserver)
+            onDispose {live.removeObserver(observer);periodic.removeObserver(periodicObserver)}
         }
         fun refresh() {
             busy = true
@@ -658,7 +679,7 @@ class MainActivity : ComponentActivity() {
                     WatchScheduler.checkNow(this@MainActivity)
                     if (Build.VERSION.SDK_INT >= 33) askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
                     reloadWatches()
-                    watchMessage = "Игра добавлена. Первая проверка запущена; следующие — примерно раз в час."
+                    watchMessage = "Игра добавлена. Проверка запрошена; фоновые проверки — примерно раз в час."
                 }
             },enabled=!watchSuggesting) { Text("Отслеживать игру") }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

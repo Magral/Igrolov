@@ -575,18 +575,21 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 val catalog=CatalogCheck.find(name,CatalogPageSettings.pages(applicationContext),reference)
                 val rules=GameRuleStore.read(applicationContext,name)
                 val result=VerifiedMonitorCheck.run(catalog,reference,kind,rules,ignored,{!isStopped})
-                val reliableOffers=result.verified.take(3)
                 WatchStore.updateIfCurrent(applicationContext,watch) {current ->
                 if(current.optLong("checked",0L)>checkStarted)return@updateIfCurrent
+                val latestRules=GameRuleStore.read(applicationContext,name)
+                val latestIgnored=IgnoredStore.ids(applicationContext)
+                val verified=result.verified.filter {MonitorPolicy.eligible(it,kind,latestRules,latestIgnored)}
+                val reliableOffers=verified.take(3)
                 current.put("steamAppId",reference.appId)
                 val cheapest = reliableOffers.minByOrNull { it.price }
                 val checkedAt = System.currentTimeMillis()
                 current.put("last", cheapest?.price ?: -1.0)
                 current.put("checked", checkedAt)
                 current.put("totalCount", catalog.offers.size)
-                current.put("eligibleCount", result.verified.size)
-                current.put("rejectedCount",result.rejected)
-                current.put("verifiedCount", result.verified.size)
+                current.put("eligibleCount", verified.size)
+                current.put("rejectedCount",catalog.offers.size-verified.size)
+                current.put("verifiedCount", verified.size)
                 current.put("bestId", cheapest?.id ?: "")
                 val topOffers = JSONArray()
                 reliableOffers.take(3).forEach { offer ->
@@ -594,7 +597,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                         .put("price", offer.price).put("type", offer.type).put("note",offer.purchaseNote))
                 }
                 current.put("topOffers", topOffers)
-                current.put("history",WatchHistory.append(current.optJSONArray("history") ?: JSONArray(),checkedAt,cheapest?.price,result.verified.size))
+                current.put("history",WatchHistory.append(current.optJSONArray("history") ?: JSONArray(),checkedAt,cheapest?.price,verified.size))
                 current.remove("error")
                 current.remove("failedAt")
                 val alerts=MonitorPolicy.alerts(reliableOffers,current.optDouble("limit",0.0),

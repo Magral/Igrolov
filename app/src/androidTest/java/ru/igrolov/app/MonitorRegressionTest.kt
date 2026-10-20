@@ -46,16 +46,17 @@ class MonitorRegressionTest {
                         }
                         else -> {
                             calls.incrementAndGet()
-                            if(mode.get() in setOf(7,8) && changed.compareAndSet(false,true)) {
+                            if(mode.get() in setOf(7,8,9) && changed.compareAndSet(false,true)) {
                                 val edit=Thread {
                                     if(mode.get()==7)WatchStore.remove(context,0)
-                                    else WatchStore.add(context,"Cyberpunk 2077","Key",1.0)
+                                    else if(mode.get()==8) WatchStore.add(context,"Cyberpunk 2077","Key",1.0)
+                                    else IgnoredStore.add(context,"10005","Cyberpunk 2077 Steam Key РФ")
                                 }
                                 edit.start();edit.join(1500)
                                 check(!edit.isAlive) {"Watch edits blocked by network lock"}
                             }
                             val id=url.path.split('/')[3].toInt()
-                            val price=if(mode.get()==4 && id==10005)95 else 100+id-10000
+                            val price=if(id==10005 && mode.get()==9)90 else if(mode.get()==4 && id==10005)95 else 100+id-10000
                             val name=if(mode.get()==6 && id==10005)"Cyberpunk 2077 Phantom Liberty Steam Key РФ" else "Cyberpunk 2077 Steam Key РФ"
                             JSONObject().put("retval",0).put("product",JSONObject().put("id",id).put("name",name)
                                 .put("is_available",if(mode.get()!=3 && id>=10005)1 else 0)
@@ -68,6 +69,7 @@ class MonitorRegressionTest {
         }}
         fun worker()=TestListenableWorkerBuilder<PriceWatchWorker>(context).build()
         androidx.work.WorkManager.getInstance(context).cancelAllWork().result.get()
+        IgnoredStore.remove(context,"10005")
         WatchStore.write(context,JSONArray());AlertJournal.clear(context)
         WatchStore.add(context,"Cyberpunk 2077","Key",1000.0)
         CatalogPageSettings.set(context,100)
@@ -99,6 +101,10 @@ class MonitorRegressionTest {
         mode.set(6)
         worker().doWork();assertEquals("10006",WatchStore.read(context).getJSONObject(0).getString("bestId"))
         assertEquals(4,AlertJournal.read(context).length())
+        mode.set(9);changed.set(false)
+        assertEquals(ListenableWorker.Result.success(),worker().doWork())
+        assertEquals("10006",WatchStore.read(context).getJSONObject(0).getString("bestId"))
+        IgnoredStore.remove(context,"10005")
         mode.set(3)
         assertEquals(ListenableWorker.Result.success(),worker().doWork())
         watch=WatchStore.read(context).getJSONObject(0)
