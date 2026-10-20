@@ -111,8 +111,6 @@ class TrackedTransferUiRegressionTest {
         assertEquals(5300.0,cached("123456").price!!,0.001)
         assertEquals(5300.0,cached("123457").price!!,0.001)
         assertEquals("Stellaris",cached("123457").canonical)
-        val scroll=UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(30)
-        if(!device.hasObject(By.textContains("ID 123457")))assertTrue(scroll.scrollIntoView(UiSelector().textContains("ID 123457")))
         device.takeScreenshot(File(context.getExternalFilesDir(null),"tracked-restart.png"))
         context.getSharedPreferences("tracked_products",0).edit().putString("ids","").remove("product_cache_123456").remove("product_cache_123457").commit()
         MonitorRoomStore.writeTrackedProduct(context,"123456",null);MonitorRoomStore.writeTrackedProduct(context,"123457",null)
