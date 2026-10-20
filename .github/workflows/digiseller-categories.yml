@@ -5,6 +5,8 @@ on:
   push:
     paths:
       - "scripts/probe_digiseller_categories.py"
+      - "scripts/probe_category_helpers.py"
+      - "scripts/test_probe_category_helpers.py"
       - "scripts/validate_digiseller_probe.py"
       - "scripts/test_validate_digiseller_probe.py"
       - ".github/workflows/digiseller-categories.yml"
@@ -36,3 +38,4 @@ jobs:
           path: digiseller_category_probe.json
           if-no-files-found: error
           retention-days: 30
+

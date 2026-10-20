@@ -10,8 +10,9 @@ android {
         applicationId = "ru.igrolov.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 106
+        versionCode = 107
         versionName = "1.0.4"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     // Fixed DEVELOPMENT signing identity. Never use this key for production releases.
     signingConfigs {
@@ -39,6 +40,11 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.work:work-runtime-ktx:2.9.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
+    androidTestImplementation("androidx.test:core:1.6.1")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
 }
+

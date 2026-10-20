@@ -38,7 +38,7 @@ import java.net.URLEncoder
 import java.util.Locale
 import java.util.concurrent.Executors
 
-data class Offer(val id: String, val name: String, val price: Double, val type: String, val rfStatus: String, val edition: String, val categoryLabel: String = "")
+data class Offer(val id: String, val name: String, val price: Double, val type: String, val rfStatus: String, val edition: String, val categoryLabel: String = "", val detailsChecked: Boolean = false, val variablePrice: Boolean = false, val available: Boolean? = null)
 
 data class Tracked(val id: String, val name: String, val price: Double?, val status: String, val url: String)
 
@@ -164,35 +164,6 @@ class MainActivity : ComponentActivity() {
                         val total = result?.optInt("total", 0) ?: 0
                         if (total > 0) error("Каталог нашёл $total товаров, но изменил формат ответа")
                     } else {
-                        // Search responses may vary by seller and product: inspect every item
-                        // on the first page, but log only field names, never values or IDs.
-                        if (page == 1) {
-                            val fieldNames = sortedSetOf<String>()
-                            var itemsWithCategoryFields = 0
-                            var itemsWithSellerFields = 0
-                            for (index in 0 until rawItems.length()) {
-                                val sample = rawItems.optJSONObject(index) ?: continue
-                                var categoryFound = false
-                                var sellerFound = false
-                                val iterator = sample.keys()
-                                while (iterator.hasNext()) {
-                                    val key = iterator.next()
-                                    val isCategory = key.contains("categor", ignoreCase = true) ||
-                                        key.contains("cataloguer", ignoreCase = true)
-                                    val isSeller = key.contains("seller", ignoreCase = true) ||
-                                        key.contains("owner", ignoreCase = true)
-                                    if (isCategory || isSeller || key.contains("platform", ignoreCase = true)) {
-                                        fieldNames.add(key)
-                                        categoryFound = categoryFound || isCategory
-                                        sellerFound = sellerFound || isSeller
-                                    }
-                                }
-                                if (categoryFound) itemsWithCategoryFields++
-                                if (sellerFound) itemsWithSellerFields++
-                            }
-                            android.util.Log.i("IgrolovCatalog",
-                                "search2 fields=${fieldNames.joinToString(",")}; categoryItems=$itemsWithCategoryFields; sellerItems=$itemsWithSellerFields; total=${rawItems.length()}")
-                        }
                         for (i in 0 until rawItems.length()) {
                             val item = rawItems.optJSONObject(i) ?: continue
                             val id = item.optString("id", item.optString("id_goods", ""))
@@ -202,7 +173,7 @@ class MainActivity : ComponentActivity() {
                                 .ifBlank { item.optString("price", "") }
                             val price = priceText.replace(',', '.').replace(" ", "").toDoubleOrNull()
                             if (!id.matches(Regex("[0-9]{4,12}")) || name.isBlank() || price == null || !price.isFinite() || price <= 0) continue
-                            val type = OfferRules.classifySteamGame(name, query) ?: continue
+                            val type = ManualOfferClassifier.titleType(name, query) ?: continue
                             if (seenIds.add(id)) {
                                 found.add(Offer(id, name, price, type, OfferRules.rfStatus(name), OfferRules.editionType(name, query)))
                                 sellerIds[id] = item.optString("seller_id")
@@ -216,20 +187,14 @@ class MainActivity : ComponentActivity() {
                 }
                 }
             } catch (e: Exception) { failure = e.message ?: "Не удалось подключиться к каталогу" }
-            // Resolve only a small, cheapest subset. Seller-scoped categories are optional:
-            // network failure or category_id=0 never removes an otherwise valid offer.
             val sorted = found.distinctBy { it.id }.sortedBy { it.price }
-            val sellerCache = mutableMapOf<String, Map<String, String>>()
-            val enriched = if (failure.isEmpty() && generation == activeCatalogGeneration.get()) {
-                sorted.mapIndexedNotNull { index, offer ->
-                    if (index >= 12 || generation != activeCatalogGeneration.get()) offer
-                    else {
-                        val seller = sellerIds[offer.id].orEmpty()
-                        val label = SellerCategoryResolver.label(offer.id, seller, sellerCache)
-                        if (label == null) offer else SellerCategoryResolver.refine(offer, label)
+            val enriched = ManualCatalogEnricher().enrich(sorted, sellerIds,
+                active = { generation == activeCatalogGeneration.get() && !Thread.currentThread().isInterrupted },
+                progress = { checked, total ->
+                    if (generation == activeCatalogGeneration.get()) runOnUiThread {
+                        if (generation == activeCatalogGeneration.get()) progress(pageCount, pageCount, checked)
                     }
-                }
-            } else sorted
+                })
             if (generation == activeCatalogGeneration.get()) runOnUiThread {
                 if (generation == activeCatalogGeneration.get()) callback(enriched, failure)
             }
@@ -251,7 +216,7 @@ class MainActivity : ComponentActivity() {
                     val connection = URL(url).openConnection() as HttpURLConnection
                     connection.connectTimeout = 12000
                     connection.readTimeout = 20000
-                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Igrolov/1.0.3)")
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Igrolov/1.0.4)")
                     try {
                         if (connection.responseCode !in 200..299) error("Steam HTTP ${connection.responseCode}")
                         val root = JSONObject(connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
@@ -427,7 +392,14 @@ class MainActivity : ComponentActivity() {
             Text("Поиск предложений Steam · RUB", style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(12.dp))
             Text("Поиск игры по названию", style = MaterialTheme.typography.titleMedium)
-            OutlinedTextField(query, { query = it }, label = { Text("Например, Cyberpunk 2077") },
+            OutlinedTextField(query, {
+                query = it
+                searchGeneration++
+                activeCatalogGeneration.set(searchGeneration)
+                searching = false
+                offers = emptyList()
+                steamGame = null
+            }, label = { Text("Например, Cyberpunk 2077") },
                 modifier = Modifier.fillMaxWidth(), singleLine = true)
             if (queryHistory.isNotEmpty()) {
                 var historyExpanded by remember { mutableStateOf(false) }
@@ -457,7 +429,7 @@ class MainActivity : ComponentActivity() {
                         label = { Text(type) })
                 }
             }
-            Text("Регион: только подтверждённая РФ (по названию)", style = MaterialTheme.typography.bodySmall)
+            Text("Регион: явные исключения РФ скрыты", style = MaterialTheme.typography.bodySmall)
             Text("Состав товара", style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf("Игра", "Все", "DLC").forEach { edition ->
@@ -465,7 +437,7 @@ class MainActivity : ComponentActivity() {
                         onClick = { editionFilter = edition }, label = { Text(edition) })
                 }
             }
-            Text("Проверка по заголовкам скрывает известные DLC и услуги. Состав издания и возможность активации в РФ обязательно уточняйте на странице товара.", style = MaterialTheme.typography.bodySmall)
+            Text("Проверяем название, описание и категории продавца. Неоднозначный способ передачи отмечается «Не указан». Параметры покупки уточняйте у продавца.", style = MaterialTheme.typography.bodySmall)
             Button(onClick = {
                 searchGeneration++
                 activeCatalogGeneration.set(searchGeneration)
@@ -496,7 +468,7 @@ class MainActivity : ComponentActivity() {
                         runOnUiThread {
                             if (generation == searchGeneration && query.trim() == requestedGame) {
                                 steamGame = game
-                                searchMessage = "Каталог: ${found.size} · справочник: ${game.source}. Проверка только по названиям."
+                                searchMessage = "Каталог: ${found.size} · карточки проверены: ${found.count { it.detailsChecked }} · справочник: ${game.source}."
                             }
                         }
                     }.start()
@@ -507,7 +479,7 @@ class MainActivity : ComponentActivity() {
                 Text("Страниц обработано: $searchPage / $searchTotalPages · найдено кандидатов: $searchFound", style = MaterialTheme.typography.bodySmall)
             }
             Text(searchMessage, style = MaterialTheme.typography.bodySmall)
-            Text("Поиск по Plati (до $catalogLimit товаров). Предложения без подтверждения РФ скрыты.", style = MaterialTheme.typography.bodySmall)
+            Text("Поиск по Plati (до $catalogLimit товаров). Неизвестный регион отмечается отдельно.", style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(10.dp))
             Spacer(Modifier.height(12.dp))
             } // конец настроек поиска
@@ -728,8 +700,10 @@ class MainActivity : ComponentActivity() {
                         ElevatedCard(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(10.dp)) {
                                 Text(offer.name, style = MaterialTheme.typography.bodyMedium)
+                                if (offer.categoryLabel.isNotBlank()) Text(offer.categoryLabel, style = MaterialTheme.typography.bodySmall)
+                                if (offer.available == false) Text("Сейчас нет в наличии", style = MaterialTheme.typography.bodySmall)
                                 Text("${offer.type} · ${offer.rfStatus} · " + String.format(Locale("ru", "RU"), "%.2f ₽", offer.price))
-                                Text(if (OfferRules.variablePrice(offer.name)) "Цена может зависеть от выбранного варианта" else offer.edition, style = MaterialTheme.typography.bodySmall)
+                                Text(if (offer.variablePrice || OfferRules.variablePrice(offer.name)) "Цена может зависеть от выбранного варианта" else offer.edition, style = MaterialTheme.typography.bodySmall)
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                     TextButton(onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://plati.market/itm/${offer.id}"))) },
                                         modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp)) { Text("Открыть", maxLines = 1) }
@@ -967,3 +941,4 @@ class MainActivity : ComponentActivity() {
     }
 
 }
+

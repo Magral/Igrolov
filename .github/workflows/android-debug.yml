@@ -79,3 +79,78 @@ jobs:
             project/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 90
+
+      - name: Build instrumentation tests
+        run: gradle --no-daemon :app:assembleDebugAndroidTest
+      - name: Upload instrumentation APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Igrolov-instrumentation-${{ github.sha }}
+          path: app/build/outputs/apk/androidTest/debug/*.apk
+
+  device:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/download-artifact@v4
+        with:
+          name: Igrolov-v1.0.4-debug-${{ github.sha }}
+          path: current
+      - uses: actions/download-artifact@v4
+        with:
+          name: Igrolov-instrumentation-${{ github.sha }}
+          path: tests
+      - name: Download pinned baseline APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 39355394743 --repo "$GITHUB_REPOSITORY" -n Igrolov-v1.0.4-debug-ee0bb7e06bcdd2be1dcf31703111e58ae7cc6d91 -D baseline
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install, upgrade without data loss, and exercise UI
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          script: bash scripts/device_smoke_104.sh
+      - name: Upload device evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Igrolov-device-tests-${{ github.sha }}
+          path: device-results/
+          if-no-files-found: error
+
+  publish:
+    if: startsWith(github.event.head_commit.message, 'release: publish 1.0.4')
+    needs: [build, device]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Igrolov-v1.0.4-debug-${{ github.sha }}
+          path: apk
+      - name: Publish verified APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp apk/app-debug.apk Igrolov-1.0.4.apk
+          sha256sum Igrolov-1.0.4.apk > SHA256SUMS.txt
+          gh release create v1.0.4 --target "$GITHUB_SHA" --title 'Игролов 1.0.4' --notes-file RELEASE_NOTES_104.md Igrolov-1.0.4.apk SHA256SUMS.txt
