@@ -18,7 +18,7 @@ adb install -r "$current_apk"
 run_test verifyUpgradeData
 run_test launchAndNavigateFiltersSettingsAndMonitoring
 adb shell am instrument -w -r -e class ru.igrolov.app.MonitorRegressionTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/monitor.txt
-grep -E 'OK \(1 test\)' device-results/monitor.txt
+grep -E 'OK \(2 tests\)' device-results/monitor.txt
 adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class ru.igrolov.app.MonitorRoomMigrationTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/room-migration.txt
 grep -E 'OK \(1 test\)' device-results/room-migration.txt
