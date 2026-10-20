@@ -3,6 +3,7 @@
 import json
 import urllib.parse
 import urllib.request
+from probe_category_helpers import flatten_categories, select_seller_samples
 
 BASE = "https://api.digiseller.com"
 HEADERS = {"Accept": "application/json", "User-Agent": "Igrolov-API-Research/1.0"}
@@ -91,16 +92,14 @@ for query in ("Hogwarts Legacy Steam", "Cyberpunk 2077 Steam",
         names = sorted({key for item in items if isinstance(item, dict)
                         for key in item if any(term in key.lower() for term in relevant)})
         # IDs are used in memory only to fetch public product details.
+        seller_samples.extend(select_seller_samples(items, seller_samples, limit=2))
         for item in items:
             if not isinstance(item, dict):
                 continue
             product_id = str(item.get("id", item.get("id_goods", "")))
             if product_id.isdecimal() and len(product_id) <= 12 and product_id not in sample_product_ids:
                 sample_product_ids.append(product_id)
-            seller_id = str(item.get("seller_id", ""))
-            if seller_id.isdecimal() and product_id.isdecimal() and seller_id not in [x[1] for x in seller_samples]:
-                seller_samples.append((product_id, seller_id))
-            if len(sample_product_ids) >= 8 and len(seller_samples) >= 8:
+            if len(sample_product_ids) >= 8:
                 break
         report["search"][query] = {
             "retval": data.get("retval") if isinstance(data, dict) else None,
@@ -130,13 +129,13 @@ for product_id in sample_product_ids[:8]:
 # Seller-specific category trees and seller-scoped product cards.
 # Seller/product IDs are only used in memory, never saved in the report.
 report["seller_samples"] = []
-for index, (product_id, seller_id) in enumerate(seller_samples[:8], 1):
+for index, (product_id, seller_id) in enumerate(seller_samples, 1):
     sample = {"sample": index}
     categories = []
     metadata = {}
     try:
         data = get("/api/categories", {"seller_id": seller_id})
-        categories = rows(data)
+        categories = flatten_categories(rows(data))
         sample["seller_categories"] = {
             "retval": data.get("retval") if isinstance(data, dict) else None,
             "count": len(categories),
