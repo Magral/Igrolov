@@ -10,13 +10,13 @@ adb install -r "$test_apk"
 run_test() {
   local case_name="$1"
   adb shell am instrument -w -r -e class "ru.igrolov.app.ReleaseSmokeTest#$case_name" ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee "device-results/$case_name.txt"
-  rg 'OK \(1 test\)' "device-results/$case_name.txt"
-  if rg 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' "device-results/$case_name.txt"; then return 1; fi
+  grep -E 'OK \(1 test\)' "device-results/$case_name.txt"
+  if grep -E 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' "device-results/$case_name.txt"; then return 1; fi
 }
 run_test seedUpgradeData
 adb install -r "$current_apk"
 run_test verifyUpgradeData
 run_test launchAndNavigateFiltersSettingsAndMonitoring
 adb shell am instrument -w -r -e class ru.igrolov.app.MonitorRegressionTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/monitor.txt
-rg 'OK \(1 test\)' device-results/monitor.txt
+grep -E 'OK \(1 test\)' device-results/monitor.txt
 adb shell dumpsys package ru.igrolov.app > device-results/package.txt
