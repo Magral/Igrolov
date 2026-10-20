@@ -9,7 +9,7 @@ HEADERS = {"Accept": "application/json", "User-Agent": "Igrolov-API-Research/1.0
 def get(path, params=None):
     url = BASE + path + ("?" + urllib.parse.urlencode(params) if params else "")
     req = urllib.request.Request(url, headers=HEADERS)
-    with urllib.request.urlopen(req, timeout=25) as response:
+    with urllib.request.urlopen(req, timeout=12) as response:
         return json.load(response)
 
 def rows(obj):
@@ -100,7 +100,7 @@ for query in ("Hogwarts Legacy Steam", "Cyberpunk 2077 Steam",
             seller_id = str(item.get("seller_id", ""))
             if seller_id.isdecimal() and product_id.isdecimal() and seller_id not in [x[1] for x in seller_samples]:
                 seller_samples.append((product_id, seller_id))
-            if len(sample_product_ids) >= 8 and len(seller_samples) >= 12:
+            if len(sample_product_ids) >= 8 and len(seller_samples) >= 8:
                 break
         report["search"][query] = {
             "retval": data.get("retval") if isinstance(data, dict) else None,
@@ -130,7 +130,7 @@ for product_id in sample_product_ids[:8]:
 # Seller-specific category trees and seller-scoped product cards.
 # Seller/product IDs are only used in memory, never saved in the report.
 report["seller_samples"] = []
-for index, (product_id, seller_id) in enumerate(seller_samples[:12], 1):
+for index, (product_id, seller_id) in enumerate(seller_samples[:8], 1):
     sample = {"sample": index}
     categories = []
     metadata = {}
