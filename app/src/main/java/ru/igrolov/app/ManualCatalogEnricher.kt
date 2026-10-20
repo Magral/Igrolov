@@ -32,6 +32,7 @@ class ManualCatalogEnricher(private val request: (String) -> JSONObject? = ::get
         }
     }
     fun enrich(offers: List<Offer>, sellerIds: Map<String, String>, active: () -> Boolean,
+               reference: ManualGameReference.Game? = null,
                progress: (Int, Int) -> Unit = { _, _ -> }): List<Offer> {
         if (offers.isEmpty() || !active()) return emptyList()
         val sellers = ConcurrentHashMap<String, Map<String, String>>()
@@ -63,7 +64,18 @@ class ManualCatalogEnricher(private val request: (String) -> JSONObject? = ::get
                             category = SellerCategoryResolver.matchCategory(seller, categoryId, mapOf(seller to names))
                         }
                         if (active()) {
-                            results[index] = ManualOfferClassifier.refine(offer, product, category)
+                            val refined = ManualOfferClassifier.refine(offer, product, category)
+                            if (refined != null) {
+                                val canonical = reference?.canonical ?: offer.name
+                                val proof = ManualPurchaseProof.inspect(product, canonical, request)
+                                var content = reference?.let { ManualContentRules.classify(product?.optString("name")?.ifBlank { offer.name } ?: offer.name,
+                                    listOf(product?.optString("info"), product?.optString("add_info")).joinToString("\n"), it) } ?: refined.edition
+                                if(content == "Не подтверждено" && proof.price != null && proof.gameSelected) content="Игра"
+                                val rfStatus = if (proof.label.contains("Россия") && refined.rfStatus != "РФ исключена") "РФ выбрана в параметрах" else refined.rfStatus
+                                results[index] = refined.copy(price = proof.price ?: refined.price,
+                                    available = proof.available, priceVerified = proof.price != null,
+                                    variablePrice = proof.price == null, purchaseNote = proof.label, edition = content, rfStatus = rfStatus)
+                            }
                             progress(done.incrementAndGet(), offers.size)
                         }
                     }
@@ -71,6 +83,6 @@ class ManualCatalogEnricher(private val request: (String) -> JSONObject? = ::get
             })
             futures.forEach { it.get() }
         } finally { workers.shutdownNow() }
-        return if (active()) results.filterNotNull() else emptyList()
+        return if (active()) results.filterNotNull().sortedBy { it.price } else emptyList()
     }
 }

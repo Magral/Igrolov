@@ -20,3 +20,6 @@ run_test launchAndNavigateFiltersSettingsAndMonitoring
 adb shell am instrument -w -r -e class ru.igrolov.app.MonitorRegressionTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/monitor.txt
 grep -E 'OK \(1 test\)' device-results/monitor.txt
 adb shell dumpsys package ru.igrolov.app > device-results/package.txt
+adb shell am instrument -w -r -e class ru.igrolov.app.StellarisUiRegressionTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/stellaris-ui.txt
+grep -E 'OK \(1 test\)' device-results/stellaris-ui.txt
+adb pull /sdcard/Android/data/ru.igrolov.app/files/stellaris-result.png device-results/stellaris-result.png

@@ -38,7 +38,7 @@ import java.net.URLEncoder
 import java.util.Locale
 import java.util.concurrent.Executors
 
-data class Offer(val id: String, val name: String, val price: Double, val type: String, val rfStatus: String, val edition: String, val categoryLabel: String = "", val detailsChecked: Boolean = false, val variablePrice: Boolean = false, val available: Boolean? = null)
+data class Offer(val id: String, val name: String, val price: Double, val type: String, val rfStatus: String, val edition: String, val categoryLabel: String = "", val detailsChecked: Boolean = false, val variablePrice: Boolean = false, val available: Boolean? = null, val priceVerified: Boolean = false, val purchaseNote: String = "")
 
 data class Tracked(val id: String, val name: String, val price: Double?, val status: String, val url: String)
 
@@ -190,7 +190,8 @@ class MainActivity : ComponentActivity() {
                 }
             } catch (e: Exception) { failure = e.message ?: "Не удалось подключиться к каталогу" }
             val sorted = found.distinctBy { it.id }.sortedBy { it.price }
-            val enriched = ManualCatalogEnricher().enrich(sorted, sellerIds,
+            val reference = ManualGameReference.lookup(query)
+            val enriched = ManualCatalogEnricher().enrich(sorted, sellerIds, reference = reference,
                 active = { generation == activeCatalogGeneration.get() && !Thread.currentThread().isInterrupted },
                 progress = { checked, total ->
                     if (generation == activeCatalogGeneration.get()) runOnUiThread {
@@ -378,7 +379,7 @@ class MainActivity : ComponentActivity() {
         Column(Modifier.fillMaxSize()) {
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Игролов 1.0.4", style = MaterialTheme.typography.headlineSmall)
+                Text("Игролов 1.0.4.1", style = MaterialTheme.typography.headlineSmall)
                 IconButton(onClick = { settingsOpen = !settingsOpen; showDirectory = false }) {
                     Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                         color = MaterialTheme.colorScheme.onSurface)
@@ -446,7 +447,7 @@ class MainActivity : ComponentActivity() {
                         onClick = { editionFilter = edition }, label = { Text(edition) })
                 }
             }
-            Text("Проверяем название, описание и категории продавца. Неоднозначный способ передачи отмечается «Не указан». Параметры покупки уточняйте у продавца.", style = MaterialTheme.typography.bodySmall)
+            Text("Основная игра должна быть явно распознана до показа. Недоступные товары и неподтверждённые цены вариантов скрываются.", style = MaterialTheme.typography.bodySmall)
             Button(onClick = {
                 searchGeneration++
                 activeCatalogGeneration.set(searchGeneration)
@@ -470,17 +471,13 @@ class MainActivity : ComponentActivity() {
                     if (generation != searchGeneration) return@searchCatalog
                     offers = found
                     searching = false
+                    val ready = found.count { ManualContentRules.visible(it, "Игра", "Все") }
+                    val unavailable = found.count { it.available != true }
+                    val uncertainPrice = found.count { it.available == true && !it.priceVerified }
                     searchMessage = if (failure.isNotBlank()) "Ошибка поиска: $failure" else
-                        "Поиск завершён. Справочник Steam загружается…"
-                    if (found.isNotEmpty()) Thread {
-                        val game = SteamGameReference.lookup(this@MainActivity, requestedGame)
-                        runOnUiThread {
-                            if (generation == searchGeneration && query.trim() == requestedGame) {
-                                steamGame = game
-                                searchMessage = "Каталог: ${found.size} · карточки проверены: ${found.count { it.detailsChecked }} · справочник: ${game.source}."
-                            }
-                        }
-                    }.start()
+                        "Проверено: ${found.size} · основная игра с подтверждёнными наличием и ценой: $ready. " +
+                        "Скрыто без подтверждённого наличия: $unavailable; без точной цены варианта: $uncertainPrice."
+
                 }
             }, enabled = query.isNotBlank() && !searching) { Text(if (searching) "Ищем..." else "Искать на Plati") }
             if (searching) {
@@ -488,7 +485,7 @@ class MainActivity : ComponentActivity() {
                 Text("Страниц обработано: $searchPage / $searchTotalPages · найдено кандидатов: $searchFound", style = MaterialTheme.typography.bodySmall)
             }
             Text(searchMessage, style = MaterialTheme.typography.bodySmall)
-            Text("Поиск по Plati (до $catalogLimit товаров). Неизвестный регион отмечается отдельно.", style = MaterialTheme.typography.bodySmall)
+            Text("Поиск по Plati (до $catalogLimit товаров). Цена берётся из свежей карточки или расчёта выбранного варианта РФ.", style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(10.dp))
             Spacer(Modifier.height(12.dp))
             } // конец настроек поиска
@@ -693,13 +690,12 @@ class MainActivity : ComponentActivity() {
             }
             Spacer(Modifier.height(12.dp))
             Text("Результаты поиска Steam Gift / Key", style = MaterialTheme.typography.titleMedium)
-            Text("Явные исключения РФ скрыты. Если регион не подтверждён, проверьте его в карточке продавца.", style = MaterialTheme.typography.bodySmall)
+            Text("Показаны только карточки с подтверждёнными наличием и ценой. Нерассчитанные варианты скрыты.", style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(8.dp))
             if (offers.isNotEmpty()) {
                 val currentRules = remember(query, rulesRevision) { GameRuleStore.read(this@MainActivity, query) }
                 val filteredOffers = remember(offers, selectedType, editionFilter, steamGame, currentRules, ignoredIds) {
-                    offers.filter { (selectedType == "Все" || it.type == selectedType) &&
-                        OfferRules.eligible(it, editionFilter, selectedType, steamGame, currentRules, allowUnconfirmed = true) && it.id !in ignoredIds }
+                    offers.filter { ManualContentRules.visible(it, editionFilter, selectedType, currentRules) && it.id !in ignoredIds }
                 }
                 val visibleCount = filteredOffers.size
                 Text("Предложения по цене ↑ · $visibleCount", style = MaterialTheme.typography.titleMedium)
@@ -710,9 +706,9 @@ class MainActivity : ComponentActivity() {
                             Column(Modifier.padding(10.dp)) {
                                 Text(offer.name, style = MaterialTheme.typography.bodyMedium)
                                 if (offer.categoryLabel.isNotBlank()) Text(offer.categoryLabel, style = MaterialTheme.typography.bodySmall)
-                                if (offer.available == false) Text("Сейчас нет в наличии", style = MaterialTheme.typography.bodySmall)
+                                if (offer.purchaseNote.isNotBlank()) Text(offer.purchaseNote, style = MaterialTheme.typography.bodySmall)
                                 Text("${offer.type} · ${offer.rfStatus} · " + String.format(Locale("ru", "RU"), "%.2f ₽", offer.price))
-                                Text(if (offer.variablePrice || OfferRules.variablePrice(offer.name)) "Цена может зависеть от выбранного варианта" else offer.edition, style = MaterialTheme.typography.bodySmall)
+                                Text(if (offer.variablePrice || OfferRules.variablePrice(offer.name)) "Цена варианта не подтверждена" else offer.edition, style = MaterialTheme.typography.bodySmall)
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                     TextButton(onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://plati.market/itm/${offer.id}"))) },
                                         modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp)) { Text("Открыть", maxLines = 1) }
