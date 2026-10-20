@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  APP_VERSION: 1.0.4.1
+  APP_VERSION: 1.0.5
 
 permissions:
   contents: read
@@ -116,7 +116,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download v1.0.4 --repo "$GITHUB_REPOSITORY" --pattern Igrolov-1.0.4.apk -D baseline
+          gh release download v1.0.4.1 --repo "$GITHUB_REPOSITORY" --pattern Igrolov-1.0.4.1.apk -D baseline
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -138,23 +138,3 @@ jobs:
           path: device-results/
           if-no-files-found: error
 
-  publish:
-    if: "startsWith(github.event.head_commit.message, 'release: publish 1.0.4.1')"
-    needs: [build, device]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: Igrolov-v${{ env.APP_VERSION }}-debug-${{ github.sha }}
-          path: apk
-      - name: Publish verified APK
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          release_apk=$(find apk -type f -name '*.apk' -print -quit)
-          cp "$release_apk" "Igrolov-$APP_VERSION.apk"
-          sha256sum "Igrolov-$APP_VERSION.apk" > SHA256SUMS.txt
-          gh release create "v$APP_VERSION" --target "$GITHUB_SHA" --title "Игролов $APP_VERSION" --notes-file RELEASE_NOTES_1041.md "Igrolov-$APP_VERSION.apk" SHA256SUMS.txt

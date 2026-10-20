@@ -8,6 +8,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
+import androidx.test.uiautomator.UiScrollable
+import androidx.test.uiautomator.UiSelector
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -24,14 +26,15 @@ class ReleaseSmokeTest {
         assertEquals("keep-104",context.getSharedPreferences("release_upgrade_probe",0).getString("sentinel",null))
         assertEquals("[\"Cyberpunk 2077\"]",context.getSharedPreferences("search_history",0).getString("queries",null))
         assertTrue(context.getSharedPreferences("game_rule_overrides",0).contains("cyberpunk 2077"))
-        assertEquals(108,context.packageManager.getPackageInfo(context.packageName,0).longVersionCode)
+        assertEquals(109,context.packageManager.getPackageInfo(context.packageName,0).longVersionCode)
     }
     @Test fun launchAndNavigateFiltersSettingsAndMonitoring() {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.0.4.1")),15000))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.0.5")),15000))
         device.findObject(By.text("Gift")).click()
         device.findObject(By.text("Key")).click()
+        UiScrollable(UiSelector().scrollable(true)).scrollTextIntoView("DLC")
         device.findObject(By.text("DLC")).click()
         device.findObject(By.text("Все")).click()
         device.findObject(By.text("Товары")).click()
@@ -42,6 +45,8 @@ class ReleaseSmokeTest {
         assertTrue(device.wait(Until.hasObject(By.text("Настройки")),5000))
         device.findObject(By.text("×")).click()
         device.findObject(By.text("Поиск")).click()
+        UiScrollable(UiSelector().scrollable(true)).scrollToBeginning(15)
         assertTrue(device.wait(Until.hasObject(By.text("Поиск игры по названию")),5000))
+        ManualSearchSettings.save(context,ManualSearchFilters())
     }
 }

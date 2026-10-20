@@ -6,10 +6,10 @@ import java.net.URL
 
 /** Lightweight manual reference: one main-game request, never hundreds of sequential DLC requests. */
 object ManualGameReference {
-    data class Game(val canonical: String, val appId: Int = 0, val dlcIds: Set<Int> = emptySet())
-    fun lookup(query: String): Game {
+    data class Game(val canonical: String, val appId: Int = 0, val dlcIds: Set<Int> = emptySet(), val aliases: List<String> = emptyList())
+    fun lookup(query: String, selectedAppId: Int? = null): Game {
         return runCatching {
-            val selected = SteamGameReference.searchGames(query).firstOrNull {
+            val selected = selectedAppId?.takeIf {it>0}?.let {SteamGameReference.Suggestion(it,query)} ?: SteamGameReference.searchGames(query).firstOrNull {
                 OfferRules.normalize(it.name) == OfferRules.normalize(query)
             } ?: return Game(query)
             val conn = URL("https://store.steampowered.com/api/appdetails?appids=${selected.id}&l=english&cc=us").openConnection() as HttpURLConnection
@@ -20,7 +20,7 @@ object ManualGameReference {
             if (data?.optString("type") != "game") return Game(query)
             val dlc = data.optJSONArray("dlc")
             Game(data.optString("name", query), selected.id,
-                if (dlc == null) emptySet() else (0 until dlc.length()).map { dlc.optInt(it) }.filter { it > 0 }.toSet())
+                if (dlc == null) emptySet() else (0 until dlc.length()).map { dlc.optInt(it) }.filter { it > 0 }.toSet(), GameSearchResolver.aliases(selected.id,data.optString("name",query)))
         }.getOrElse { Game(query) }
     }
 }
@@ -46,11 +46,17 @@ object ManualContentRules {
         if (OfferRules.editionType(title,game.canonical)=="DLC" || listOf("species pack", "story pack", "season pass", "expansion", "upgrade", "season").any { phrase(title,it) }) return "DLC"
         val links=Regex("(?i)store\\.steampowered\\.com/app/([0-9]+)").findAll(info).mapNotNull { it.groupValues[1].toIntOrNull() }.toSet()
         if (links.isNotEmpty() && game.appId !in links && links.all { it in game.dlcIds }) return "DLC"
-        val titleWords=words(title); val canonical=words(game.canonical)
-        if (canonical.isEmpty()) return "Не подтверждено"
-        val start=titleWords.windowed(canonical.size).indexOfFirst { it==canonical }
-        if (start<0) return "Не подтверждено"
-        val suffix=titleWords.drop(start+canonical.size)
+        val titleWords=words(title)
+        val identities=(listOf(game.canonical)+game.aliases).map(::words).filter {it.isNotEmpty()}.sortedByDescending {it.size}
+        val matched=identities.mapNotNull {identity ->
+            val start=titleWords.windowed(identity.size).indexOfFirst {it==identity}
+            if(start<0)null else start to identity.size
+        }.firstOrNull() ?: return "Не подтверждено"
+        val suffix=titleWords.drop(matched.first+matched.second)
+        val identity=titleWords.subList(matched.first,matched.first+matched.second).joinToString(" ")
+        val identityNumbers=Regex("[0-9]+").findAll(GameSearchResolver.normalized(identity)).map {it.value}.toSet()
+        // A numbered sequel is a different game, even if the marketplace matches the prefix.
+        if(suffix.firstOrNull()?.all(Char::isDigit)==true && suffix.first() !in identityNumbers && suffix.first() !in setOf("0","24")) return "Не подтверждено"
         // Positive identification: an unrecognized named suffix is NOT assumed to be the base game.
         // This rejects "Stellaris: Utopia/MegaCorp/Overlord" even while Steam is unavailable.
         if (suffix.all { it in deliveryWords || it.all(Char::isDigit) }) return "Игра"

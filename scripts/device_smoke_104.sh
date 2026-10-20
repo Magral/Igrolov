@@ -23,3 +23,9 @@ adb shell dumpsys package ru.igrolov.app > device-results/package.txt
 adb shell am instrument -w -r -e class ru.igrolov.app.StellarisUiRegressionTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/stellaris-ui.txt
 grep -E 'OK \(1 test\)' device-results/stellaris-ui.txt
 adb pull /sdcard/Android/data/ru.igrolov.app/files/stellaris-result.png device-results/stellaris-result.png
+adb shell am force-stop ru.igrolov.app
+adb shell am instrument -w -r -e class 'ru.igrolov.app.ManualSearchPreferencesTest#saveFiltersFromScreen' ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/save-filters.txt
+grep -E 'OK \(1 test\)' device-results/save-filters.txt
+adb shell am force-stop ru.igrolov.app
+adb shell am instrument -w -r -e class 'ru.igrolov.app.ManualSearchPreferencesTest#verifyFiltersAfterRestart' ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/restart-filters.txt
+grep -E 'OK \(1 test\)' device-results/restart-filters.txt

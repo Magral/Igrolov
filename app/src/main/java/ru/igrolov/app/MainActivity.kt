@@ -37,6 +37,7 @@ import java.net.URL
 import java.net.URLEncoder
 import java.util.Locale
 import java.util.concurrent.Executors
+import kotlinx.coroutines.delay
 
 data class Offer(val id: String, val name: String, val price: Double, val type: String, val rfStatus: String, val edition: String, val categoryLabel: String = "", val detailsChecked: Boolean = false, val variablePrice: Boolean = false, val available: Boolean? = null, val priceVerified: Boolean = false, val purchaseNote: String = "")
 
@@ -46,10 +47,14 @@ class MainActivity : ComponentActivity() {
     // Bound concurrent product detail requests so large watch lists do not spawn unlimited threads.
     private val detailExecutor = Executors.newFixedThreadPool(4)
     private val catalogExecutor = Executors.newSingleThreadExecutor()
+    private val suggestionExecutor = Executors.newSingleThreadExecutor()
+    private val suggestionGeneration = java.util.concurrent.atomic.AtomicInteger(0)
     private val activeCatalogGeneration = java.util.concurrent.atomic.AtomicInteger(0)
     override fun onDestroy() {
         activeCatalogGeneration.incrementAndGet()
         catalogExecutor.shutdownNow()
+        suggestionGeneration.incrementAndGet()
+        suggestionExecutor.shutdownNow()
         detailExecutor.shutdownNow()
         super.onDestroy()
     }
@@ -128,19 +133,26 @@ class MainActivity : ComponentActivity() {
         throw last ?: java.io.IOException("Нет соединения")
     }
 
-    private fun searchCatalog(query: String, pageCount: Int, generation: Int, progress: (Int, Int, Int) -> Unit, callback: (List<Offer>, String) -> Unit) {
+    private fun searchCatalog(query: String, pageCount: Int, generation: Int, selectedAppId: Int?, progress: (Int, Int, Int) -> Unit, callback: (List<Offer>, String) -> Unit) {
         catalogExecutor.execute {
             val found = mutableListOf<Offer>()
             val seenIds = mutableSetOf<String>()
             val sellerIds = mutableMapOf<String, String>()
             var failure = ""
+            val reference = ManualGameReference.lookup(query,selectedAppId)
+            if (generation != activeCatalogGeneration.get()) return@execute
+            if(selectedAppId != null && reference.appId != selectedAppId) {
+                runOnUiThread { if(generation == activeCatalogGeneration.get()) callback(emptyList(),"Steam не подтвердил выбранную основную игру. Повторите запрос или выберите другую игру.") }
+                return@execute
+            }
+            val marketQuery=reference.aliases.firstOrNull {it.isNotBlank() && it.all {c->c.code<128}} ?: query.replace(Regex("[™®©]"),"")
             try {
                 // Marketplace-wide search endpoint used by the Plati site ecosystem.
                 // It is not the seller-specific shop_search.asp interface.
                 for (page in 1..pageCount) {
                 if (generation != activeCatalogGeneration.get() || Thread.currentThread().isInterrupted) return@execute
                 val params = linkedMapOf(
-                    "query" to query,
+                    "query" to marketQuery,
                     "searchmode" to "10",
                     "sortmode" to "2",
                     "pagesize" to "100",
@@ -173,7 +185,7 @@ class MainActivity : ComponentActivity() {
                                 .ifBlank { item.optString("price", "") }
                             val price = priceText.replace(',', '.').replace(" ", "").toDoubleOrNull()
                             if (!id.matches(Regex("[0-9]{4,12}")) || name.isBlank() || price == null || !price.isFinite() || price <= 0) continue
-                            val type = ManualOfferClassifier.titleType(name, query) ?: continue
+                            val type = (listOf(query)+reference.aliases).firstNotNullOfOrNull {ManualOfferClassifier.titleType(name,it)} ?: continue
                             if (seenIds.add(id)) {
                                 found.add(Offer(id, name, price, type, OfferRules.rfStatus(name), OfferRules.editionType(name, query)))
                                 sellerIds[id] = item.optString("seller_id")
@@ -190,7 +202,6 @@ class MainActivity : ComponentActivity() {
                 }
             } catch (e: Exception) { failure = e.message ?: "Не удалось подключиться к каталогу" }
             val sorted = found.distinctBy { it.id }.sortedBy { it.price }
-            val reference = ManualGameReference.lookup(query)
             val enriched = ManualCatalogEnricher().enrich(sorted, sellerIds, reference = reference,
                 active = { generation == activeCatalogGeneration.get() && !Thread.currentThread().isInterrupted },
                 progress = { checked, total ->
@@ -219,7 +230,7 @@ class MainActivity : ComponentActivity() {
                     val connection = URL(url).openConnection() as HttpURLConnection
                     connection.connectTimeout = 12000
                     connection.readTimeout = 20000
-                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Igrolov/1.0.4)")
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Igrolov/1.0.5)")
                     try {
                         if (connection.responseCode !in 200..299) error("Steam HTTP ${connection.responseCode}")
                         val root = JSONObject(connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
@@ -243,6 +254,13 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun Screen() {
+        val savedFilters = remember {ManualSearchSettings.read(this@MainActivity)}
+        var gameSuggestions by remember {mutableStateOf<List<GameSearchResolver.Candidate>>(emptyList())}
+        var selectedGame by remember {mutableStateOf<GameSearchResolver.Candidate?>(null)}
+        var suggestionBusy by remember {mutableStateOf(false)}
+        var maxPrice by remember {mutableStateOf(savedFilters.maxPrice)}
+        var confirmedRf by remember {mutableStateOf(savedFilters.confirmedRf)}
+        var showRejections by remember {mutableStateOf(false)}
         var entry by remember { mutableStateOf("") }
         var query by remember { mutableStateOf("") }
         var offers by remember { mutableStateOf<List<Offer>>(emptyList()) }
@@ -269,9 +287,28 @@ class MainActivity : ComponentActivity() {
         var monitorDone by remember { mutableIntStateOf(0) }
         var monitorTotal by remember { mutableIntStateOf(0) }
         var monitorCurrent by remember { mutableStateOf("") }
-        var selectedType by remember { mutableStateOf("Все") }
+        var selectedType by remember { mutableStateOf(savedFilters.type) }
         val rfOnly = true
-        var editionFilter by remember { mutableStateOf("Игра") }
+        var editionFilter by remember { mutableStateOf(savedFilters.edition) }
+        val manualFilters=ManualSearchFilters(selectedType,editionFilter,maxPrice,confirmedRf)
+        LaunchedEffect(selectedType,editionFilter,maxPrice,confirmedRf) {ManualSearchSettings.save(this@MainActivity,manualFilters)}
+        LaunchedEffect(query) {
+            val requested=query.trim()
+            val generation=suggestionGeneration.incrementAndGet()
+            gameSuggestions=emptyList()
+            suggestionBusy=false
+            if(requested.length>=3 && selectedGame==null) {
+                suggestionBusy=true
+                delay(450)
+                val local=ManualSearchSettings.games(this@MainActivity)
+                suggestionExecutor.execute {
+                    val suggestions=GameSearchResolver.suggest(requested,local,{suggestionGeneration.get()==generation}) { term ->
+                        SteamGameReference.searchGames(term).map {GameSearchResolver.Candidate(it.id,it.name)}
+                    }
+                    runOnUiThread {if(suggestionGeneration.get()==generation) {gameSuggestions=suggestions;suggestionBusy=false}}
+                }
+            }
+        }
         var items by remember { mutableStateOf(loadIds().map { cachedTracked(it) }) }
         var message by remember { mutableStateOf("Вставьте ссылку на товар Plati или его ID") }
         var busy by remember { mutableStateOf(false) }
@@ -379,7 +416,7 @@ class MainActivity : ComponentActivity() {
         Column(Modifier.fillMaxSize()) {
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Игролов 1.0.4.1", style = MaterialTheme.typography.headlineSmall)
+                Text("Игролов 1.0.5", style = MaterialTheme.typography.headlineSmall)
                 IconButton(onClick = { settingsOpen = !settingsOpen; showDirectory = false }) {
                     Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                         color = MaterialTheme.colorScheme.onSurface)
@@ -397,6 +434,8 @@ class MainActivity : ComponentActivity() {
             Text("Поиск игры по названию", style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(query, {
                 query = it
+                selectedGame = null
+                gameSuggestions = emptyList()
                 searchGeneration++
                 activeCatalogGeneration.set(searchGeneration)
                 searching = false
@@ -404,6 +443,25 @@ class MainActivity : ComponentActivity() {
                 steamGame = null
             }, label = { Text("Например, Cyberpunk 2077") },
                 modifier = Modifier.fillMaxWidth(), singleLine = true)
+            if(selectedGame!=null) Text("Выбрано: ${selectedGame!!.name} · Steam #${selectedGame!!.appId}",style=MaterialTheme.typography.bodySmall)
+            if(suggestionBusy) Text("Подбираем названия Steam…",style=MaterialTheme.typography.bodySmall)
+            if(gameSuggestions.isNotEmpty() && selectedGame==null) {
+                Text("Уточните игру · название и Steam ID",style=MaterialTheme.typography.titleSmall)
+                gameSuggestions.forEach { candidate ->
+                    TextButton(onClick={
+                        selectedGame=candidate
+                        suggestionGeneration.incrementAndGet()
+                        suggestionBusy=false
+                        gameSuggestions=emptyList()
+                        query=candidate.name.replace(Regex("[™®©]"),"")
+                        offers=emptyList()
+                        searchGeneration++
+                        activeCatalogGeneration.set(searchGeneration)
+                        searching=false
+                        ManualSearchSettings.rememberGame(this@MainActivity,candidate)
+                    },modifier=Modifier.fillMaxWidth()) {Text("${candidate.name} · Steam #${candidate.appId}")}
+                }
+            }
             if (queryHistory.isNotEmpty()) {
                 var historyExpanded by remember { mutableStateOf(false) }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -421,6 +479,7 @@ class MainActivity : ComponentActivity() {
                                 searching = false
                                 offers = emptyList()
                                 steamGame = null
+                                selectedGame=null
                                 query = savedQuery
                             }, modifier = Modifier.weight(1f)) {
                                 Text(savedQuery, maxLines = 1)
@@ -439,7 +498,9 @@ class MainActivity : ComponentActivity() {
                         label = { Text(type) })
                 }
             }
-            Text("Регион: явные исключения РФ скрыты", style = MaterialTheme.typography.bodySmall)
+            FilterChip(selected=confirmedRf,onClick={confirmedRf=!confirmedRf},label={Text("Только подтверждённая РФ")})
+            OutlinedTextField(maxPrice,{maxPrice=it},label={Text("Цена до, ₽")},singleLine=true,
+                isError=!manualFilters.valid,supportingText={Text(if(manualFilters.valid) "Пустое поле — без ограничения" else "Укажите положительную цену")},modifier=Modifier.fillMaxWidth())
             Text("Состав товара", style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf("Игра", "Все", "DLC").forEach { edition ->
@@ -458,11 +519,18 @@ class MainActivity : ComponentActivity() {
                 searchFound = 0
                 searchMessage = "Поиск предложений..."
                 offers = emptyList()
-                val requestedGame = query.trim()
+                val identity=selectedGame ?: GameSearchResolver.exact(query,gameSuggestions)
+                if(selectedGame==null && gameSuggestions.isNotEmpty() && identity==null) {
+                    searching=false
+                    searchMessage="Выберите точную игру из предложений Steam"
+                    return@Button
+                }
+                val requestedGame = identity?.name?.replace(Regex("[™®©]"),"") ?: query.trim()
+                if(identity!=null) ManualSearchSettings.rememberGame(this@MainActivity,identity)
                 queryHistory = (listOf(requestedGame) + queryHistory.filterNot { it.equals(requestedGame, ignoreCase = true) }).take(20)
                 searchPrefs.edit().putString("queries", JSONArray(queryHistory).toString()).apply()
                 steamGame = null
-                searchCatalog(requestedGame, searchTotalPages, generation, { page, _, count ->
+                searchCatalog(requestedGame, searchTotalPages, generation, identity?.appId, { page, _, count ->
                     if (generation == searchGeneration) {
                         searchPage = page
                         searchFound = count
@@ -479,7 +547,7 @@ class MainActivity : ComponentActivity() {
                         "Скрыто без подтверждённого наличия: $unavailable; без точной цены варианта: $uncertainPrice."
 
                 }
-            }, enabled = query.isNotBlank() && !searching) { Text(if (searching) "Ищем..." else "Искать на Plati") }
+            }, enabled = query.isNotBlank() && !searching && !suggestionBusy && manualFilters.valid) { Text(if (searching) "Ищем..." else "Искать на Plati") }
             if (searching) {
                 LinearProgressIndicator(progress = { searchPage.toFloat() / searchTotalPages }, modifier = Modifier.fillMaxWidth())
                 Text("Страниц обработано: $searchPage / $searchTotalPages · найдено кандидатов: $searchFound", style = MaterialTheme.typography.bodySmall)
@@ -694,10 +762,17 @@ class MainActivity : ComponentActivity() {
             Spacer(Modifier.height(8.dp))
             if (offers.isNotEmpty()) {
                 val currentRules = remember(query, rulesRevision) { GameRuleStore.read(this@MainActivity, query) }
-                val filteredOffers = remember(offers, selectedType, editionFilter, steamGame, currentRules, ignoredIds) {
-                    offers.filter { ManualContentRules.visible(it, editionFilter, selectedType, currentRules) && it.id !in ignoredIds }
+                val filteredOffers = remember(offers, manualFilters, currentRules, ignoredIds) {
+                    offers.filter { ManualSearchFilter.rejection(it,manualFilters,currentRules,ignoredIds)==null }
                 }
                 val visibleCount = filteredOffers.size
+                val rejectionCounts=remember(offers,manualFilters,currentRules,ignoredIds) {
+                    offers.mapNotNull {ManualSearchFilter.rejection(it,manualFilters,currentRules,ignoredIds)}.groupingBy {it}.eachCount()
+                }
+                if(rejectionCounts.isNotEmpty()) {
+                    TextButton(onClick={showRejections=!showRejections}) {Text(if(showRejections) "Скрыть причины" else "Почему скрыты предложения (${rejectionCounts.values.sum()})")}
+                    if(showRejections) rejectionCounts.forEach {(reason,count)->Text("$reason: $count",style=MaterialTheme.typography.bodySmall)}
+                }
                 Text("Предложения по цене ↑ · $visibleCount", style = MaterialTheme.typography.titleMedium)
                 if (visibleCount == 0) Text("По выбранным фильтрам предложений нет. Уточните название или проверьте регион в заголовках.", style = MaterialTheme.typography.bodySmall)
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -762,6 +837,7 @@ class MainActivity : ComponentActivity() {
                         activeCatalogGeneration.set(searchGeneration)
                         searching = false
                         steamGame = null
+                        selectedGame=null
                         query = game
                         offers = emptyList()
                         searchMessage = "Игра выбрана из лидеров продаж. Нажмите «Искать на Plati»."
