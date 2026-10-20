@@ -712,7 +712,7 @@ class MainActivity : ComponentActivity() {
             }
             Spacer(Modifier.height(12.dp))
             Text("Результаты поиска Steam Gift / Key", style = MaterialTheme.typography.titleMedium)
-            Text("Показываются только предложения с явным указанием РФ в названии.", style = MaterialTheme.typography.bodySmall)
+            Text("Явные исключения РФ скрыты. Если регион не подтверждён, проверьте его в карточке продавца.", style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(8.dp))
             if (offers.isNotEmpty()) {
                 val currentRules = remember(query, rulesRevision) { GameRuleStore.read(this@MainActivity, query) }
