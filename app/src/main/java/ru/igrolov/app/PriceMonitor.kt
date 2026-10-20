@@ -594,7 +594,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 val topOffers = JSONArray()
                 reliableOffers.take(3).forEach { offer ->
                     topOffers.put(JSONObject().put("id", offer.id).put("name", offer.name)
-                        .put("price", offer.price).put("type", offer.type).put("note",offer.purchaseNote))
+                        .put("price", offer.price).put("type", offer.type).put("note",offer.purchaseNote).put("canonical",offer.canonical).put("steamAppId",offer.steamAppId))
                 }
                 current.put("topOffers", topOffers)
                 current.put("history",WatchHistory.append(current.optJSONArray("history") ?: JSONArray(),checkedAt,cheapest?.price,verified.size))

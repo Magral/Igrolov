@@ -34,12 +34,12 @@ class ReleaseSmokeTest {
         assertEquals("2500",ManualSearchSettings.read(context).maxPrice)
         WatchStore.write(context,org.json.JSONArray())
         ManualSearchSettings.save(context,ManualSearchFilters())
-        assertEquals(110,context.packageManager.getPackageInfo(context.packageName,0).longVersionCode)
+        assertEquals(111,context.packageManager.getPackageInfo(context.packageName,0).longVersionCode)
     }
     @Test fun launchAndNavigateFiltersSettingsAndMonitoring() {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.0.6")),15000))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.0.6.1")),15000))
         device.findObject(By.text("Gift")).click()
         device.findObject(By.text("Key")).click()
         UiScrollable(UiSelector().scrollable(true)).scrollTextIntoView("DLC")

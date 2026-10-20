@@ -53,7 +53,7 @@ class ManualCatalogEnricher(private val request: (String) -> JSONObject? = { Cat
                                 val rfStatus = if (proof.russiaSelected && refined.rfStatus != "РФ исключена") "РФ выбрана в параметрах" else refined.rfStatus
                                 results[index] = refined.copy(price = proof.price ?: refined.price,
                                     available = proof.available, priceVerified = proof.price != null,
-                                    variablePrice = proof.price == null, purchaseNote = proof.label, edition = content, rfStatus = rfStatus)
+                                    variablePrice = proof.price == null, purchaseNote = proof.label, edition = content, rfStatus = rfStatus, canonical=reference?.canonical.orEmpty(), steamAppId=reference?.appId ?: 0)
                             }
                             progress(done.incrementAndGet(), offers.size)
                         }

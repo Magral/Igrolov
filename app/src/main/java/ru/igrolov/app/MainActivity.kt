@@ -39,9 +39,9 @@ import java.util.Locale
 import java.util.concurrent.Executors
 import kotlinx.coroutines.delay
 
-data class Offer(val id: String, val name: String, val price: Double, val type: String, val rfStatus: String, val edition: String, val categoryLabel: String = "", val detailsChecked: Boolean = false, val variablePrice: Boolean = false, val available: Boolean? = null, val priceVerified: Boolean = false, val purchaseNote: String = "")
+data class Offer(val id: String, val name: String, val price: Double, val type: String, val rfStatus: String, val edition: String, val categoryLabel: String = "", val detailsChecked: Boolean = false, val variablePrice: Boolean = false, val available: Boolean? = null, val priceVerified: Boolean = false, val purchaseNote: String = "", val canonical:String="", val steamAppId:Int=0)
 
-data class Tracked(val id: String, val name: String, val price: Double?, val status: String, val url: String)
+data class Tracked(val id: String, val name: String, val price: Double?, val status: String, val url: String, val canonical:String="", val steamAppId:Int=0)
 
 class MainActivity : ComponentActivity() {
     // Bound concurrent product detail requests so large watch lists do not spawn unlimited threads.
@@ -76,6 +76,7 @@ class MainActivity : ComponentActivity() {
     }
     private fun fetch(id: String, callback: (Tracked) -> Unit) {
         detailExecutor.execute {
+            val previous=cachedTracked(id)
             val result = try {
                 val conn = (URL("https://api.digiseller.com/api/products/$id/data?currency=RUB&lang=ru-RU").openConnection() as HttpURLConnection)
                 conn.connectTimeout = 12000
@@ -87,8 +88,9 @@ class MainActivity : ComponentActivity() {
                     if (json.optInt("retval", -1) != 0) error(json.optString("retdesc", "Ошибка API"))
                     val product = json.optJSONObject("product") ?: error("Нет данных товара")
                     if(product.optString("id")!=id) error("ID карточки не совпадает")
+                    val identity=TrackedGameIdentity.resolve(previous,product.optString("name"),ManualSearchSettings.games(this)+GameSearchResolver.seeds)
                     var calculationFailure:Exception?=null
-                    val proof=ManualPurchaseProof.inspect(product,product.optString("name")) {path->
+                    val proof=ManualPurchaseProof.inspect(product,identity.canonical) {path->
                         try {CatalogApi.get(path,true)}catch(e:Exception) {calculationFailure=e;null}
                     }
                     calculationFailure?.let {throw it}
@@ -98,9 +100,9 @@ class MainActivity : ComponentActivity() {
                         proof.price==null -> proof.label
                         else -> "В продаже · ${proof.label}"
                     }
-                    Tracked(id,product.optString("name","Товар $id"),proof.price.takeIf {proof.available},state,"https://plati.market/itm/$id")
+                    Tracked(id,product.optString("name","Товар $id"),proof.price.takeIf {proof.available},state,"https://plati.market/itm/$id",identity.canonical.takeIf {identity.confirmed}.orEmpty(),identity.appId)
                 } finally { conn.disconnect() }
-            } catch (e: Exception) { Tracked(id, "Товар $id", null, "Ошибка загрузки: ${e.message ?: "нет соединения"}", "https://plati.market/itm/$id") }
+            } catch (e: Exception) {previous.copy(price=null,status="Ошибка загрузки: ${e.message ?: "нет соединения"}")}
             runOnUiThread { callback(result) }
         }
     }
@@ -232,7 +234,7 @@ class MainActivity : ComponentActivity() {
                     val connection = URL(url).openConnection() as HttpURLConnection
                     connection.connectTimeout = 12000
                     connection.readTimeout = 20000
-                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Igrolov/1.0.6)")
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Igrolov/1.0.6.1)")
                     try {
                         if (connection.responseCode !in 200..299) error("Steam HTTP ${connection.responseCode}")
                         val root = JSONObject(connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
@@ -404,9 +406,7 @@ class MainActivity : ComponentActivity() {
                 cacheTracked(found)
                 items = items.map { current ->
                     if (current.id != id) current
-                    else if (found.status.startsWith("Ошибка загрузки") && current.price != null)
-                        current.copy(status = "Нет связи · показана последняя цена")
-                    else found
+                    else TrackedPriceCache.merge(current,found)
                 }
                 remaining--
                 if (remaining == 0) busy = false
@@ -458,7 +458,7 @@ class MainActivity : ComponentActivity() {
         Column(Modifier.fillMaxSize()) {
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Игролов 1.0.6", style = MaterialTheme.typography.headlineSmall)
+                Text("Игролов 1.0.6.1", style = MaterialTheme.typography.headlineSmall)
                 IconButton(onClick = { settingsOpen = !settingsOpen; showDirectory = false }) {
                     Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                         color = MaterialTheme.colorScheme.onSurface)
@@ -614,7 +614,7 @@ class MainActivity : ComponentActivity() {
                     }
                     if (id.length !in 4..12) message = "Не удалось определить ID. Введите числовой ID товара."
                     else if (items.any { it.id == id }) message = "Товар уже добавлен"
-                    else { items = items + Tracked(id, "Товар $id", null, "Загрузка...", "https://plati.market/itm/$id"); saveIds(items.map { it.id }); entry = ""; message = "Товар добавлен"; fetch(id) { found -> cacheTracked(found); items = items.map { if (it.id == id) found else it } } }
+                    else { items = items + Tracked(id, "Товар $id", null, "Загрузка...", "https://plati.market/itm/$id"); saveIds(items.map { it.id }); entry = ""; message = "Товар добавлен"; fetch(id) { found -> cacheTracked(found); items = items.map { if (it.id == id) TrackedPriceCache.merge(it,found) else it } } }
                 }) { Text("Добавить") }
                 OutlinedButton(onClick = { refresh() }, enabled = !busy && items.isNotEmpty()) { Text(if (busy) "Обновление..." else "Обновить цены") }
             }
@@ -742,9 +742,11 @@ class MainActivity : ComponentActivity() {
                                             }) { Text("Открыть") }
                                             TextButton(onClick = {
                                                 if (items.none { it.id == id }) {
-                                                    items = items + Tracked(id, title, price, "Ожидает обновления", "https://plati.market/itm/$id")
+                                                    val tracked=Tracked(id,title,price,"Ожидает обновления","https://plati.market/itm/$id",offerJson.optString("canonical",w.optString("name")),offerJson.optInt("steamAppId",w.optInt("steamAppId")))
+                                                    items = items + tracked
+                                                    cacheTracked(tracked)
                                                     saveIds(items.map { it.id })
-                                                    fetch(id) { found -> cacheTracked(found); items = items.map { if (it.id == id) found else it } }
+                                                    fetch(id) { found -> cacheTracked(found); items = items.map { if (it.id == id) TrackedPriceCache.merge(it,found) else it } }
                                                 }
                                             }, enabled = items.none { it.id == id }) { Text("Отслеживать") }
                                             TextButton(onClick = {
@@ -866,9 +868,11 @@ class MainActivity : ComponentActivity() {
                                         modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp)) { Text("Открыть", maxLines = 1) }
                                     TextButton(onClick = {
                                         if (items.none { it.id == offer.id }) {
-                                            items = items + Tracked(offer.id, offer.name, offer.price, "Ожидает обновления", "https://plati.market/itm/${offer.id}")
+                                            val tracked=TrackedPriceCache.fromOffer(offer)
+                                            items = items + tracked
+                                            cacheTracked(tracked)
                                             saveIds(items.map { it.id })
-                                            fetch(offer.id) { found -> cacheTracked(found); items = items.map { if (it.id == offer.id) found else it } }
+                                            fetch(offer.id) { found -> cacheTracked(found); items = items.map { if (it.id == offer.id) TrackedPriceCache.merge(it,found) else it } }
                                         }
                                     }, enabled = items.none { it.id == offer.id }, modifier = Modifier.weight(1f),
                                         contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp)) { Text("Отслеживать", maxLines = 1, style = MaterialTheme.typography.labelSmall) }
