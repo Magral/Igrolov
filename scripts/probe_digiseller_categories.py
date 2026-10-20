@@ -131,6 +131,8 @@ for product_id in sample_product_ids[:8]:
 report["seller_samples"] = []
 for index, (product_id, seller_id) in enumerate(seller_samples[:3], 1):
     sample = {"sample": index}
+    categories = []
+    metadata = {}
     try:
         data = get("/api/categories", {"seller_id": seller_id})
         categories = rows(data)
@@ -162,6 +164,19 @@ for index, (product_id, seller_id) in enumerate(seller_samples[:3], 1):
         }
     except Exception as exc:
         sample["product_error"] = type(exc).__name__
+    # Verify an exact seller-category ID match without publishing identifiers.
+    seller_categories = categories if "seller_categories" in sample else []
+    product_category = metadata.get("category_id") if "product_with_seller" in sample else None
+    matches = [
+        x.get("name", "") for x in seller_categories if isinstance(x, dict)
+        and str(x.get("id", x.get("category_id", ""))) == str(product_category)
+        and str(product_category) not in ("0", "None", "")
+    ]
+    sample["matched_category"] = {
+        "found": len(matches) == 1,
+        "name": matches[0][:100] if len(matches) == 1 else None,
+        "matches": len(matches)
+    }
     report["seller_samples"].append(sample)
 
 with open("digiseller_category_probe.json", "w", encoding="utf-8") as file:
