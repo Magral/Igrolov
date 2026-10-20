@@ -40,4 +40,5 @@ dependencies {
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.work:work-runtime-ktx:2.9.1")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
 }
