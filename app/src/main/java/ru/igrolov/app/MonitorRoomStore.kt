@@ -84,6 +84,12 @@ interface MonitorDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun putTrackedProduct(row: StoredTrackedProduct)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun putTrackedProducts(rows: List<StoredTrackedProduct>)
+
+    @Query("SELECT COUNT(*) FROM tracked_product_cache")
+    fun trackedProductCount(): Int
+
     @Query("SELECT payload FROM tracked_product_cache WHERE productId = :id")
     fun trackedProduct(id: String): String?
 
@@ -96,11 +102,17 @@ interface MonitorDao {
     @Insert
     fun putAlert(row: StoredPriceAlert)
 
+    @Insert
+    fun putAlerts(rows: List<StoredPriceAlert>)
+
     @Query("DELETE FROM price_alert_journal WHERE rowId NOT IN (SELECT rowId FROM price_alert_journal ORDER BY rowId DESC LIMIT 200)")
     fun trimAlerts()
 
     @Query("DELETE FROM price_alert_journal")
     fun clearAlerts()
+
+    @Query("SELECT COUNT(*) FROM price_alert_journal")
+    fun alertCount(): Int
 }
 
 @Database(entities = [StoredWatch::class, StoredPricePoint::class, MonitorMigrationMarker::class, StoredTrackedProduct::class, StoredPriceAlert::class], version = 2, exportSchema = false)

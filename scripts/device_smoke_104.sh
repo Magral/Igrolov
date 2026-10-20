@@ -24,6 +24,8 @@ adb shell am instrument -w -r -e class ru.igrolov.app.MonitorRoomMigrationTest r
 grep -E 'OK \(1 test\)' device-results/room-migration.txt
 adb shell am instrument -w -r -e class ru.igrolov.app.MonitorRoomSchemaMigrationTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/room-schema-migration.txt
 grep -E 'OK \(1 test\)' device-results/room-schema-migration.txt
+adb shell am instrument -w -r -e class ru.igrolov.app.MonitorRoomScaleTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/room-scale.txt
+grep -E 'OK \(1 test\)' device-results/room-scale.txt
 adb shell dumpsys package ru.igrolov.app > device-results/package.txt
 adb shell am instrument -w -r -e class ru.igrolov.app.StellarisUiRegressionTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/stellaris-ui.txt
 grep -E 'OK \(1 test\)' device-results/stellaris-ui.txt
