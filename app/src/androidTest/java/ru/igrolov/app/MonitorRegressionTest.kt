@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.work.ListenableWorker
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.testing.TestListenableWorkerBuilder
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
@@ -20,10 +21,24 @@ import java.net.URLConnection
 import java.net.URLStreamHandler
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.TimeUnit
 
 /** Exercises the actual WorkManager worker, transport, verifier, persistence and notifications. */
 @RunWith(AndroidJUnit4::class)
 class MonitorRegressionTest {
+    @Test fun manualChecksQueueBehindAnExistingCheck() {
+        val context=ApplicationProvider.getApplicationContext<Context>()
+        val manager=androidx.work.WorkManager.getInstance(context)
+        manager.cancelUniqueWork("plati_manual_price_check").result.get()
+        val first=OneTimeWorkRequestBuilder<PriceWatchWorker>().setInitialDelay(1,TimeUnit.DAYS).build()
+        val second=OneTimeWorkRequestBuilder<PriceWatchWorker>().setInitialDelay(1,TimeUnit.DAYS).build()
+        WatchScheduler.enqueueManualCheck(context,first).result.get()
+        WatchScheduler.enqueueManualCheck(context,second).result.get()
+        val queued=manager.getWorkInfosForUniqueWork("plati_manual_price_check").get()
+        assertEquals("A second refresh must remain queued behind the active refresh",2,queued.size)
+        manager.cancelUniqueWork("plati_manual_price_check").result.get()
+    }
+
     @Test fun verifiedPricesFurtherDropsRetriesAndConcurrentWatchEdits() = runBlocking {
         val context=ApplicationProvider.getApplicationContext<Context>()
         val mode=AtomicInteger(0)

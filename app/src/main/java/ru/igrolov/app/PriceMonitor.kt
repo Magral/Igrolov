@@ -524,7 +524,11 @@ object WatchScheduler {
     fun checkNow(context: Context) {
         val request = OneTimeWorkRequestBuilder<PriceWatchWorker>().setConstraints(connected)
             .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL,30,TimeUnit.SECONDS).build()
-        WorkManager.getInstance(context).enqueueUniqueWork("plati_manual_price_check", ExistingWorkPolicy.KEEP, request)
+        enqueueManualCheck(context, request)
+    }
+    // Keep the trigger injectable so queue semantics can be tested without network work.
+    internal fun enqueueManualCheck(context: Context, request: androidx.work.OneTimeWorkRequest) =
+        WorkManager.getInstance(context).enqueueUniqueWork("plati_manual_price_check", ExistingWorkPolicy.APPEND_OR_REPLACE, request)
     }
     fun start(context: Context) {
         val request = PeriodicWorkRequestBuilder<PriceWatchWorker>(1, TimeUnit.HOURS).setConstraints(connected)

@@ -48,7 +48,7 @@ class MonitorUiRegressionTest {
         context.getSharedPreferences("tracked_products",0).edit().putString("ids","10000").remove("product_cache_10000").commit()
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.0.7")),15000))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.0.8")),15000))
         device.findObject(By.text("Мониторинг")).click()
         val scroll=UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(30)
         assertTrue(scroll.scrollIntoView(UiSelector().textStartsWith("История цен (")))

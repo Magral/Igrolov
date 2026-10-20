@@ -238,7 +238,7 @@ class MainActivity : ComponentActivity() {
                     val connection = URL(url).openConnection() as HttpURLConnection
                     connection.connectTimeout = 12000
                     connection.readTimeout = 20000
-                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Igrolov/1.0.7)")
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Igrolov/1.0.8)")
                     try {
                         if (connection.responseCode !in 200..299) error("Steam HTTP ${connection.responseCode}")
                         val root = JSONObject(connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
@@ -477,7 +477,7 @@ class MainActivity : ComponentActivity() {
         Column(Modifier.fillMaxSize()) {
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Игролов 1.0.7", style = MaterialTheme.typography.headlineSmall)
+                Text("Игролов 1.0.8", style = MaterialTheme.typography.headlineSmall)
                 IconButton(onClick = { settingsOpen = !settingsOpen; showDirectory = false }) {
                     Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                         color = MaterialTheme.colorScheme.onSurface)
