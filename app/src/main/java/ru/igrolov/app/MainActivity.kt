@@ -369,7 +369,11 @@ class MainActivity : ComponentActivity() {
             val ids=loadIds()
             ioExecutor.execute {
                 val restored=ids.map { id -> TrackedPriceCache.decode(id,MonitorRoomStore.readTrackedProduct(this@MainActivity,id)) }
-                runOnUiThread { items=items.map { current -> restored.firstOrNull { it.id==current.id } ?: current } }
+                runOnUiThread {
+                    items=items.map { current ->
+                        if (current.price == null) restored.firstOrNull { it.id==current.id } ?: current else current
+                    }
+                }
             }
         }
         DisposableEffect(Unit) {

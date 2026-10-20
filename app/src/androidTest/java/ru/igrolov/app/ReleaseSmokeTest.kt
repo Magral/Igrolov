@@ -35,7 +35,7 @@ class ReleaseSmokeTest {
         assertEquals("2500",ManualSearchSettings.read(context).maxPrice)
         WatchStore.write(context,org.json.JSONArray())
         ManualSearchSettings.save(context,ManualSearchFilters())
-        assertEquals(113,PackageInfoCompat.getLongVersionCode(context.packageManager.getPackageInfo(context.packageName,0)))
+        assertEquals(114,PackageInfoCompat.getLongVersionCode(context.packageManager.getPackageInfo(context.packageName,0)))
     }
     @Test fun launchAndNavigateFiltersSettingsAndMonitoring() {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
@@ -43,7 +43,9 @@ class ReleaseSmokeTest {
         assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.0.7")),15000))
         device.findObject(By.text("Gift")).click()
         device.findObject(By.text("Key")).click()
-        UiScrollable(UiSelector().scrollable(true)).scrollTextIntoView("DLC")
+        val search=UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(20)
+        assertTrue(search.scrollIntoView(UiSelector().text("DLC")))
+        assertTrue(device.wait(Until.hasObject(By.text("DLC")),5000))
         device.findObject(By.text("DLC")).click()
         device.findObject(By.text("Все")).click()
         device.findObject(By.text("Товары")).click()
