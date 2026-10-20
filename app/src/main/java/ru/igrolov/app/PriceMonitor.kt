@@ -529,6 +529,8 @@ object CatalogCheck {
                 }
             }
         }
+        val totalPages=response.optJSONObject("result")?.optInt("total_pages",pageCount) ?: pageCount
+        if(page>=totalPages)break
         }
         return Snapshot(offers.distinctBy {it.id},sellers)
     }

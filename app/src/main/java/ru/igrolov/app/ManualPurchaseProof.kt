@@ -40,7 +40,8 @@ object ManualPurchaseProof {
             if(!id.matches(Regex("[1-9][0-9]*")) || !value.matches(Regex("[1-9][0-9]*"))) return Plan(pairs,labels,false)
             pairs.add("$id:$value");labels.add(selected.optString("text"))
             if(listOf("стран","регион","country","region").any {it in question}) russiaSelected=true
-            if (normalized(selected.optString("text")) in setOf(normalized(canonical),normalized("$canonical Standard Edition"),"standard","standard edition","стандартное издание","базовая игра")) gameSelected=true
+            // Generic "Standard" may describe a DLC or another game: only the named game can prove identity.
+            if (normalized(selected.optString("text")) in setOf(normalized(canonical),normalized("$canonical Standard Edition"))) gameSelected=true
         }
         return Plan(pairs,labels,true,gameSelected,russiaSelected)
     }

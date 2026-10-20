@@ -31,6 +31,15 @@ class VerifiedMonitorCheckTest {
         assertEquals(listOf("10029","10028","10024"),result.verified.map {it.id})
         assertEquals(listOf(50.0,150.0,500.0),result.verified.map {it.price})
     }
+    @Test fun widespreadOutageStopsTheBatchAfterAtMostFourInFlightRequests() {
+        val calls=AtomicInteger()
+        try {
+            VerifiedMonitorCheck.run(CatalogCheck.Snapshot((10000..10499).map(::offer),emptyMap()),reference,"Все",JSONObject(),emptySet(),{true}) {
+                calls.incrementAndGet();throw IOException("HTTP 503")
+            }
+            fail("An incomplete check must fail")
+        }catch(expected:IOException) {assertTrue(calls.get() in 1..4)}
+    }
     @Test(expected=IOException::class) fun partialCardNetworkFailureIsNotAConfirmedEmptyMarketplace() {
         VerifiedMonitorCheck.run(CatalogCheck.Snapshot(listOf(offer(10000)),emptyMap()),reference,"Все",JSONObject(),emptySet(),{true}) {throw IOException("HTTP 503")}
     }

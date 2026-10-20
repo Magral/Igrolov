@@ -3,7 +3,7 @@ package ru.igrolov.app
 import org.json.JSONObject
 import java.util.Locale
 
-/** Manual search only. Does not alter the price-monitoring rules. */
+/** Delivery/account evidence shared by manual search and automatic price monitoring. */
 object ManualOfferClassifier {
     private fun text(value: String): String = OfferRules.normalize(value)
         .replace(Regex("(?<=\\p{L})'(?=\\p{L})"), "")

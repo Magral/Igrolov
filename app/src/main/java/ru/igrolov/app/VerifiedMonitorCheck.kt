@@ -17,7 +17,7 @@ object VerifiedMonitorCheck {
                 if(!path.startsWith("/api/categories"))failures.incrementAndGet()
                 null
             }
-        }.enrich(catalog.offers.filterNot {it.id in ignored},catalog.sellers,active,reference)
+        }.enrich(catalog.offers.filterNot {it.id in ignored},catalog.sellers,{active() && failures.get()==0},reference)
         if(!active())throw java.util.concurrent.CancellationException()
         if(failures.get()>0)throw IOException("Не удалось проверить ${failures.get()} карточек/расчётов; предыдущий результат сохранён")
         val valid=enriched.filter {MonitorPolicy.eligible(it,kind,rules,ignored)}.sortedBy {it.price}

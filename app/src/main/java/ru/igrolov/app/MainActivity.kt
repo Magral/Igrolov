@@ -64,20 +64,10 @@ class MainActivity : ComponentActivity() {
     private val prefs by lazy { getSharedPreferences("tracked_products", MODE_PRIVATE) }
     private fun loadIds(): List<String> = prefs.getString("ids", "")!!.split(",").filter { it.isNotBlank() }
     private fun saveIds(ids: List<String>) = prefs.edit().putString("ids", ids.distinct().joinToString(",")).apply()
-    private fun cachedTracked(id: String): Tracked {
-        val url = "https://plati.market/itm/$id"
-        val saved = prefs.getString("product_cache_$id", null) ?: return Tracked(id, "Товар $id", null, "Обновляем цену…", url)
-        return try {
-            val obj = JSONObject(saved)
-            Tracked(id, obj.optString("name", "Товар $id"),
-                if (obj.has("price") && !obj.isNull("price")) obj.optDouble("price").takeIf { it.isFinite() && it > 0 } else null,
-                "Обновляем цену…", url)
-        } catch (_: Exception) { Tracked(id, "Товар $id", null, "Обновляем цену…", url) }
-    }
-    private fun cacheTracked(item: Tracked) {
-        if (item.status.startsWith("Ошибка загрузки")) return
-        val json = JSONObject().put("name", item.name).put("price", item.price ?: JSONObject.NULL)
-        prefs.edit().putString("product_cache_${item.id}", json.toString()).apply()
+    private fun cachedTracked(id:String)=TrackedPriceCache.decode(id,prefs.getString("product_cache_$id",null))
+    private fun cacheTracked(item:Tracked) {
+        val cached=TrackedPriceCache.encode(item) ?: return
+        prefs.edit().putString("product_cache_${item.id}",cached).apply()
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

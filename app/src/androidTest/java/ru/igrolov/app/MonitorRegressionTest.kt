@@ -36,7 +36,7 @@ class MonitorRegressionTest {
                 override fun usingProxy()=false
                 override fun getResponseCode()=if(mode.get()==1 || (mode.get()==2 && url.path.contains("/10006/")))503 else 200
                 override fun getInputStream():ByteArrayInputStream {
-                    if(responseCode!=200)throw IOException("HTTP $responseCode")
+                    if(getResponseCode()!=200)throw IOException("HTTP ${getResponseCode()}")
                     val json=when {
                         url.path.contains("appdetails") -> JSONObject("""{"1091500":{"success":true,"data":{"name":"Cyberpunk 2077","type":"game","dlc":[2138330]}}}""")
                         url.path.endsWith("search2") -> {
@@ -67,10 +67,12 @@ class MonitorRegressionTest {
             }
         }}
         fun worker()=TestListenableWorkerBuilder<PriceWatchWorker>(context).build()
+        androidx.work.WorkManager.getInstance(context).cancelAllWork().result.get()
         WatchStore.write(context,JSONArray());AlertJournal.clear(context)
         WatchStore.add(context,"Cyberpunk 2077","Key",1000.0)
         CatalogPageSettings.set(context,100)
-        assertEquals(ListenableWorker.Result.success(),worker().doWork())
+        val firstResult=worker().doWork()
+        assertEquals(WatchStore.read(context).toString(),ListenableWorker.Result.success(),firstResult)
         assertEquals(8,calls.get())
         var watch=WatchStore.read(context).getJSONObject(0)
         assertEquals("10005",watch.getString("bestId"));assertEquals(105.0,watch.getDouble("last"),0.001)

@@ -76,6 +76,17 @@ class ManualPurchaseProofTest {
         assertEquals(listOf(1000.0,2000.0),result.map { it.price })
         assertTrue(result.all { ManualContentRules.visible(it,"Игра","Key") })
     }
+    @Test fun genericStandardCannotIdentifyANamedDlcOrAnotherPartOfTheSeries() {
+        for((canonical,title) in listOf("Stellaris" to "Stellaris Utopia Steam Key РФ","Cities Skylines" to "Cities Skylines II Steam Key РФ","Civilization VI" to "Civilization VII Steam Key РФ")) {
+            val p=card().put("name",title).put("options",org.json.JSONArray("""[{"id":1,"label":"Издание","type":"radio","variants":[{"value":2,"text":"Standard","visible":1}]}]"""))
+            val result=ManualCatalogEnricher {path ->
+                if(path.contains("price/calc")) JSONObject("""{"retval":0,"data":{"amount":500,"commission":0,"currency":"RUB","count":1}}""")
+                else JSONObject().put("retval",0).put("product",p)
+            }.enrich(listOf(offer().copy(name=title)),emptyMap(),{true},ManualGameReference.Game(canonical))
+            assertTrue(result.single().priceVerified)
+            assertFalse(title,ManualContentRules.visible(result.single(),"Игра","Все"))
+        }
+    }
     @Test fun advertisedEditionChoiceWithoutApiOptionsCannotUseTheBasePrice() {
         val p=card().put("name","Stellaris Steam Gift · Выбор издания")
         assertNull(ManualPurchaseProof.inspect(p,"Stellaris") {null}.price)
