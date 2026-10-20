@@ -1,4 +1,4 @@
-# Игролов 1.0.6 — мониторинг и история цен
+# Игролов 1.0.6 — проверенный кандидат
 
 Android-приложение для поиска Steam-игр на Plati, фильтрации Gift/Key, отслеживания товаров и ценовых уведомлений. Мониторинг развивается вместе с поиском.
 
@@ -28,7 +28,7 @@ Android-приложение для поиска Steam-игр на Plati, фил
 
 ## Проверки и установка
 
-Статус версии: [RELEASE_106_CHECKLIST.md](RELEASE_106_CHECKLIST.md). APK, отчёты JVM и Android, журналы и скриншоты доступны в [GitHub Actions](https://github.com/Magral/Igrolov/actions). `versionCode=110`, `versionName=1.0.6`.
+60 JVM-тестов и 8 Android-проверок прошли без ошибок. [Итоговый CI](https://github.com/Magral/Igrolov/actions/runs/39372570343). Статус версии: [RELEASE_106_CHECKLIST.md](RELEASE_106_CHECKLIST.md). APK, отчёты JVM и Android, журналы и скриншоты доступны в [GitHub Actions](https://github.com/Magral/Igrolov/actions). `versionCode=110`, `versionName=1.0.6`.
 
 Стабильный APK: [1.0.4.1](https://github.com/Magral/Igrolov/releases/tag/v1.0.4.1). Публикация нового стабильного Release не включена автоматически. Это APK для прямой установки из приватного репозитория, не публикация в Google Play. Закреплённый debug-ключ открыт в исходниках и не является production-ключом. Сохранена подпись для обновления предыдущих сборок.
 
