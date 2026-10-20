@@ -2,6 +2,7 @@ package ru.igrolov.app
 
 import org.junit.Assert.*
 import org.junit.Test
+import org.json.JSONObject
 
 class SellerCategoryResolverTest {
     private fun offer(type: String) = Offer(
@@ -71,6 +72,27 @@ class SellerCategoryResolverTest {
         assertNull(SellerCategoryResolver.matchCategory("", "7", categories))
         assertNull(SellerCategoryResolver.matchCategory("abc", "7", categories))
         assertNull(SellerCategoryResolver.matchCategory("101", "invalid", categories))
+    }
+
+    @Test fun nestedCategoryResponseMatchesSellerProduct() {
+        val response = JSONObject("""{"retval":0,"content":{"category":[
+          {"id":7,"name":"Steam Gifts"},
+          {"category_id":8,"name":"Стим Ключи"},
+          {"id":0,"name":"Unknown"}
+        ]}}""")
+        val names = SellerCategoryResolver.parseCategoryNames(response)
+        assertEquals("Steam Gifts", names["7"])
+        assertEquals("Стим Ключи", names["8"])
+        assertFalse(names.containsKey("0"))
+        assertEquals("Steam Gifts",
+            SellerCategoryResolver.matchCategory("101", "7", mapOf("101" to names)))
+        assertNull(SellerCategoryResolver.matchCategory("202", "7", mapOf("101" to names)))
+    }
+
+    @Test fun categoryApiErrorsDoNotClassify() {
+        val error = JSONObject("""{"retval":1,"category":[{"id":7,"name":"Steam Gifts"}]}""")
+        assertTrue(SellerCategoryResolver.parseCategoryNames(error).isEmpty())
+        assertTrue(SellerCategoryResolver.parseCategoryNames(JSONObject("""{"retval":0}""")).isEmpty())
     }
 
     @Test fun noCategoryMeansNoChange() {
