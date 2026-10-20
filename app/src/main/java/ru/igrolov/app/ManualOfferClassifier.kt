@@ -13,7 +13,10 @@ object ManualOfferClassifier {
         .lowercase(Locale.ROOT).replace('ё', 'е')
         .replace(Regex("[^\\p{L}\\p{N}]+"), " ").trim()
     private fun has(value: String, phrase: String) = " ${text(value)} ".contains(" ${text(phrase)} ")
-    private fun any(value: String, phrases: List<String>) = phrases.any { has(value, it) }
+    private fun any(value: String, phrases: List<String>): Boolean {
+        val normalized = " ${text(value)} "
+        return phrases.any { normalized.contains(" ${text(it)} ") }
+    }
     private fun withoutNegation(value: String): String {
         var cleaned = text(value)
         for (phrase in listOf("не аккаунт", "не является аккаунтом", "не аренда", "not an account", "not account", "not a rental")) {

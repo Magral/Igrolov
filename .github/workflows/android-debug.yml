@@ -151,6 +151,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp apk/app-debug.apk Igrolov-1.0.4.apk
+          release_apk=$(find apk -type f -name '*.apk' -print -quit)
+          cp "$release_apk" Igrolov-1.0.4.apk
           sha256sum Igrolov-1.0.4.apk > SHA256SUMS.txt
           gh release create v1.0.4 --target "$GITHUB_SHA" --title 'Игролов 1.0.4' --notes-file RELEASE_NOTES_104.md Igrolov-1.0.4.apk SHA256SUMS.txt
