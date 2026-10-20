@@ -52,6 +52,9 @@ class MonitorUiRegressionTest {
         device.findObject(By.text("Мониторинг")).click()
         val scroll=UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(30)
         assertTrue(scroll.scrollIntoView(UiSelector().textStartsWith("История цен (")))
+        if(!WatchStore.read(context).getJSONObject(0).has("eligibleCount")) {
+            assertFalse("Old records without counters must not be labelled as an empty marketplace",device.hasObject(By.text("Подходящих предложений нет — это не ошибка сети.")))
+        }
         device.findObject(By.textStartsWith("История цен (")).click()
         assertTrue(scroll.scrollIntoView(UiSelector().textStartsWith("Диапазон:")))
         assertTrue(device.findObject(By.textStartsWith("Диапазон:")).text.contains("800"))

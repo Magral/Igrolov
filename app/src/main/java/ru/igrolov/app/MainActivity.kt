@@ -713,8 +713,8 @@ class MainActivity : ComponentActivity() {
                         if (w.has("error")) Text("Ошибка проверки: ${w.optString("error")}. Показаны предыдущие данные.", style = MaterialTheme.typography.bodySmall)
                         if(w.has("notificationError"))Text(w.optString("notificationError"),style=MaterialTheme.typography.bodySmall)
                         if (w.optLong("checked", 0L) > 0L) {
-                                        if (w.optInt("eligibleCount") == 0) Text("Подходящих предложений нет — это не ошибка сети.", style = MaterialTheme.typography.bodySmall)
-                                        else if (w.optInt("verifiedCount", 0) == 0) Text("Нет предложений с подтверждёнными наличием, ценой, РФ и способом передачи; уведомления не отправляются.", style = MaterialTheme.typography.bodySmall)
+                                        if (w.has("eligibleCount") && w.optInt("eligibleCount") == 0) Text("Подходящих предложений нет — это не ошибка сети.", style = MaterialTheme.typography.bodySmall)
+                                        else if (w.has("verifiedCount") && w.optInt("verifiedCount", 0) == 0) Text("Нет предложений с подтверждёнными наличием, ценой, РФ и способом передачи; уведомления не отправляются.", style = MaterialTheme.typography.bodySmall)
                         }
                         var resultsExpanded by remember(w.optString("name")) { mutableStateOf(false) }
                         val bestOffers = w.optJSONArray("topOffers") ?: JSONArray()
