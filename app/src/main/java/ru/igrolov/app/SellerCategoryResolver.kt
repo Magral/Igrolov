@@ -47,12 +47,24 @@ object SellerCategoryResolver {
         return id.takeIf { it.matches(Regex("[0-9]+")) && it != "0" }
     }
 
+    /** Strict seller-scoped ID match. Zero, missing and cross-seller IDs are not evidence. */
+    fun matchCategory(
+        sellerId: String,
+        productCategoryId: String?,
+        categoriesBySeller: Map<String, Map<String, String>>
+    ): String? {
+        if (!sellerId.matches(Regex("[0-9]{1,12}"))) return null
+        val id = productCategoryId ?: return null
+        if (!id.matches(Regex("[0-9]+")) || id == "0") return null
+        return categoriesBySeller[sellerId]?.get(id)?.takeIf { it.isNotBlank() }
+    }
+
     /** Returns a category only when both seller and product resolve to the same ID. */
     fun label(productId: String, sellerId: String, cache: MutableMap<String, Map<String, String>>): String? {
         if (!productId.matches(Regex("[0-9]{4,12}")) || !sellerId.matches(Regex("[0-9]{1,12}"))) return null
         val id = categoryId(productId, sellerId) ?: return null
         val names = cache.getOrPut(sellerId) { categoryNames(sellerId) }
-        return names[id]
+        return matchCategory(sellerId, id, mapOf(sellerId to names))
     }
 
     /** Only unambiguous category names may add evidence; broad Steam/Игры cannot. */
