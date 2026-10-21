@@ -60,7 +60,7 @@ class TrackedTransferUiRegressionTest {
     private fun open():UiDevice {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.3")),15000))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.4")),15000))
         return device
     }
     private fun cached(id:String)=TrackedPriceCache.decode(id,context.getSharedPreferences("tracked_products",0).getString("product_cache_$id",null))
@@ -76,7 +76,7 @@ class TrackedTransferUiRegressionTest {
         assertTrue(device.wait(Until.hasObject(By.text("Stellaris · Steam #281990")),15000))
         device.findObject(By.text("Stellaris · Steam #281990")).click()
         val scroll=UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(30)
-        assertTrue(scroll.scrollTextIntoView("Искать на Plati"));device.findObject(By.text("Искать на Plati")).click()
+        assertTrue(scroll.scrollTextIntoView("Искать"));device.findObject(By.text("Искать")).click()
         assertTrue(device.wait(Until.hasObject(By.textContains("Проверено:")),15000))
         assertTrue(scroll.scrollTextIntoView("Отслеживать"))
         assertTrue(device.hasObject(By.textContains("4914,00 ₽")))

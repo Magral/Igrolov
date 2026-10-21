@@ -40,7 +40,7 @@ import java.util.Locale
 import java.util.concurrent.Executors
 import kotlinx.coroutines.delay
 
-data class Offer(val id: String, val name: String, val price: Double, val type: String, val rfStatus: String, val edition: String, val categoryLabel: String = "", val detailsChecked: Boolean = false, val variablePrice: Boolean = false, val available: Boolean? = null, val priceVerified: Boolean = false, val purchaseNote: String = "", val canonical:String="", val steamAppId:Int=0)
+data class Offer(val id: String, val name: String, val price: Double, val type: String, val rfStatus: String, val edition: String, val categoryLabel: String = "", val detailsChecked: Boolean = false, val variablePrice: Boolean = false, val available: Boolean? = null, val priceVerified: Boolean = false, val purchaseNote: String = "", val canonical:String="", val steamAppId:Int=0, val marketplace:String="Plati", val productUrl:String="")
 
 data class Tracked(val id: String, val name: String, val price: Double?, val status: String, val url: String, val canonical:String="", val steamAppId:Int=0)
 
@@ -152,6 +152,23 @@ class MainActivity : ComponentActivity() {
         throw last ?: java.io.IOException("Нет соединения")
     }
 
+    private fun postGgselJson(path: String, body: JSONObject): JSONObject {
+        val connection = (URL("https://api.ggsel.com/v2/$path").openConnection() as HttpURLConnection)
+        connection.connectTimeout = 12000
+        connection.readTimeout = 18000
+        connection.requestMethod = "POST"
+        connection.doOutput = true
+        connection.setRequestProperty("Accept", "application/json")
+        connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+        connection.setRequestProperty("User-Agent", "Igrolov Android")
+        try {
+            connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+            val status = connection.responseCode
+            if (status !in 200..299) throw java.io.IOException("GGSEL HTTP $status")
+            return JSONObject(connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
+        } finally { connection.disconnect() }
+    }
+
     private fun searchCatalog(query: String, pageCount: Int, generation: Int, selectedAppId: Int?, additionalAliases: List<String>, progress: (Int, Int, Int) -> Unit, callback: (List<Offer>, String, List<String>) -> Unit) {
         catalogExecutor.execute {
             val found = mutableListOf<Offer>()
@@ -228,8 +245,49 @@ class MainActivity : ComponentActivity() {
                         if (generation == activeCatalogGeneration.get()) progress(pageCount, pageCount, checked)
                     }
                 })
+            var ggselFailure = ""
+            if (generation == activeCatalogGeneration.get() && !Thread.currentThread().isInterrupted) {
+                try {
+                    val categoryRoot = postGgselJson("elastic/goods/query-categories", JSONObject()
+                        .put("search_term", reference.canonical)
+                        .put("lang", "ru")
+                        .put("limit", 10))
+                    val category = GgselCatalog.chooseCategory(
+                        GgselCatalog.categories(categoryRoot), listOf(reference.canonical) + reference.aliases
+                    )
+                    if (category != null) {
+                        val productRoot = postGgselJson("elastic/goods/categories", JSONObject()
+                            .put("digi_catalog", category.id)
+                            .put("url", category.url)
+                            .put("limit", 100)
+                            .put("content_type_ids", JSONArray())
+                            .put("search_after", JSONArray())
+                            .put("with_filters", false)
+                            .put("is_preorders", false)
+                            .put("ab_test_without_emoji", true)
+                            .put("sort", "sortByRec")
+                            .put("query_string", "")
+                            .put("with_forbidden", false)
+                            .put("min_price", "")
+                            .put("max_price", "")
+                            .put("currency", "wmr")
+                            .put("lang", "ru")
+                            .put("platforms", JSONArray().put("Steam"))
+                            .put("page", 1))
+                        found.addAll(GgselCatalog.offers(productRoot, reference))
+                        if (generation == activeCatalogGeneration.get()) runOnUiThread {
+                            if (generation == activeCatalogGeneration.get()) progress(pageCount, pageCount, found.size)
+                        }
+                    }
+                } catch (e: Exception) {
+                    ggselFailure = "GGSEL: ${e.message ?: "каталог временно недоступен"}"
+                }
+            }
+            val finalOffers = (enriched + found.filter { it.marketplace == "GGSEL" })
+                .distinctBy { "${it.marketplace}:${it.id}" }.sortedBy { it.price }
+            if (ggselFailure.isNotBlank()) failure = listOf(failure, ggselFailure).filter { it.isNotBlank() }.joinToString(" · ")
             var aliasSuggestions = emptyList<String>()
-            if (enriched.isEmpty() && failure.isBlank() && generation == activeCatalogGeneration.get()) {
+            if (finalOffers.isEmpty() && failure.isBlank() && generation == activeCatalogGeneration.get()) {
                 val core = CatalogAliasResolver.fallbackQuery(reference.canonical)
                 if (core != null && !reference.aliases.any { GameSearchResolver.normalized(it) == GameSearchResolver.normalized(core) }) {
                     runCatching {
@@ -247,7 +305,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             if (generation == activeCatalogGeneration.get()) runOnUiThread {
-                if (generation == activeCatalogGeneration.get()) callback(enriched, failure, aliasSuggestions)
+                if (generation == activeCatalogGeneration.get()) callback(finalOffers, failure, aliasSuggestions)
             }
         }
     }
@@ -312,7 +370,7 @@ class MainActivity : ComponentActivity() {
         var directoryMessage by remember { mutableStateOf("Выберите игру для редактирования") }
         var directorySuggestions by remember { mutableStateOf<List<SteamGameReference.Suggestion>>(emptyList()) }
         var directorySelectedAppId by remember { mutableStateOf<Int?>(null) }
-        var searchMessage by remember { mutableStateOf("Нажмите «Искать на Plati» для запроса к каталогу") }
+        var searchMessage by remember { mutableStateOf("Нажмите «Искать» для запроса к каталогам") }
         var pendingAliasGame by remember { mutableStateOf<GameSearchResolver.Candidate?>(null) }
         var pendingAliasSuggestions by remember { mutableStateOf<List<String>>(emptyList()) }
         var pendingAliasProfileId by remember { mutableStateOf<String?>(null) }
@@ -329,6 +387,7 @@ class MainActivity : ComponentActivity() {
         var monitorTotal by remember { mutableIntStateOf(0) }
         var monitorCurrent by remember { mutableStateOf("") }
         var selectedType by remember { mutableStateOf(savedFilters.type) }
+        var selectedMarketplace by remember { mutableStateOf("Все") }
         val rfOnly = true
         var editionFilter by remember { mutableStateOf(savedFilters.edition) }
         val manualFilters=ManualSearchFilters(selectedType,editionFilter,maxPrice,confirmedRf)
@@ -618,7 +677,7 @@ class MainActivity : ComponentActivity() {
             if (!hiddenWishlistSearch) {
                 offers = emptyList()
                 searchMessage = if (candidateOverride != null)
-                    "Автопоиск Plati · выполняется для «$requestedGame»…"
+                    "Автопоиск цен · выполняется для «$requestedGame»…"
                 else "Поиск предложений…"
                 query = requestedGame
                 if (identity != null) selectedGame = identity
@@ -655,12 +714,13 @@ class MainActivity : ComponentActivity() {
                 }
                 if (!hiddenWishlistSearch) offers = found
                 searching = false
-                val ready = found.count { ManualContentRules.visible(it, "Игра", "Все") }
-                val unavailable = found.count { it.available != true }
-                val uncertainPrice = found.count { it.available == true && !it.priceVerified }
+                val ready = finalOffers.count { ManualContentRules.visible(it, "Игра", "Все") }
+                val unavailable = finalOffers.count { it.available != true }
+                val uncertainPrice = finalOffers.count { it.available == true && !it.priceVerified }
                 val wishlistSearch = wishlistProfileId != null && identity?.appId != null
                 val wishlistRules = if (wishlistSearch) GameRuleStore.read(this@MainActivity, requestedGame) else null
-                val minimum = if (wishlistSearch) found.asSequence()
+                val minimum = if (wishlistSearch) finalOffers.asSequence()
+                    .filter { it.marketplace == "Plati" }
                     .filter {
                         ManualSearchFilter.rejection(it, manualFilters, wishlistRules!!, ignoredIds) == null &&
                             it.available == true && it.priceVerified && it.price > 0.0
@@ -682,20 +742,21 @@ class MainActivity : ComponentActivity() {
                     val key = "$wishlistProfileId:${identity.appId}"
                     wishlistSearchingKeys = wishlistSearchingKeys - key
                     wishlistSearchStatuses = wishlistSearchStatuses + (key to when {
-                        failure.isNotBlank() -> "Ошибка поиска цен"
                         minimum != null -> "Минимум найден в Plati"
+                        failure.isNotBlank() -> "Ошибка поиска цен"
                         else -> "Подтверждённая цена не найдена"
                     })
                 }
                 if (!hiddenWishlistSearch) {
-                    val summary = if (failure.isNotBlank()) "Ошибка поиска: $failure" else
-                        "Проверено: ${found.size} · основная игра с подтверждёнными наличием и ценой: $ready. " +
+                    val summary = if (failure.isNotBlank() && finalOffers.isEmpty()) "Ошибка поиска: $failure" else
+                        (if (failure.isNotBlank()) "Часть каталогов недоступна ($failure). " else "") +
+                        "Проверено: ${finalOffers.size} · основная игра с подтверждёнными наличием и ценой: $ready. " +
                             "Скрыто без подтверждённого наличия: $unavailable; без точной цены варианта: $uncertainPrice." +
                             if (wishlistSearch) {
                                 if (minimum != null) " Минимальная подтверждённая Plati цена сохранена в списке желаемого."
                                 else " Подтверждённая Plati цена не найдена; сохранённое значение не изменено."
                             } else ""
-                    searchMessage = if (candidateOverride != null) "Автопоиск Plati · $summary" else summary
+                    searchMessage = if (candidateOverride != null) "Автопоиск цен · $summary" else summary
                 }
             }
         }
@@ -743,7 +804,7 @@ class MainActivity : ComponentActivity() {
             }
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Игролов 1.1.3", style = MaterialTheme.typography.headlineSmall)
+                Text("Игролов 1.1.4", style = MaterialTheme.typography.headlineSmall)
                 IconButton(onClick = { settingsOpen = !settingsOpen; showDirectory = false }) {
                     Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                         color = MaterialTheme.colorScheme.onSurface)
@@ -757,7 +818,7 @@ class MainActivity : ComponentActivity() {
             Column(Modifier.fillMaxSize().verticalScroll(if (settingsOpen) directoryScroll else when(activeTab) { 0 -> searchScroll; 1 -> productsScroll; 2 -> watchScroll; else -> directoryScroll }).padding(16.dp)) {
             if (activeTab == 0 && !settingsOpen) {
             Text("Поиск предложений Steam · RUB", style = MaterialTheme.typography.bodySmall)
-            if (searchMessage.startsWith("Автопоиск Plati")) {
+            if (searchMessage.startsWith("Автопоиск цен")) {
                 Text(searchMessage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
             }
             Spacer(Modifier.height(12.dp))
@@ -828,6 +889,13 @@ class MainActivity : ComponentActivity() {
                         label = { Text(type) })
                 }
             }
+            Text("Маркетплейс", style = MaterialTheme.typography.titleSmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("Все", "Plati", "GGSEL").forEach { marketplace ->
+                    FilterChip(selected = selectedMarketplace == marketplace,
+                        onClick = { selectedMarketplace = marketplace }, label = { Text(marketplace) })
+                }
+            }
             FilterChip(selected=confirmedRf,onClick={confirmedRf=!confirmedRf},label={Text("Только подтверждённая РФ")})
             OutlinedTextField(maxPrice,{maxPrice=it},label={Text("Цена до, ₽")},singleLine=true,
                 isError=!manualFilters.valid,supportingText={Text(if(manualFilters.valid) "Пустое поле — без ограничения" else "Укажите положительную цену")},modifier=Modifier.fillMaxWidth())
@@ -841,14 +909,14 @@ class MainActivity : ComponentActivity() {
             Text("Основная игра должна быть явно распознана до показа. Недоступные товары и неподтверждённые цены вариантов скрываются.", style = MaterialTheme.typography.bodySmall)
             Button(onClick = { startCatalogSearch() },
                 enabled = query.isNotBlank() && !searching && !suggestionBusy && manualFilters.valid) {
-                Text(if (searching) "Ищем..." else "Искать на Plati")
+                Text(if (searching) "Ищем..." else "Искать")
             }
             if (searching) {
                 LinearProgressIndicator(progress = { searchPage.toFloat() / searchTotalPages }, modifier = Modifier.fillMaxWidth())
                 Text("Страниц обработано: $searchPage / $searchTotalPages · найдено кандидатов: $searchFound", style = MaterialTheme.typography.bodySmall)
             }
             Text(searchMessage, style = MaterialTheme.typography.bodySmall)
-            Text("Поиск по Plati (до $catalogLimit товаров). Цена берётся из свежей карточки или расчёта выбранного варианта РФ.", style = MaterialTheme.typography.bodySmall)
+            Text("Поиск по Plati (до $catalogLimit товаров) и GGSEL (активные предложения каталога). Цена источника указана у результата.", style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(10.dp))
             Spacer(Modifier.height(12.dp))
             } // конец настроек поиска
@@ -1099,12 +1167,16 @@ class MainActivity : ComponentActivity() {
             Spacer(Modifier.height(8.dp))
             if (offers.isNotEmpty()) {
                 val currentRules = remember(query, rulesRevision) { GameRuleStore.read(this@MainActivity, query) }
-                val filteredOffers = remember(offers, manualFilters, currentRules, ignoredIds) {
-                    offers.filter { ManualSearchFilter.rejection(it,manualFilters,currentRules,ignoredIds)==null }
+                val filteredOffers = remember(offers, manualFilters, currentRules, ignoredIds, selectedMarketplace) {
+                    offers.filter { (selectedMarketplace == "Все" || it.marketplace == selectedMarketplace) &&
+                        ManualSearchFilter.rejection(it,manualFilters,currentRules,ignoredIds)==null }
                 }
                 val visibleCount = filteredOffers.size
-                val rejectionCounts=remember(offers,manualFilters,currentRules,ignoredIds) {
-                    offers.mapNotNull {ManualSearchFilter.rejection(it,manualFilters,currentRules,ignoredIds)}.groupingBy {it}.eachCount()
+                val rejectionCounts=remember(offers,manualFilters,currentRules,ignoredIds,selectedMarketplace) {
+                    offers.mapNotNull {
+                        if (selectedMarketplace != "Все" && it.marketplace != selectedMarketplace) "Другой маркетплейс"
+                        else ManualSearchFilter.rejection(it,manualFilters,currentRules,ignoredIds)
+                    }.groupingBy {it}.eachCount()
                 }
                 if(rejectionCounts.isNotEmpty()) {
                     TextButton(onClick={showRejections=!showRejections}) {Text(if(showRejections) "Скрыть причины" else "Почему скрыты предложения (${rejectionCounts.values.sum()})")}
@@ -1116,24 +1188,30 @@ class MainActivity : ComponentActivity() {
                     filteredOffers.take(visibleOfferLimit).forEach { offer ->
                         ElevatedCard(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(10.dp)) {
+                                Text(offer.marketplace, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                                 Text(offer.name, style = MaterialTheme.typography.bodyMedium)
                                 if (offer.categoryLabel.isNotBlank()) Text(offer.categoryLabel, style = MaterialTheme.typography.bodySmall)
                                 if (offer.purchaseNote.isNotBlank()) Text(offer.purchaseNote, style = MaterialTheme.typography.bodySmall)
                                 Text("${offer.type} · ${offer.rfStatus} · " + String.format(Locale("ru", "RU"), "%.2f ₽", offer.price))
                                 Text(if (offer.variablePrice) "Цена варианта не подтверждена" else offer.edition, style = MaterialTheme.typography.bodySmall)
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    TextButton(onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://plati.market/itm/${offer.id}"))) },
+                                    TextButton(onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(
+                                        offer.productUrl.ifBlank { "https://plati.market/itm/${offer.id}" }
+                                    ))) },
                                         modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp)) { Text("Открыть", maxLines = 1) }
                                     TextButton(onClick = {
-                                        if (items.none { it.id == offer.id }) {
+                                        if (offer.marketplace == "Plati" && items.none { it.id == offer.id }) {
                                             val tracked=TrackedPriceCache.fromOffer(offer)
                                             items = items + tracked
                                             cacheTracked(tracked)
                                             saveIds(items.map { it.id })
                                             fetch(offer.id) { found -> cacheTracked(found); items = items.map { if (it.id == offer.id) TrackedPriceCache.merge(it,found) else it } }
                                         }
-                                    }, enabled = items.none { it.id == offer.id }, modifier = Modifier.weight(1f),
-                                        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp)) { Text("Отслеживать", maxLines = 1, style = MaterialTheme.typography.labelSmall) }
+                                    }, enabled = offer.marketplace == "Plati" && items.none { it.id == offer.id }, modifier = Modifier.weight(1f),
+                                        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp)) {
+                                        Text(if (offer.marketplace == "Plati") "Отслеживать" else "Трекер GGSEL позже",
+                                            maxLines = 1, style = MaterialTheme.typography.labelSmall)
+                                    }
                                 }
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                     TextButton(onClick = {
@@ -1232,7 +1310,7 @@ class MainActivity : ComponentActivity() {
                         selectedGame=null
                         query = game
                         offers = emptyList()
-                        searchMessage = "Игра выбрана из лидеров продаж. Нажмите «Искать на Plati»."
+                        searchMessage = "Игра выбрана из лидеров продаж. Нажмите «Искать»."
                         activeTab = 0
                     }, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 6.dp)) {
                         Text("${index + 1}. $game", modifier = Modifier.fillMaxWidth())

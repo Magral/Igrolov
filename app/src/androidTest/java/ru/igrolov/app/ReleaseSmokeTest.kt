@@ -35,12 +35,12 @@ class ReleaseSmokeTest {
         assertEquals("2500",ManualSearchSettings.read(context).maxPrice)
         WatchStore.write(context,org.json.JSONArray())
         ManualSearchSettings.save(context,ManualSearchFilters())
-        assertEquals(120,PackageInfoCompat.getLongVersionCode(context.packageManager.getPackageInfo(context.packageName,0)))
+        assertEquals(121,PackageInfoCompat.getLongVersionCode(context.packageManager.getPackageInfo(context.packageName,0)))
     }
     @Test fun launchAndNavigateFiltersSettingsAndMonitoring() {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.3")),15000))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.4")),15000))
         device.findObject(By.text("Gift")).click()
         device.findObject(By.text("Key")).click()
         device.findObject(By.text("Товары")).click()
@@ -53,20 +53,23 @@ class ReleaseSmokeTest {
         device.findObject(By.text("Поиск")).click()
         UiScrollable(UiSelector().scrollable(true)).scrollToBeginning(15)
         assertTrue(device.wait(Until.hasObject(By.text("Поиск игры по названию")),5000))
+        assertTrue(device.hasObject(By.text("GGSEL")))
+        assertTrue(device.hasObject(By.text("Plati")))
+        assertTrue(device.hasObject(By.text("Искать")))
         ManualSearchSettings.save(context,ManualSearchFilters())
     }
 
     @Test fun wishlistImportIsSeparateFromOfferSearch() {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.3")),15000))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.4")),15000))
         device.findObject(By.text("Желания")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Загрузить и закрепить профиль")),5000))
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"wishlist.png"))
-        assertFalse(device.hasObject(By.text("Искать на Plati")))
+        assertFalse(device.hasObject(By.text("Искать")))
         device.findObject(By.text("Загрузить и закрепить профиль")).click()
         assertTrue(device.wait(Until.hasObject(By.textContains("Вставьте SteamID64")),3000))
-        assertFalse(device.hasObject(By.text("Искать на Plati")))
+        assertFalse(device.hasObject(By.text("Искать")))
     }
 
     @Test fun savedWishlistProfilesShowSteamPricesAndKeepSearchSeparate() {
@@ -82,14 +85,14 @@ class ReleaseSmokeTest {
             .putString("wishlist_selected_profile",steamId).putString("wishlist_profile",profile.input)
             .putString("wishlist_games",SteamWishlist.encode(profile.games)).putLong("wishlist_imported_at",profile.importedAt).commit()
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.3")),15000))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.4")),15000))
         device.findObject(By.text("Желания")).click()
         assertTrue(device.wait(Until.hasObject(By.textContains("Namtar")),5000))
         assertTrue(device.hasObject(By.textContains("Friend")))
         device.pressBack()
         if (!device.wait(Until.hasObject(By.textContains("Namtar")),1500)) {
             context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-            assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.3")),15000))
+            assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.4")),15000))
             device.findObject(By.text("Желания")).click()
             assertTrue(device.wait(Until.hasObject(By.textContains("Namtar")),5000))
         }
@@ -107,7 +110,7 @@ class ReleaseSmokeTest {
         assertTrue(device.hasObject(By.text("900 руб.")))
         device.findObject(By.text("Stellaris")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Поиск игры по названию")),5000))
-        assertTrue(device.wait(Until.hasObject(By.textContains("Автопоиск Plati")),5000))
+        assertTrue(device.wait(Until.hasObject(By.textContains("Автопоиск цен")),5000))
         assertFalse(device.hasObject(By.text("Искать Plati")))
         prefs.edit().remove("wishlist_profiles").remove("wishlist_selected_profile").remove("wishlist_profile")
             .remove("wishlist_games").remove("wishlist_imported_at").commit()

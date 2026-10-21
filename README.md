@@ -1,12 +1,12 @@
-# Игролов 1.1.3
+# Игролов 1.1.4
 
-Android-приложение для поиска Steam-игр на Plati, фильтрации Gift/Key, мониторинга товаров и ценовых уведомлений.
+Android-приложение для поиска предложений Steam-игр на Plati и GGSEL, фильтрации Gift/Key, мониторинга товаров и ценовых уведомлений.
 
-В 1.1.3 добавлен запасной поиск по отличительной части названия игры. Если каталог продавца использует другое название, приложение предложит его для подтверждения и сохранит по Steam AppID. Повторный поиск использует алиас и проходит прежние проверки предложения.
+В 1.1.4 к поиску подключён покупательский каталог GGSEL. Результаты показываются с отдельной маркировкой источника и фильтром Plati/GGSEL; предложение принимается только с точной игрой, явным Steam Gift/Key, активным статусом и фиксированной ценой за одну копию.
 
-- Стабильный релиз: [скачать APK 1.1.3](https://github.com/Magral/Igrolov/releases/download/v1.1.3/Igrolov-1.1.3.apk). Полный CI: [GitHub Actions run 39625957695](https://github.com/Magral/Igrolov/actions/runs/39625957695).
-- Сборка: versionCode 120, versionName 1.1.3.
-- Чек-лист: [RELEASE_113_CHECKLIST.md](RELEASE_113_CHECKLIST.md), изменения: [CHANGELOG_113.md](CHANGELOG_113.md), заметки: [RELEASE_NOTES_113.md](RELEASE_NOTES_113.md).
+Релиз 1.1.4 готовится.
+- Сборка: versionCode 121, versionName 1.1.4.
+- Чек-лист: [RELEASE_114_CHECKLIST.md](RELEASE_114_CHECKLIST.md), изменения: [CHANGELOG_114.md](CHANGELOG_114.md), заметки: [RELEASE_NOTES_114.md](RELEASE_NOTES_114.md).
 
 ## Поиск
 
