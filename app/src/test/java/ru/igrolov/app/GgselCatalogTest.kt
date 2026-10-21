@@ -34,14 +34,15 @@ class GgselCatalogTest {
             ]}]}}
         """.trimIndent())
         val offers = GgselCatalog.offers(root, ManualGameReference.Game("Stellaris", 281990))
-        assertEquals(1, offers.size)
-        val offer = offers.single()
+        assertEquals(2, offers.size)
+        val offer = offers.single { it.id == "ggsel:123456" }
         assertEquals("ggsel:123456", offer.id)
         assertEquals("GGSEL", offer.marketplace)
         assertEquals("Key", offer.type)
         assertEquals(499.90, offer.price, 0.001)
         assertEquals("https://ggsel.net/en/catalog/product/stellaris-steam-key-ru-123456", offer.productUrl)
         assertTrue(offer.available == true && offer.priceVerified && offer.detailsChecked)
+        assertEquals("Регион РФ не подтвержден", offers.single { it.id == "ggsel:123463" }.rfStatus)
     }
 
     @Test fun leavesUnconfirmedRussianRegionMarkedRatherThanClaimingCompatibility() {
