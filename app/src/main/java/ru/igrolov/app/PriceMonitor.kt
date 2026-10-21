@@ -237,6 +237,7 @@ object AlertJournal {
     fun record(context: Context, game: String, offer: Offer, limit: Double) = synchronized(lock) {
         MonitorRoomStore.recordAlert(context, JSONObject().put("id", offer.id).put("game", game)
             .put("name", offer.name).put("price", offer.price).put("type", offer.type)
+            .put("marketplace",offer.marketplace).put("url",offer.productUrl)
             .put("limit", limit).put("at", System.currentTimeMillis()))
     }
     fun clear(context: Context) = synchronized(lock) { MonitorRoomStore.clearAlerts(context) }
@@ -561,26 +562,36 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 val catalog=CatalogCheck.find(name,CatalogPageSettings.pages(applicationContext),reference)
                 val rules=GameRuleStore.read(applicationContext,name)
                 val result=VerifiedMonitorCheck.run(catalog,reference,kind,rules,ignored,{!isStopped})
+                // GGSEL catalog rows already carry a confirmed active one-copy RUB price.
+                // A provider error aborts the complete snapshot, preserving prior minima/history.
+                val ggselOffers=GgselBuyerApi.find(reference,{!isStopped})
+                if(isStopped)return Result.success()
                 WatchStore.updateIfCurrent(applicationContext,watch) {current ->
                 if(current.optLong("checked",0L)>checkStarted)return@updateIfCurrent
                 val latestRules=GameRuleStore.read(applicationContext,name)
                 val latestIgnored=IgnoredStore.ids(applicationContext)
-                val verified=result.verified.filter {MonitorPolicy.eligible(it,kind,latestRules,latestIgnored)}
+                val sourceOffers=result.verified+ggselOffers
+                val verified=sourceOffers.filter {MonitorPolicy.eligible(it,kind,latestRules,latestIgnored)}.distinctBy {"${it.marketplace}:${it.id}"}.sortedBy {it.price}
                 val reliableOffers=verified.take(3)
                 current.put("steamAppId",reference.appId)
                 val cheapest = reliableOffers.minByOrNull { it.price }
                 val checkedAt = System.currentTimeMillis()
                 current.put("last", cheapest?.price ?: -1.0)
                 current.put("checked", checkedAt)
-                current.put("totalCount", catalog.offers.size)
+                current.put("totalCount", catalog.offers.size+ggselOffers.size)
                 current.put("eligibleCount", verified.size)
-                current.put("rejectedCount",catalog.offers.size-verified.size)
+                current.put("rejectedCount",catalog.offers.size+ggselOffers.size-verified.size)
                 current.put("verifiedCount", verified.size)
                 current.put("bestId", cheapest?.id ?: "")
+                current.put("sourceCounts",JSONObject()
+                    .put("Plati",verified.count {it.marketplace=="Plati"})
+                    .put("GGSEL",verified.count {it.marketplace=="GGSEL"}))
                 val topOffers = JSONArray()
                 reliableOffers.take(3).forEach { offer ->
                     topOffers.put(JSONObject().put("id", offer.id).put("name", offer.name)
-                        .put("price", offer.price).put("type", offer.type).put("note",offer.purchaseNote).put("canonical",offer.canonical).put("steamAppId",offer.steamAppId))
+                        .put("price", offer.price).put("type", offer.type).put("note",offer.purchaseNote)
+                        .put("canonical",offer.canonical).put("steamAppId",offer.steamAppId)
+                        .put("marketplace",offer.marketplace).put("url",offer.productUrl))
                 }
                 current.put("topOffers", topOffers)
                 current.put("history",WatchHistory.append(current.optJSONArray("history") ?: JSONArray(),checkedAt,cheapest?.price,verified.size))
@@ -620,9 +631,10 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
     private fun sendNotification(offer: Offer, game: String, index: Int) {
         val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= 26) manager.createNotificationChannel(
-            NotificationChannel("price_alerts", "Снижение цен Plati", NotificationManager.IMPORTANCE_DEFAULT))
+            NotificationChannel("price_alerts", "Снижение цен на игры", NotificationManager.IMPORTANCE_DEFAULT))
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
-        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://plati.market/itm/${offer.id}"))
+        val url=offer.productUrl.ifBlank { "https://plati.market/itm/${offer.id}" }
+        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
         val pending = PendingIntent.getActivity(applicationContext, offer.id.hashCode(), intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val notification = NotificationCompat.Builder(applicationContext, "price_alerts")
@@ -630,7 +642,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
             .setContentTitle("$game — ${String.format(Locale("ru","RU"), "%.0f ₽",offer.price)}")
             .setContentText("${offer.type} · ${offer.name}")
             .setStyle(NotificationCompat.BigTextStyle().bigText(
-                "${offer.type} · ${offer.name}\nЦена: ${String.format(Locale("ru","RU"), "%.2f ₽", offer.price)}\nНажмите, чтобы открыть предложение на Plati."))
+                "${offer.marketplace} · ${offer.type} · ${offer.name}\nЦена: ${String.format(Locale("ru","RU"), "%.2f ₽", offer.price)}\nНажмите, чтобы открыть предложение."))
             .setContentIntent(pending).setAutoCancel(true).build()
         manager.notify(offer.id.hashCode(), notification)
     }

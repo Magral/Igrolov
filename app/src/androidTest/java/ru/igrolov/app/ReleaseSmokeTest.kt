@@ -40,7 +40,7 @@ class ReleaseSmokeTest {
     @Test fun launchAndNavigateFiltersSettingsAndMonitoring() {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.4")),15000))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.5")),15000))
         device.findObject(By.text("Gift")).click()
         device.findObject(By.text("Key")).click()
         device.findObject(By.text("Товары")).click()
@@ -62,7 +62,7 @@ class ReleaseSmokeTest {
     @Test fun wishlistImportIsSeparateFromOfferSearch() {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.4")),15000))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.5")),15000))
         device.findObject(By.text("Желания")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Загрузить и закрепить профиль")),5000))
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"wishlist.png"))
@@ -85,14 +85,14 @@ class ReleaseSmokeTest {
             .putString("wishlist_selected_profile",steamId).putString("wishlist_profile",profile.input)
             .putString("wishlist_games",SteamWishlist.encode(profile.games)).putLong("wishlist_imported_at",profile.importedAt).commit()
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.4")),15000))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.5")),15000))
         device.findObject(By.text("Желания")).click()
         assertTrue(device.wait(Until.hasObject(By.textContains("Namtar")),5000))
         assertTrue(device.hasObject(By.textContains("Friend")))
         device.pressBack()
         if (!device.wait(Until.hasObject(By.textContains("Namtar")),1500)) {
             context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-            assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.4")),15000))
+            assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.5")),15000))
             device.findObject(By.text("Желания")).click()
             assertTrue(device.wait(Until.hasObject(By.textContains("Namtar")),5000))
         }

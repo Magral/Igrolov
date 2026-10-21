@@ -14,6 +14,7 @@ import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
@@ -44,15 +45,24 @@ class MonitorRegressionTest {
         val mode=AtomicInteger(0)
         val calls=AtomicInteger(0)
         val changed=AtomicBoolean(false)
+        val ggselEnabled=AtomicBoolean(false)
+        val ggselOffline=AtomicBoolean(false)
         URL.setURLStreamHandlerFactory { protocol -> if(protocol!="https") null else object:URLStreamHandler() {
             override fun openConnection(url:URL):URLConnection=object:HttpURLConnection(url) {
                 override fun connect(){}
                 override fun disconnect(){}
                 override fun usingProxy()=false
-                override fun getResponseCode()=if(mode.get()==1 || (mode.get()==2 && url.path.contains("/10006/")))503 else 200
+                override fun getResponseCode()=if(mode.get()==1 || (mode.get()==2 && url.path.contains("/10006/")) || (ggselOffline.get() && url.host=="api.ggsel.com"))503 else 200
+                override fun getOutputStream()=ByteArrayOutputStream()
                 override fun getInputStream():ByteArrayInputStream {
                     if(getResponseCode()!=200)throw IOException("HTTP ${getResponseCode()}")
                     val json=when {
+                        url.host=="api.ggsel.com" && url.path.endsWith("query-categories") -> if(ggselEnabled.get())
+                            JSONObject("""{"data":{"categories":[{"digi_catalog":77,"name":"Cyberpunk 2077","url":"cyberpunk-2077"}]}}""")
+                            else JSONObject("""{"data":{"categories":[]}}""")
+                        url.host=="api.ggsel.com" && url.path.endsWith("/categories") -> JSONObject("""{"items":[
+                            {"id_goods":77777,"url":"cyberpunk-steam-key-ru","name":"Cyberpunk 2077 Steam Key РФ","forbidden_type":0,
+                             "price_for_one_wmr":"50","is_preorder":false,"options_check":false,"options":[]}] }""")
                         url.path.contains("appdetails") -> JSONObject("""{"1091500":{"success":true,"data":{"name":"Cyberpunk 2077","type":"game","dlc":[2138330]}}}""")
                         url.path.endsWith("search2") -> {
                             val items=JSONArray()
@@ -133,6 +143,34 @@ class MonitorRegressionTest {
         mode.set(7);changed.set(false)
         assertEquals(ListenableWorker.Result.success(),worker().doWork())
         assertEquals(0,WatchStore.read(context).length());assertEquals(4,AlertJournal.read(context).length())
+
+        // A complete monitor snapshot now merges verified Plati and active GGSEL catalog prices.
+        mode.set(0);changed.set(false)
+        ggselEnabled.set(true)
+        AlertJournal.clear(context)
+        WatchStore.add(context,"Cyberpunk 2077","Key",100.0,appId=1091500)
+        assertEquals(ListenableWorker.Result.success(),worker().doWork())
+        watch=WatchStore.read(context).getJSONObject(0)
+        assertEquals("ggsel:77777",watch.getString("bestId"))
+        assertEquals(50.0,watch.getDouble("last"),0.001)
+        assertEquals(3,watch.getJSONObject("sourceCounts").getInt("Plati"))
+        assertEquals(1,watch.getJSONObject("sourceCounts").getInt("GGSEL"))
+        val top=watch.getJSONArray("topOffers").getJSONObject(0)
+        assertEquals("GGSEL",top.getString("marketplace"))
+        assertEquals("https://ggsel.net/en/catalog/product/cyberpunk-steam-key-ru",top.getString("url"))
+        val ggselAlert=AlertJournal.read(context).getJSONObject(0)
+        assertEquals("GGSEL",ggselAlert.getString("marketplace"))
+        assertTrue(ggselAlert.getString("url").contains("ggsel.net"))
+
+        // An unavailable provider cannot turn its previous confirmed price into zero or a history gap.
+        val savedHistory=watch.getJSONArray("history").length()
+        ggselOffline.set(true)
+        assertEquals(ListenableWorker.Result.retry(),worker().doWork())
+        watch=WatchStore.read(context).getJSONObject(0)
+        assertEquals(50.0,watch.getDouble("last"),0.001)
+        assertEquals(savedHistory,watch.getJSONArray("history").length())
+        assertTrue(watch.getString("error").contains("GGSEL HTTP 503"))
+        ggselOffline.set(false)
         manager.cancelAll()
     }
 }

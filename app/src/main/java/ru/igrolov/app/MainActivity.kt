@@ -152,23 +152,6 @@ class MainActivity : ComponentActivity() {
         throw last ?: java.io.IOException("Нет соединения")
     }
 
-    private fun postGgselJson(path: String, body: JSONObject): JSONObject {
-        val connection = (URL("https://api.ggsel.com/v2/$path").openConnection() as HttpURLConnection)
-        connection.connectTimeout = 12000
-        connection.readTimeout = 18000
-        connection.requestMethod = "POST"
-        connection.doOutput = true
-        connection.setRequestProperty("Accept", "application/json")
-        connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-        connection.setRequestProperty("User-Agent", "Igrolov Android")
-        try {
-            connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
-            val status = connection.responseCode
-            if (status !in 200..299) throw java.io.IOException("GGSEL HTTP $status")
-            return JSONObject(connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
-        } finally { connection.disconnect() }
-    }
-
     private fun searchCatalog(query: String, pageCount: Int, generation: Int, selectedAppId: Int?, additionalAliases: List<String>, progress: (Int, Int, Int) -> Unit, callback: (List<Offer>, String, List<String>) -> Unit) {
         catalogExecutor.execute {
             val found = mutableListOf<Offer>()
@@ -248,36 +231,10 @@ class MainActivity : ComponentActivity() {
             var ggselFailure = ""
             if (generation == activeCatalogGeneration.get() && !Thread.currentThread().isInterrupted) {
                 try {
-                    val categoryRoot = postGgselJson("elastic/goods/query-categories", JSONObject()
-                        .put("search_term", reference.canonical)
-                        .put("lang", "ru")
-                        .put("limit", 10))
-                    val category = GgselCatalog.chooseCategory(
-                        GgselCatalog.categories(categoryRoot), listOf(reference.canonical) + reference.aliases
-                    )
-                    if (category != null) {
-                        val productRoot = postGgselJson("elastic/goods/categories", JSONObject()
-                            .put("digi_catalog", category.id)
-                            .put("url", category.url)
-                            .put("limit", 100)
-                            .put("content_type_ids", JSONArray())
-                            .put("search_after", JSONArray())
-                            .put("with_filters", false)
-                            .put("is_preorders", false)
-                            .put("ab_test_without_emoji", true)
-                            .put("sort", "sortByRec")
-                            .put("query_string", "")
-                            .put("with_forbidden", false)
-                            .put("min_price", "")
-                            .put("max_price", "")
-                            .put("currency", "wmr")
-                            .put("lang", "ru")
-                            .put("platforms", JSONArray().put("Steam"))
-                            .put("page", 1))
-                        found.addAll(GgselCatalog.offers(productRoot, reference))
-                        if (generation == activeCatalogGeneration.get()) runOnUiThread {
-                            if (generation == activeCatalogGeneration.get()) progress(pageCount, pageCount, found.size)
-                        }
+                    found.addAll(GgselBuyerApi.find(reference,
+                        active = { generation == activeCatalogGeneration.get() && !Thread.currentThread().isInterrupted }))
+                    if (generation == activeCatalogGeneration.get()) runOnUiThread {
+                        if (generation == activeCatalogGeneration.get()) progress(pageCount, pageCount, found.size)
                     }
                 } catch (e: Exception) {
                     ggselFailure = "GGSEL: ${e.message ?: "каталог временно недоступен"}"
@@ -804,7 +761,7 @@ class MainActivity : ComponentActivity() {
             }
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Игролов 1.1.4", style = MaterialTheme.typography.headlineSmall)
+                Text("Игролов 1.1.5", style = MaterialTheme.typography.headlineSmall)
                 IconButton(onClick = { settingsOpen = !settingsOpen; showDirectory = false }) {
                     Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                         color = MaterialTheme.colorScheme.onSurface)
@@ -1021,6 +978,7 @@ class MainActivity : ComponentActivity() {
                 LinearProgressIndicator(progress = { if (monitorTotal > 0) monitorDone.toFloat() / monitorTotal else 0f }, modifier = Modifier.fillMaxWidth())
                 Text("Проверено игр: $monitorDone / $monitorTotal${if (monitorCurrent.isNotBlank()) " · Сейчас: $monitorCurrent" else ""}", style = MaterialTheme.typography.bodySmall)
             }
+            Text("Цены проверяются на Plati и GGSEL. В уведомления попадают только активные предложения с подтверждённой ценой и регионом РФ.",style=MaterialTheme.typography.bodySmall)
             Text(watchMessage, style = MaterialTheme.typography.bodySmall)
             val watchArray = remember(watches) { JSONArray(watches) }
             for (wi in 0 until watchArray.length()) {
@@ -1042,6 +1000,8 @@ class MainActivity : ComponentActivity() {
                                         if (w.has("eligibleCount") && w.optInt("eligibleCount") == 0) Text("Подходящих предложений нет — это не ошибка сети.", style = MaterialTheme.typography.bodySmall)
                                         else if (w.has("verifiedCount") && w.optInt("verifiedCount", 0) == 0) Text("Нет предложений с подтверждёнными наличием, ценой, РФ и способом передачи; уведомления не отправляются.", style = MaterialTheme.typography.bodySmall)
                         }
+                        val sourceCounts=w.optJSONObject("sourceCounts")
+                        if(sourceCounts!=null) Text("Источники · Plati: ${sourceCounts.optInt("Plati")} · GGSEL: ${sourceCounts.optInt("GGSEL")}",style=MaterialTheme.typography.bodySmall)
                         var resultsExpanded by remember(w.optString("name")) { mutableStateOf(false) }
                         val bestOffers = w.optJSONArray("topOffers") ?: JSONArray()
                         TextButton(onClick = { resultsExpanded = !resultsExpanded }) {
@@ -1057,24 +1017,26 @@ class MainActivity : ComponentActivity() {
                                 val title = offerJson.optString("name")
                                 val price = offerJson.optDouble("price")
                                 val type = offerJson.optString("type")
+                                val marketplace=offerJson.optString("marketplace","Plati")
+                                val productUrl=offerJson.optString("url").ifBlank { "https://plati.market/itm/$id" }
                                 ElevatedCard(Modifier.fillMaxWidth()) {
                                     Column(Modifier.padding(10.dp)) {
                                         Text(title, style = MaterialTheme.typography.bodyMedium)
-                                        Text("$type · " + String.format(Locale("ru", "RU"), "%.2f ₽", price))
+                                        Text("$marketplace · $type · " + String.format(Locale("ru", "RU"), "%.2f ₽", price))
                                         if(offerJson.optString("note").isNotBlank())Text(offerJson.optString("note"),style=MaterialTheme.typography.bodySmall)
                                         Row {
                                             TextButton(onClick = {
-                                                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://plati.market/itm/$id")))
-                                            }) { Text("Открыть") }
+                                                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(productUrl)))
+                                            }) { Text("Открыть на $marketplace") }
                                             TextButton(onClick = {
-                                                if (items.none { it.id == id }) {
+                                                if (marketplace=="Plati" && items.none { it.id == id }) {
                                                     val tracked=Tracked(id,title,price,"Ожидает обновления","https://plati.market/itm/$id",offerJson.optString("canonical",w.optString("name")),offerJson.optInt("steamAppId",w.optInt("steamAppId")))
                                                     items = items + tracked
                                                     cacheTracked(tracked)
                                                     saveIds(items.map { it.id })
                                                     fetch(id) { found -> cacheTracked(found); items = items.map { if (it.id == id) TrackedPriceCache.merge(it,found) else it } }
                                                 }
-                                            }, enabled = items.none { it.id == id }) { Text("Отслеживать") }
+                                            }, enabled = marketplace=="Plati" && items.none { it.id == id }) { Text(if(marketplace=="GGSEL") "Мониторится по игре" else "Отслеживать товар") }
                                             TextButton(onClick = {
                                                 IgnoredStore.add(this@MainActivity, id, title)
                                                 ignoredIds = IgnoredStore.ids(this@MainActivity)
@@ -1123,17 +1085,19 @@ class MainActivity : ComponentActivity() {
                 for (ai in 0 until alerts.length()) {
                     val alert = alerts.optJSONObject(ai) ?: continue
                     val id = alert.optString("id")
+                    val marketplace=alert.optString("marketplace","Plati")
+                    val alertUrl=alert.optString("url").ifBlank { "https://plati.market/itm/$id" }
                     val stamp = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("ru", "RU"))
                         .format(java.util.Date(alert.optLong("at")))
                     ElevatedCard(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(alert.optString("game"), style = MaterialTheme.typography.titleMedium)
                             Text(alert.optString("name"), style = MaterialTheme.typography.bodySmall)
-                            Text("${alert.optString("type")} · ${String.format(Locale("ru", "RU"), "%.2f ₽", alert.optDouble("price"))} · цель до ${alert.optDouble("limit").toInt()} ₽")
+                            Text("$marketplace · ${alert.optString("type")} · ${String.format(Locale("ru", "RU"), "%.2f ₽", alert.optDouble("price"))} · цель до ${alert.optDouble("limit").toInt()} ₽")
                             Text("Найдено: $stamp · ID $id", style = MaterialTheme.typography.bodySmall)
                             TextButton(onClick = {
-                                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://plati.market/itm/$id")))
-                            }) { Text("Открыть на Plati") }
+                                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(alertUrl)))
+                            }) { Text("Открыть на $marketplace") }
                         }
                     }
                 }

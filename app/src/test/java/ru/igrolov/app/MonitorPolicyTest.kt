@@ -29,6 +29,20 @@ class MonitorPolicyTest {
         for(bad in listOf(offer().copy(type="Не указан"),offer().copy(available=null),offer().copy(priceVerified=false),offer().copy(edition="Не подтверждено"),offer().copy(edition="DLC"),offer().copy(rfStatus="Регион РФ не подтвержден")))
             assertFalse(bad.toString(),MonitorPolicy.eligible(bad,"Все"))
     }
+    @Test fun alertsKeepPlatiAndGgselOffersAsSeparateMarketplaceIdentities() {
+        val plati=offer().copy(id="123456",marketplace="Plati")
+        val ggsel=offer().copy(id="ggsel:123456",marketplace="GGSEL",productUrl="https://ggsel.net/en/catalog/product/stellaris")
+        val first=MonitorPolicy.alerts(listOf(plati,ggsel),110.0,JSONObject(),JSONArray())
+        assertEquals(2,first.offers.size)
+        assertTrue(first.prices.has("123456"))
+        assertTrue(first.prices.has("ggsel:123456"))
+        assertTrue(MonitorPolicy.alerts(listOf(plati,ggsel),110.0,first.prices,JSONArray()).offers.isEmpty())
+        val ggselDrop=ggsel.copy(price=90.0)
+        val drop=MonitorPolicy.alerts(listOf(plati,ggselDrop),110.0,first.prices,JSONArray())
+        assertEquals(listOf("ggsel:123456"),drop.offers.map {it.id})
+        assertEquals("GGSEL",drop.offers.single().marketplace)
+        assertEquals("https://ggsel.net/en/catalog/product/stellaris",drop.offers.single().productUrl)
+    }
     @Test fun historyKeepsMissingOffersAsGapsAndRejectsInvalidPrices() {
         val now=2000000000000L
         val old=JSONArray().put(JSONObject().put("at",now-100L*86400000).put("price",10))
