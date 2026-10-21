@@ -1254,7 +1254,10 @@ class MainActivity : ComponentActivity() {
                                     ))) },
                                         modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp)) { Text("Открыть", maxLines = 1) }
                                     TextButton(onClick = {
-                                        val tracked=TrackedPriceCache.fromOffer(offer)
+                                        val tracked=TrackedPriceCache.fromOffer(offer.copy(
+                                            canonical=offer.canonical.ifBlank { selectedGame?.name ?: query },
+                                            steamAppId=offer.steamAppId.takeIf { it>0 } ?: selectedGame?.appId ?: 0
+                                        ))
                                         if(items.none { it.storageKey==tracked.storageKey }) {
                                             items = items + tracked
                                             cacheTracked(tracked)
