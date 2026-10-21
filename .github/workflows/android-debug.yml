@@ -134,6 +134,19 @@ jobs:
           else
             gh release download v1.0.4.1 --repo "$GITHUB_REPOSITORY" --pattern Igrolov-1.0.4.1.apk -D baseline
           fi
+      - name: Retry Android Emulator SDK installation
+        run: |
+          sdkmanager --version
+          yes | sdkmanager --licenses > /dev/null
+          for attempt in 1 2 3; do
+            if sdkmanager --install emulator --channel=0; then
+              exit 0
+            fi
+            echo "Android Emulator package install failed (attempt $attempt/3); retrying."
+            rm -rf "${ANDROID_HOME:-/usr/local/lib/android/sdk}/emulator"
+            sleep "$((attempt * 5))"
+          done
+          exit 1
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
