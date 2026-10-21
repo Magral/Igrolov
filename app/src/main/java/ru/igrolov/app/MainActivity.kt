@@ -69,12 +69,24 @@ class MainActivity : ComponentActivity() {
     private val prefs by lazy { getSharedPreferences("tracked_products", MODE_PRIVATE) }
     private fun loadIds(): List<String> = prefs.getString("ids", "")!!.split(",").filter { it.isNotBlank() }
     private fun saveIds(ids: List<String>) = prefs.edit().putString("ids", ids.distinct().joinToString(",")).apply()
-    private fun cachedTracked(id:String)=TrackedPriceCache.decode(id,MonitorRoomStore.readTrackedProduct(this,id))
-    private fun cachedTrackedFromPreferences(id:String)=TrackedPriceCache.decode(id,prefs.getString("product_cache_$id",null))
+    private fun trackedLegacyId(key:String)=key.substringAfter(':',key)
+    private fun cachedTracked(key:String):Tracked {
+        val legacyId=trackedLegacyId(key)
+        val cached=MonitorRoomStore.readTrackedProduct(this,key)
+            ?: if(legacyId!=key) MonitorRoomStore.readTrackedProduct(this,legacyId) else null
+        return TrackedPriceCache.decode(key,cached)
+    }
+    private fun cachedTrackedFromPreferences(key:String):Tracked {
+        val legacyId=trackedLegacyId(key)
+        val cached=prefs.getString("product_cache_$key",null)
+            ?: if(legacyId!=key) prefs.getString("product_cache_$legacyId",null) else null
+        return TrackedPriceCache.decode(key,cached)
+    }
     private fun cacheTracked(item:Tracked) {
         val cached=TrackedPriceCache.encode(item) ?: return
-        prefs.edit().putString("product_cache_${item.id}",cached).apply()
-        ioExecutor.execute { MonitorRoomStore.writeTrackedProduct(this,item.id,cached) }
+        val key=item.storageKey
+        prefs.edit().putString("product_cache_$key",cached).apply()
+        ioExecutor.execute { MonitorRoomStore.writeTrackedProduct(this,key,cached) }
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,36 +101,56 @@ class MainActivity : ComponentActivity() {
             )) { Screen() }
         }
     }
-    private fun fetch(id: String, callback: (Tracked) -> Unit) {
+    private fun fetch(id:String,callback:(Tracked)->Unit) =
+        fetch(Tracked(id,"Товар $id",null,"Обновляем цену…","https://plati.market/itm/$id"),callback)
+
+    private fun fetch(item:Tracked, callback:(Tracked)->Unit) {
         detailExecutor.execute {
-            val previous=cachedTracked(id)
+            val previous=cachedTracked(item.storageKey).let { cached ->
+                if(cached.price==null && item.price!=null) item else cached
+            }
             val result = try {
-                val conn = (URL("https://api.digiseller.com/api/products/$id/data?currency=RUB&lang=ru-RU").openConnection() as HttpURLConnection)
-                conn.connectTimeout = 12000
-                conn.readTimeout = 12000
-                conn.setRequestProperty("Accept", "application/json")
-                try {
-                    if (conn.responseCode !in 200..299) error("HTTP ${conn.responseCode}")
-                    val json = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
-                    if (json.optInt("retval", -1) != 0) error(json.optString("retdesc", "Ошибка API"))
-                    val product = json.optJSONObject("product") ?: error("Нет данных товара")
-                    if(product.optString("id")!=id) error("ID карточки не совпадает")
-                    val identity=TrackedGameIdentity.resolve(previous,product.optString("name"),ManualSearchSettings.games(this)+GameSearchResolver.seeds)
-                    var calculationFailure:Exception?=null
-                    val proof=ManualPurchaseProof.inspect(product,identity.canonical) {path->
-                        try {CatalogApi.get(path,true)}catch(e:Exception) {calculationFailure=e;null}
-                    }
-                    calculationFailure?.let {throw it}
-                    val state=when {
-                        product.optInt("is_available",-1)==0 -> "Нет в наличии"
-                        !proof.available -> "Наличие не подтверждено"
-                        proof.price==null -> proof.label
-                        else -> "В продаже · ${proof.label}"
-                    }
-                    Tracked(id,product.optString("name","Товар $id"),proof.price.takeIf {proof.available},state,"https://plati.market/itm/$id",identity.canonical.takeIf {identity.confirmed}.orEmpty(),identity.appId)
-                } finally { conn.disconnect() }
+                if(item.marketplace=="GGSEL") {
+                    if(item.steamAppId<=0 || item.canonical.isBlank())
+                        error("Для отслеживания GGSEL не хватает подтверждённой игры Steam")
+                    val reference=ManualGameReference.lookup(item.canonical,item.steamAppId,emptyList())
+                    if(reference.appId!=item.steamAppId)
+                        error("Steam не подтвердил игру для обновления GGSEL")
+                    val offer=GgselBuyerApi.find(reference).firstOrNull { it.id==item.id }
+                    if(offer==null) item.copy(price=null,status="Нет активного предложения GGSEL")
+                    else Tracked(item.id,offer.name,offer.price.takeIf {offer.priceVerified && offer.available==true},
+                        if(offer.priceVerified && offer.available==true) "В продаже · GGSEL" else "Цена или наличие не подтверждены",
+                        offer.productUrl.ifBlank { item.url },offer.canonical,item.steamAppId,"GGSEL")
+                } else {
+                    val id=item.id
+                    val conn = (URL("https://api.digiseller.com/api/products/$id/data?currency=RUB&lang=ru-RU").openConnection() as HttpURLConnection)
+                    conn.connectTimeout = 12000
+                    conn.readTimeout = 12000
+                    conn.setRequestProperty("Accept", "application/json")
+                    try {
+                        if (conn.responseCode !in 200..299) error("HTTP ${conn.responseCode}")
+                        val json = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
+                        if (json.optInt("retval", -1) != 0) error(json.optString("retdesc", "Ошибка API"))
+                        val product = json.optJSONObject("product") ?: error("Нет данных товара")
+                        if(product.optString("id")!=id) error("ID карточки не совпадает")
+                        val identity=TrackedGameIdentity.resolve(previous,product.optString("name"),ManualSearchSettings.games(this)+GameSearchResolver.seeds)
+                        var calculationFailure:Exception?=null
+                        val proof=ManualPurchaseProof.inspect(product,identity.canonical) {path->
+                            try {CatalogApi.get(path,true)}catch(e:Exception) {calculationFailure=e;null}
+                        }
+                        calculationFailure?.let {throw it}
+                        val state=when {
+                            product.optInt("is_available",-1)==0 -> "Нет в наличии"
+                            !proof.available -> "Наличие не подтверждено"
+                            proof.price==null -> proof.label
+                            else -> "В продаже · ${proof.label}"
+                        }
+                        Tracked(id,product.optString("name","Товар $id"),proof.price.takeIf {proof.available},state,item.url,
+                            identity.canonical.takeIf {identity.confirmed}.orEmpty(),identity.appId,"Plati")
+                    } finally { conn.disconnect() }
+                }
             } catch (e: Exception) {previous.copy(price=null,status="Ошибка загрузки: ${e.message ?: "нет соединения"}")}
-            runOnUiThread { callback(result) }
+            runOnUiThread { callback(TrackedPriceCache.merge(previous,result)) }
         }
     }
     // Network requests are performed only on background threads.
