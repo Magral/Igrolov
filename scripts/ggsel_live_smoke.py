@@ -58,7 +58,9 @@ def get_text(url):
     with urllib.request.urlopen(request, timeout=20) as response:
         if not 200 <= response.status < 300:
             raise RuntimeError(f"{url}: HTTP {response.status}")
-        return response.read().decode("utf-8")
+        html = response.read().decode("utf-8")
+        print(f"GGSEL category page: HTTP {response.status}, final_url={response.geturl()}, content_type={response.headers.get('Content-Type', '')}, bytes={len(html)}")
+        return html
 
 def category_id_from_html(html):
     match = re.search(
@@ -98,8 +100,11 @@ def main():
     if exact is None:
         raise RuntimeError(f"GGSEL did not return exact Stellaris category; found {[c[1] for c in categories[:10]]}")
     _, name, slug = exact
-    catalog_id = category_id_from_html(get_text(CATEGORY_PAGE + slug))
+    page_html = get_text(CATEGORY_PAGE + slug)
+    catalog_id = category_id_from_html(page_html)
     if catalog_id <= 0:
+        preview = re.sub(r"\s+", " ", page_html[:1600])
+        print(f"GGSEL category page HTML preview: {preview}", file=sys.stderr)
         raise RuntimeError(f"GGSEL category page did not expose digi_catalog for {name} ({slug})")
     body = {
         "digi_catalog": catalog_id, "url": slug, "limit": 5,
