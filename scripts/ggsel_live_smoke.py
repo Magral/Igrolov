@@ -103,8 +103,13 @@ def main():
     page_html = get_text(CATEGORY_PAGE + slug)
     catalog_id = category_id_from_html(page_html)
     if catalog_id <= 0:
-        preview = re.sub(r"\s+", " ", page_html[:1600])
+        preview = re.sub(r"\s+", " ", page_html[:700])
         print(f"GGSEL category page HTML preview: {preview}", file=sys.stderr)
+        for marker in ("digi_catalog", "Stellaris", "stellaris", "pageProps", "__next_f"):
+            positions = [m.start() for m in re.finditer(re.escape(marker), page_html, re.IGNORECASE)][:3]
+            for position in positions:
+                context = re.sub(r"\s+", " ", page_html[max(0, position - 160):position + 360])
+                print(f"GGSEL page marker {marker} at {position}: {context}", file=sys.stderr)
         raise RuntimeError(f"GGSEL category page did not expose digi_catalog for {name} ({slug})")
     body = {
         "digi_catalog": catalog_id, "url": slug, "limit": 5,
