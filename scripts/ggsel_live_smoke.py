@@ -10,6 +10,7 @@ import urllib.request
 CATEGORY_QUERY = "https://api.ggsel.com/elastic/goods/query-categories"
 CATEGORY_GOODS = "https://api4.ggsel.com/elastic/goods/categories"
 CATEGORY_GOODS_FALLBACK = "https://api.ggsel.com/elastic/goods/categories"
+CATEGORY_SEARCH_FALLBACK = "https://api.ggsel.com/elastic/goods/query"
 CATEGORY_PAGE = "https://ggsel.net/en/catalog/"
 HEADERS = {
     "Accept": "application/json, text/plain, */*",
@@ -159,7 +160,25 @@ def main():
         if items:
             print(f"GGSEL live smoke passed: exact category + page ID + product catalog ({catalog_id}: {name}, variant={label})")
             return
-    raise RuntimeError("GGSEL product catalog returned zero rows for every known request parameter set")
+    search_body = {
+        "search_term": "Stellaris", "digi_catalog": catalog_id, "url": slug,
+        "limit": 60, "search_after": [], "is_preorders": False,
+        "with_filters": True, "with_categories": False, "sort": "sortByPriceUp",
+        "content_type_ids": [48, 2], "with_forbidden": False,
+        "min_price": "", "max_price": "", "currency": "wmr",
+        "lang": "en", "platforms": ["Steam"],
+    }
+    search_results = post_json(CATEGORY_SEARCH_FALLBACK, search_body)
+    search_data = search_results.get("data") if isinstance(search_results, dict) else None
+    search_items = search_data.get("items") if isinstance(search_data, dict) else None
+    if not isinstance(search_items, list):
+        raise RuntimeError("GGSEL search endpoint returned an invalid product list")
+    print(f"GGSEL live search fallback: {len(search_items)} product rows")
+    matching = [item for item in search_items if isinstance(item, dict) and "stellaris" in str(item.get("name", "")).casefold()]
+    if matching:
+        print(f"GGSEL live smoke passed: exact category + page ID + query endpoint ({catalog_id}: {name}, {len(matching)} Stellaris rows)")
+        return
+    raise RuntimeError("GGSEL product/category APIs returned no Stellaris rows")
 
 if __name__ == "__main__":
     try:
