@@ -497,7 +497,163 @@ class MainActivity : ComponentActivity() {
         var activeTab by remember { mutableStateOf(0) }
         var settingsOpen by remember { mutableStateOf(false) }
         var topGames by remember { mutableStateOf<List<String>>(emptyList()) }
-        var topBusy by re�о."
+        var topBusy by remember { mutableStateOf(false) }
+        var topError by remember { mutableStateOf("") }
+        fun refreshTop() {
+            if (topBusy) return
+            topBusy = true
+            loadPaidTopSellers { games, error ->
+                topGames = games
+                topError = error
+                topBusy = false
+            }
+        }
+        LaunchedEffect(activeTab, settingsOpen) {
+            if (activeTab == 4 && !settingsOpen && topGames.isEmpty() && !topBusy) refreshTop()
+        }
+        fun importWishlist() {
+            if (wishlistBusy) return
+            val profile = wishlistProfile.trim().ifBlank {
+                wishlistProfiles.firstOrNull { it.steamId64 == selectedWishlistId }?.input.orEmpty()
+            }
+            if (profile.isBlank()) {
+                wishlistMessage = "Вставьте SteamID64 или ссылку на открытый профиль Steam."
+                return
+            }
+            wishlistBusy = true
+            wishlistMessage = "Загружаем профиль, список и цены Steam RU…"
+            wishlistExecutor.execute {
+                try {
+                    val snapshot = SteamWishlist.fetchSnapshot(profile)
+                    val timestamp = System.currentTimeMillis()
+                    runOnUiThread {
+                        val previous = wishlistProfiles.firstOrNull { it.steamId64 == snapshot.steamId64 }
+                        val games = snapshot.games.map { game ->
+                            game.copy(lowestPlatiPrice = previous?.games?.firstOrNull { it.appId == game.appId }?.lowestPlatiPrice)
+                        }
+                        val savedProfile = WishlistProfile(snapshot.steamId64, snapshot.displayName, profile, games, timestamp)
+                        persistWishlistProfiles(listOf(savedProfile) + wishlistProfiles.filterNot { it.steamId64 == snapshot.steamId64 })
+                        selectedWishlistId = snapshot.steamId64
+                        wishlistProfile = ""
+                        prefs.edit().putString("wishlist_profile", profile)
+                            .putString("wishlist_games", SteamWishlist.encode(games))
+                            .putString("wishlist_selected_profile", snapshot.steamId64)
+                            .putLong("wishlist_imported_at", timestamp).apply()
+                        wishlistGames = games
+                        wishlistVisibleLimit = 50
+                        wishlistImportedAt = timestamp
+                        wishlistBusy = false
+                        wishlistMessage = if (games.isEmpty()) "В открытом списке пока нет игр."
+                            else "Сохранён профиль «${snapshot.displayName}». Игр: ${games.size}. Цены Steam RU обновлены. Нажмите на название игры для общего поиска или «Искать» для проверки цены в этом списке."
+                    }
+                } catch (e: Exception) {
+                    runOnUiThread {
+                        wishlistBusy = false
+                        wishlistMessage = "Не удалось обновить список: ${e.message ?: "ошибка Steam"}. Сохранённая копия оставлена."
+                    }
+                }
+            }
+        }
+        fun startCatalogSearch(
+            candidateOverride: GameSearchResolver.Candidate? = null,
+            wishlistProfileId: String? = null,
+            hiddenWishlistSearch: Boolean = false
+        ) {
+            if (searching && candidateOverride == null) return
+            if (!manualFilters.valid) {
+                val key = if (wishlistProfileId != null && candidateOverride != null)
+                    "$wishlistProfileId:${candidateOverride.appId}" else null
+                if (key != null) wishlistSearchStatuses = wishlistSearchStatuses + (key to "Проверьте ценовой фильтр")
+                else searchMessage = "Проверьте ценовой фильтр"
+                return
+            }
+            val identity = candidateOverride ?: selectedGame ?: GameSearchResolver.exact(query, gameSuggestions)
+            if (candidateOverride == null && selectedGame == null && gameSuggestions.isNotEmpty() && identity == null) {
+                searching = false
+                searchMessage = "Выберите точную игру из предложений Steam"
+                return
+            }
+            val requestedGame = identity?.name?.replace(Regex("[™®©]"), "") ?: query.trim()
+            if (requestedGame.isBlank()) return
+
+            wishlistSearchingKeys.forEach { key -> wishlistSearchStatuses = wishlistSearchStatuses + (key to "Поиск остановлен") }
+            wishlistSearchingKeys = emptySet()
+            val wishlistKey = wishlistProfileId?.let { "$it:${identity?.appId ?: candidateOverride?.appId}" }
+            if (hiddenWishlistSearch && wishlistKey != null) {
+                wishlistSearchingKeys = setOf(wishlistKey)
+                wishlistSearchStatuses = wishlistSearchStatuses + (wishlistKey to "Ищем минимальную цену…")
+            }
+
+            searchGeneration++
+            activeCatalogGeneration.set(searchGeneration)
+            val generation = searchGeneration
+            visibleOfferLimit = 30
+            searching = true
+            searchPage = 0
+            searchFound = 0
+            if (!hiddenWishlistSearch) {
+                offers = emptyList()
+                searchMessage = if (candidateOverride != null)
+                    "Автопоиск Plati · выполняется для «$requestedGame»…"
+                else "Поиск предложений…"
+                query = requestedGame
+                if (identity != null) selectedGame = identity
+                queryHistory = (listOf(requestedGame) + queryHistory.filterNot { it.equals(requestedGame, ignoreCase = true) }).take(20)
+                searchPrefs.edit().putString("queries", JSONArray(queryHistory).toString()).apply()
+                activeTab = 0
+                settingsOpen = false
+            }
+            if (identity != null) ManualSearchSettings.rememberGame(this@MainActivity, identity)
+            steamGame = null
+
+            searchCatalog(requestedGame, searchTotalPages, generation, identity?.appId, { page, _, count ->
+                if (generation == searchGeneration) {
+                    searchPage = page
+                    searchFound = count
+                }
+            }) { found, failure ->
+                if (generation != searchGeneration) return@searchCatalog
+                if (!hiddenWishlistSearch) offers = found
+                searching = false
+                val ready = found.count { ManualContentRules.visible(it, "Игра", "Все") }
+                val unavailable = found.count { it.available != true }
+                val uncertainPrice = found.count { it.available == true && !it.priceVerified }
+                val wishlistSearch = wishlistProfileId != null && identity?.appId != null
+                val wishlistRules = if (wishlistSearch) GameRuleStore.read(this@MainActivity, requestedGame) else null
+                val minimum = if (wishlistSearch) found.asSequence()
+                    .filter {
+                        ManualSearchFilter.rejection(it, manualFilters, wishlistRules!!, ignoredIds) == null &&
+                            it.available == true && it.priceVerified && it.price > 0.0
+                    }
+                    .minOfOrNull { it.price } else null
+                if (wishlistSearch && wishlistProfileId != null && identity != null) {
+                    val updatedProfiles = wishlistProfiles.map { profile ->
+                        if (profile.steamId64 != wishlistProfileId || minimum == null) profile else profile.copy(games = profile.games.map { game ->
+                            if (game.appId == identity.appId) game.copy(lowestPlatiPrice = minimum) else game
+                        })
+                    }
+                    if (minimum != null) {
+                        persistWishlistProfiles(updatedProfiles)
+                        if (selectedWishlistId == wishlistProfileId) {
+                            wishlistGames = updatedProfiles.firstOrNull { it.steamId64 == wishlistProfileId }?.games.orEmpty()
+                            prefs.edit().putString("wishlist_games", SteamWishlist.encode(wishlistGames)).apply()
+                        }
+                    }
+                    val key = "$wishlistProfileId:${identity.appId}"
+                    wishlistSearchingKeys = wishlistSearchingKeys - key
+                    wishlistSearchStatuses = wishlistSearchStatuses + (key to when {
+                        failure.isNotBlank() -> "Ошибка поиска цен"
+                        minimum != null -> "Минимум найден в Plati"
+                        else -> "Подтверждённая цена не найдена"
+                    })
+                }
+                if (!hiddenWishlistSearch) {
+                    val summary = if (failure.isNotBlank()) "Ошибка поиска: $failure" else
+                        "Проверено: ${found.size} · основная игра с подтверждёнными наличием и ценой: $ready. " +
+                            "Скрыто без подтверждённого наличия: $unavailable; без точной цены варианта: $uncertainPrice." +
+                            if (wishlistSearch) {
+                                if (minimum != null) " Минимальная подтверждённая Plati цена сохранена в списке желаемого."
+                                else " Подтверждённая Plati цена не найдена; сохранённое значение не изменено."
                             } else ""
                     searchMessage = if (candidateOverride != null) "Автопоиск Plati · $summary" else summary
                 }
