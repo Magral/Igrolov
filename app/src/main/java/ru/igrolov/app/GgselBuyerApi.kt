@@ -35,7 +35,7 @@ object GgselBuyerApi {
         val categoryId = if (category.id > 0L) category.id else {
             val pageHtml = getCategoryPage(CATEGORY_PAGE_BASE_URL + category.url)
             if (!active()) return emptyList()
-            GgselCatalog.categoryIdFromPageHtml(pageHtml).takeIf { it > 0L }
+            GgselCatalog.categoryIdFromPageHtml(pageHtml, category.name, category.url).takeIf { it > 0L }
                 ?: throw IOException("GGSEL category page has no digi_catalog for " + category.name)
         }
         val products = post(CATEGORY_GOODS_URL, JSONObject()

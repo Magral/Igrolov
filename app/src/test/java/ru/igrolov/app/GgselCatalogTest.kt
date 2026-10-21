@@ -8,10 +8,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GgselCatalogTest {
-    @Test fun extractsCatalogIdOnlyFromNextPageCategoryData() {
-        val html = """<html><script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"category":{"digi_catalog":281990}}}}</script></html>"""
-        assertEquals(281990L, GgselCatalog.categoryIdFromPageHtml(html))
-        assertEquals(0L, GgselCatalog.categoryIdFromPageHtml("<html><body>blocked</body></html>"))
+    @Test fun resolvesExactCategoryFromCurrentAppRouterHydrationData() {
+        val html = """<script>{"id":12943,"digi_catalog":37770,"name":"Stellaris","url":"stellaris"}</script>"""
+        assertEquals(37770L, GgselCatalog.categoryIdFromPageHtml(html, "Stellaris", "stellaris"))
+        assertEquals(0L, GgselCatalog.categoryIdFromPageHtml(html, "Stellaris DLC", "stellaris"))
+        assertEquals(0L, GgselCatalog.categoryIdFromPageHtml(html, "Stellaris", "stellaris-dlc"))
+    }
+
+    @Test fun resolvesLegacyNextDataCategoryAndRejectsBlockedPage() {
+        val html = """<script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"category":{"name":"Stellaris","url":"stellaris","digi_catalog":281990}}}}</script>"""
+        assertEquals(281990L, GgselCatalog.categoryIdFromPageHtml(html, "Stellaris", "stellaris"))
+        assertEquals(0L, GgselCatalog.categoryIdFromPageHtml("<html>blocked</html>", "Stellaris", "stellaris"))
     }
 
     @Test fun selectsOnlyAnExactGameCategoryOrSavedAlias() {

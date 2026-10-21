@@ -62,18 +62,29 @@ def get_text(url):
         print(f"GGSEL category page: HTTP {response.status}, final_url={response.geturl()}, content_type={response.headers.get('Content-Type', '')}, bytes={len(html)}")
         return html
 
-def category_id_from_html(html):
-    match = re.search(
+def category_id_from_html(html, expected_name, expected_slug):
+    next_data = re.search(
         r"""<script\b(?=[^>]*\bid=["']__NEXT_DATA__["'])[^>]*>(.*?)</script\s*>""",
         html, re.IGNORECASE | re.DOTALL
     )
-    if not match:
-        return 0
-    try:
-        category = json.loads(match.group(1)).get("props", {}).get("pageProps", {}).get("category", {})
-        return int(category.get("digi_catalog") or 0)
-    except (ValueError, TypeError, json.JSONDecodeError):
-        return 0
+    if next_data:
+        try:
+            category = json.loads(next_data.group(1)).get("props", {}).get("pageProps", {}).get("category", {})
+            if category.get("name") == expected_name and category.get("url") == expected_slug:
+                catalog_id = int(category.get("digi_catalog") or 0)
+                if catalog_id > 0:
+                    return catalog_id
+        except (ValueError, TypeError, json.JSONDecodeError):
+            pass
+
+    # Current GGSEL App Router pages serialize category metadata in hydration data.
+    pattern = re.compile(
+        r"""(?is)\{[^{}]{0,5000}?"digi_catalog"\s*:\s*"?(\d+)"?[^{}]{0,2000}?"name"\s*:\s*"([^"\\]+)"[^{}]{0,1000}?"url"\s*:\s*"([^"\\]+)"[^{}]{0,5000}?\}"""
+    )
+    for candidate in pattern.finditer(html):
+        if candidate.group(2).casefold() == expected_name.casefold() and candidate.group(3) == expected_slug:
+            return int(candidate.group(1))
+    return 0
 
 def find_categories(root):
     pending = [root]
@@ -101,11 +112,11 @@ def main():
         raise RuntimeError(f"GGSEL did not return exact Stellaris category; found {[c[1] for c in categories[:10]]}")
     _, name, slug = exact
     page_html = get_text(CATEGORY_PAGE + slug)
-    catalog_id = category_id_from_html(page_html)
+    catalog_id = category_id_from_html(page_html, name, slug)
     if catalog_id <= 0:
         preview = re.sub(r"\s+", " ", page_html[:700])
         print(f"GGSEL category page HTML preview: {preview}", file=sys.stderr)
-        for marker in ("digi_catalog", "Stellaris", "stellaris", "pageProps", "__next_f"):
+        for marker in ("digi_catalog", name, "pageProps", "__next_f"):
             positions = [m.start() for m in re.finditer(re.escape(marker), page_html, re.IGNORECASE)][:3]
             for position in positions:
                 context = re.sub(r"\s+", " ", page_html[max(0, position - 160):position + 360])

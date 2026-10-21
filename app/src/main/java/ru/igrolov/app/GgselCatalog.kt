@@ -38,17 +38,40 @@ object GgselCatalog {
     }.distinctBy { it.url }.toList()
 
     /** Read the category ID embedded in the public catalog page's Next.js bootstrap data. */
-    fun categoryIdFromPageHtml(html: String): Long {
-        val script = Regex(
+    /** Resolve the current category ID from embedded page data, validating the exact category slug and name. */
+    fun categoryIdFromPageHtml(html: String, expectedName: String, expectedUrl: String): Long {
+        fun matches(name: String, url: String, id: Long): Boolean =
+            id > 0L &&
+                GameSearchResolver.normalized(name) == GameSearchResolver.normalized(expectedName) &&
+                url == expectedUrl
+
+        val nextData = Regex(
             """(?is)<script\b(?=[^>]*\bid=["']__NEXT_DATA__["'])[^>]*>(.*?)</script\s*>"""
-        ).find(html)?.groupValues?.getOrNull(1) ?: return 0L
-        val category = runCatching {
-            JSONObject(script.trim())
-                .optJSONObject("props")
-                ?.optJSONObject("pageProps")
-                ?.optJSONObject("category")
-        }.getOrNull() ?: return 0L
-        return category.optLong("digi_catalog", 0L).takeIf { it > 0L } ?: 0L
+        ).find(html)?.groupValues?.getOrNull(1)
+        if (nextData != null) {
+            val category = runCatching {
+                JSONObject(nextData.trim())
+                    .optJSONObject("props")
+                    ?.optJSONObject("pageProps")
+                    ?.optJSONObject("category")
+            }.getOrNull()
+            if (category != null) {
+                val id = category.optLong("digi_catalog", 0L)
+                if (matches(category.optString("name"), category.optString("url"), id)) return id
+            }
+        }
+
+        // Current GGSEL pages serialize category data in the App Router hydration stream.
+        val categoryObject = Regex(
+            """(?is)\{[^{}]{0,5000}?"digi_catalog"\s*:\s*"?(\d+)"?[^{}]{0,2000}?"name"\s*:\s*"([^"\\]+)"[^{}]{0,1000}?"url"\s*:\s*"([^"\\]+)"[^{}]{0,5000}?\}"""
+        )
+        for (candidate in categoryObject.findAll(html)) {
+            val id = candidate.groupValues[1].toLongOrNull() ?: continue
+            val name = candidate.groupValues[2]
+            val url = candidate.groupValues[3]
+            if (matches(name, url, id)) return id
+        }
+        return 0L
     }
 
     /** Only a category matching the canonical Steam title or a saved title alias is accepted. */
