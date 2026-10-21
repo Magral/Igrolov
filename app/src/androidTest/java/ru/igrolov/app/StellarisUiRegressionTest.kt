@@ -65,7 +65,9 @@ class StellarisUiRegressionTest {
         assertTrue(device.wait(Until.hasObject(By.text("Stellaris Steam Key РФ")),5000))
         assertEquals(1,device.findObjects(By.text("Stellaris Steam Key РФ")).size)
         assertFalse(device.hasObject(By.text("Stellaris Utopia Steam Key РФ")))
-        assertTrue(device.hasObject(By.textContains("1 000,00 ₽")) || device.hasObject(By.textContains("1000,00 ₽")) || device.hasObject(By.textContains("1 000,00 ₽")))
+        val priceVisible = { device.hasObject(By.textContains("1 000,00 ₽")) || device.hasObject(By.textContains("1000,00 ₽")) || device.hasObject(By.textContains("1 000,00 ₽")) }
+        repeat(5) { if (!priceVisible()) scroll.scrollForward() }
+        assertTrue(priceVisible())
         device.takeScreenshot(File(context.getExternalFilesDir(null),"stellaris-result.png"))
     }
 }
