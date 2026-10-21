@@ -34,7 +34,7 @@ class GgselBuyerApiTest {
             }
         },getCategoryPage={url->
             pageUrls+=url
-            """<script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"category":{"name":"Stellaris","digi_catalog":281990}}}}</script>"""
+            """<script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"category":{"name":"Stellaris","url":"stellaris","digi_catalog":281990}}}}</script>"""
         })
         assertEquals(listOf(GgselBuyerApi.CATEGORY_PAGE_BASE_URL+"stellaris"),pageUrls)
         assertEquals(listOf(GgselBuyerApi.CATEGORY_QUERY_URL,GgselBuyerApi.CATEGORY_GOODS_URL),paths)

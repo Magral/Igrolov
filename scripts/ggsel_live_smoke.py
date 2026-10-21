@@ -22,7 +22,7 @@ HEADERS = {
 def post_json(url, payload):
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     last = None
-    for attempt in range(3):
+    for attempt in range(5):
         request = urllib.request.Request(url, data=body, headers=HEADERS, method="POST")
         try:
             with urllib.request.urlopen(request, timeout=20) as response:
@@ -36,11 +36,11 @@ def post_json(url, payload):
                     raise RuntimeError(f"{url}: JSON root is not an object")
                 return value
         except urllib.error.HTTPError as exc:
-            if exc.code not in (429, 500, 502, 503, 504) or attempt == 2:
+            if exc.code not in (429, 500, 502, 503, 504) or attempt == 4:
                 raise RuntimeError(f"{url}: HTTP {exc.code}") from exc
             last = exc
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
-            if attempt == 2:
+            if attempt == 4:
                 raise RuntimeError(f"{url}: {exc}") from exc
             last = exc
         time.sleep(1 + attempt)
