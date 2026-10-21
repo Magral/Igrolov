@@ -8,4 +8,4 @@
 - [x] Проверить поиск и мониторинг на API 26 и 29, JVM-тесты, логи, отчёты и APK.
 - [x] Зафиксировать результаты CI и обновить README/заметки релиза.
 
-Успешный [GitHub Actions run 123](https://github.com/Magral/Igrolov/actions/runs/39419248041): 65 JVM-тестов и 14 Android-сценариев на каждом API. Логи без `FATAL EXCEPTION`. Собран [APK 1.0.8](https://github.com/Magral/Igrolov/actions/runs/39419248041/artifacts/12263695620). Стабильный Release не публикуется автоматически.
+Успешный [GitHub Actions run 123](https://github.com/Magral/Igrolov/actions/runs/39419248041): 65 JVM-тестов и 14 Android-сценариев на каждом API. Логи без `FATAL EXCEPTION`. Собран [APK 1.0.8](https://github.com/Magral/Igrolov/actions/runs/39419248041/artifacts/12263695620). Стабильный Release создаётся отдельной job после полного успешного CI для коммита с префиксом `release:`.
