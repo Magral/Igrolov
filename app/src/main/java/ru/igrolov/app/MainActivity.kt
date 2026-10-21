@@ -710,14 +710,20 @@ class MainActivity : ComponentActivity() {
                     }
                     return@searchCatalog
                 }
-                if (!hiddenWishlistSearch) offers = found
+                val results = found.map { offer ->
+                    offer.copy(
+                        canonical = offer.canonical.ifBlank { identity?.name ?: requestedGame },
+                        steamAppId = offer.steamAppId.takeIf { it > 0 } ?: identity?.appId ?: 0
+                    )
+                }
+                if (!hiddenWishlistSearch) offers = results
                 searching = false
-                val ready = found.count { ManualContentRules.visible(it, "Игра", "Все") }
-                val unavailable = found.count { it.available != true }
-                val uncertainPrice = found.count { it.available == true && !it.priceVerified }
+                val ready = results.count { ManualContentRules.visible(it, "Игра", "Все") }
+                val unavailable = results.count { it.available != true }
+                val uncertainPrice = results.count { it.available == true && !it.priceVerified }
                 val wishlistSearch = wishlistProfileId != null && identity?.appId != null
                 val wishlistRules = if (wishlistSearch) GameRuleStore.read(this@MainActivity, requestedGame) else null
-                val minimaByMarketplace = if (wishlistSearch) found.asSequence()
+                val minimaByMarketplace = if (wishlistSearch) results.asSequence()
                     .filter {
                         ManualSearchFilter.rejection(it, manualFilters, wishlistRules!!, ignoredIds) == null &&
                             it.available == true && it.priceVerified && it.price > 0.0
@@ -759,7 +765,7 @@ class MainActivity : ComponentActivity() {
                 if (!hiddenWishlistSearch) {
                     val summary = if (failure.isNotBlank() && found.isEmpty()) "Ошибка поиска: $failure" else
                         (if (failure.isNotBlank()) "Часть каталогов недоступна ($failure). " else "") +
-                        "Проверено: ${found.size} · основная игра с подтверждёнными наличием и ценой: $ready. " +
+                        "Проверено: ${results.size} · основная игра с подтверждёнными наличием и ценой: $ready. " +
                             "Скрыто без подтверждённого наличия: $unavailable; без точной цены варианта: $uncertainPrice." +
                             if (wishlistSearch) {
                                 if (hasWishlistMinimum) " Подтверждённые минимумы сохранены: " +
