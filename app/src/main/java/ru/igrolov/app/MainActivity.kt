@@ -42,7 +42,7 @@ import kotlinx.coroutines.delay
 
 data class Offer(val id: String, val name: String, val price: Double, val type: String, val rfStatus: String, val edition: String, val categoryLabel: String = "", val detailsChecked: Boolean = false, val variablePrice: Boolean = false, val available: Boolean? = null, val priceVerified: Boolean = false, val purchaseNote: String = "", val canonical:String="", val steamAppId:Int=0, val marketplace:String="Plati", val productUrl:String="")
 
-data class Tracked(val id: String, val name: String, val price: Double?, val status: String, val url: String, val canonical:String="", val steamAppId:Int=0)
+data class Tracked(val id: String, val name: String, val price: Double?, val status: String, val url: String, val canonical:String="", val steamAppId:Int=0, val marketplace:String="Plati") { val storageKey:String get() = "$marketplace:$id" }
 
 class MainActivity : ComponentActivity() {
     // Bound concurrent product detail requests so large watch lists do not spawn unlimited threads.
