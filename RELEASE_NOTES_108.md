@@ -4,4 +4,4 @@
 
 Проверено на API 26 и 29. Регрессионный тест подтверждает, что две проверки остаются в уникальной цепочке. Сценарий отслеживания из поиска подтвердил появление проверенной цены. Прошли 65 JVM-тестов и 14 Android-сценариев на каждом API; в логах нет `FATAL EXCEPTION`.
 
-Версия: `1.0.8`, `versionCode=115`. [GitHub Actions](https://github.com/Magral/Igrolov/actions/runs/39419248041), [APK-кандидат](https://github.com/Magral/Igrolov/actions/runs/39419248041/artifacts/12263695620). Стабильный Release не публикуется автоматически. Список проверок: [RELEASE_108_CHECKLIST.md](RELEASE_108_CHECKLIST.md).
+Версия: `1.0.8`, `versionCode=115`. [GitHub Actions](https://github.com/Magral/Igrolov/actions/runs/39419248041), [APK](https://github.com/Magral/Igrolov/actions/runs/39419248041/artifacts/12263695620). Стабильный Release публикуется автоматически после полного успешного CI для коммита с префиксом `release:`. Список проверок: [RELEASE_108_CHECKLIST.md](RELEASE_108_CHECKLIST.md).
