@@ -53,17 +53,28 @@ object SteamWishlist {
     fun parsePublicProfile(xml: String): Pair<String?, String?> {
         val id = Regex("<steamID64>\\s*([0-9]{17})\\s*</steamID64>", RegexOption.IGNORE_CASE)
             .find(xml)?.groupValues?.get(1)
-        val name = Regex("<steamID>(.*?)</steamID>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
+        val name = Regex("<steamID(?:\\s[^>]*)?>(.*?)</steamID>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
             .find(xml)?.groupValues?.get(1)?.let(::decodeXml)?.trim()?.takeIf { it.isNotBlank() }
         return id to name
     }
 
     fun parsePublicProfileId(xml: String): String? = parsePublicProfile(xml).first
 
-    private fun decodeXml(value: String): String = value
-        .replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
-        .replace("&quot;", "\"").replace("&apos;", "'")
-        .replace(Regex("&#(\\d+);")) { it.groupValues[1].toIntOrNull()?.toChar()?.toString() ?: it.value }
+    private fun decodeXml(value: String): String {
+        val trimmed = value.trim()
+        if (trimmed.startsWith("<![CDATA[") && trimmed.endsWith("]]>")) {
+            return trimmed.substring(9, trimmed.length - 3)
+        }
+        return trimmed
+            .replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
+            .replace("&quot;", "\"").replace("&apos;", "'")
+            .replace(Regex("&#(\\d+);")) { match ->
+                match.groupValues[1].toIntOrNull()?.let { runCatching { String(Character.toChars(it)) }.getOrNull() } ?: match.value
+            }
+            .replace(Regex("&#x([0-9a-fA-F]+);", RegexOption.IGNORE_CASE)) { match ->
+                match.groupValues[1].toIntOrNull(16)?.let { runCatching { String(Character.toChars(it)) }.getOrNull() } ?: match.value
+            }
+    }
 
     fun parseWishlist(json: String): List<WishlistGame> {
         val root = JSONObject(json)

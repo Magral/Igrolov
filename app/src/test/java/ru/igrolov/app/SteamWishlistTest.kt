@@ -17,6 +17,10 @@ class SteamWishlistTest {
         val profile = SteamWishlist.parsePublicProfile("<profile><steamID>Alex &amp; Sam</steamID><steamID64>76561198000000000</steamID64></profile>")
         assertEquals("76561198000000000", profile.first)
         assertEquals("Alex & Sam", profile.second)
+        val cdataProfile = SteamWishlist.parsePublicProfile("<profile><steamID><![CDATA[Namtar]]></steamID><steamID64>76561198000000000</steamID64></profile>")
+        assertEquals("Namtar", cdataProfile.second)
+        val cdataWithMarkup = SteamWishlist.parsePublicProfile("<profile><steamID><![CDATA[A &amp; B]]></steamID><steamID64>76561198000000000</steamID64></profile>")
+        assertEquals("A &amp; B", cdataWithMarkup.second)
         assertNull(SteamWishlist.parsePublicProfileId("<profile><steamID64>123</steamID64></profile>"))
     }
 
