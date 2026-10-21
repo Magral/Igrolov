@@ -183,7 +183,7 @@ def main():
         except (TypeError, ValueError):
             forbidden = -1
         price_value = None
-        for key in ("price_for_one_wmr", "price_wmr", "price"):
+        for key in ("price_for_one_wmr", "price_wmr_for_one", "price_wmr", "price"):
             raw = str(item.get(key, "")).replace(" ", "").replace(",", ".")
             try:
                 parsed = float(raw)
@@ -196,6 +196,7 @@ def main():
             re.fullmatch(r"[0-9]{4,12}", product_id) is not None
             and forbidden == 0
             and price_value is not None
+            and item.get("is_active", True) is not False
             and not bool(item.get("is_preorder", False))
             and not bool(item.get("options_check", False))
             and not (isinstance(item.get("options"), list) and item["options"])
@@ -204,7 +205,7 @@ def main():
     compatible = [item for item in matching if app_compatible(item)]
     if matching:
         sample = matching[0]
-        fields = ("id_goods", "name", "forbidden_type", "price_for_one_wmr", "price_wmr", "price", "is_preorder", "options_check", "options", "url")
+        fields = ("id_goods", "name", "forbidden_type", "price_for_one_wmr", "price_wmr_for_one", "price_wmr", "price", "is_active", "is_preorder", "options_check", "options", "url")
         print("GGSEL live Stellaris item keys: " + ", ".join(sorted(sample.keys())))
         print("GGSEL live Stellaris sample: " + json.dumps({key: sample.get(key) for key in fields if key in sample}, ensure_ascii=False))
     print(f"GGSEL live search fallback: {len(search_items)} rows, {len(matching)} Stellaris rows, {len(compatible)} app-compatible active priced rows")

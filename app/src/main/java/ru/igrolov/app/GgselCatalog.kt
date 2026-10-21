@@ -82,6 +82,7 @@ object GgselCatalog {
 
     private fun price(item: JSONObject): Double? {
         val raw = item.optString("price_for_one_wmr")
+            .ifBlank { item.optString("price_wmr_for_one") }
             .ifBlank { item.optString("price_wmr") }
             .ifBlank { item.optString("price") }
         return raw.replace(" ", "").replace(',', '.').toDoubleOrNull()
@@ -102,7 +103,8 @@ object GgselCatalog {
             val title = item.optString("name").trim()
             if (!productId.matches(Regex("[0-9]{4,12}")) || title.isBlank()) continue
             if (!item.has("forbidden_type") || item.optInt("forbidden_type", -1) != 0) continue
-            if (item.optBoolean("is_preorder") || item.optBoolean("options_check") ||
+            if ((item.has("is_active") && !item.optBoolean("is_active")) ||
+                item.optBoolean("is_preorder") || item.optBoolean("options_check") ||
                 (item.optJSONArray("options")?.length() ?: 0) > 0) continue
             val matchingName = identityNames.firstOrNull { ManualOfferClassifier.titleType(title, it) != null } ?: continue
             val type = ManualOfferClassifier.titleType(title, matchingName) ?: continue
