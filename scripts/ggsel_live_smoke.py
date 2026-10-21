@@ -64,8 +64,13 @@ def find_categories(root):
             pending.extend(v for v in value if isinstance(v, (dict, list)))
 
 def main():
-    categories = list(find_categories(post_json(CATEGORY_QUERY, {"search_term": "Stellaris", "lang": "ru", "limit": 10})))
+    category_response = post_json(
+        CATEGORY_QUERY, {"search_term": "Stellaris", "lang": "ru", "limit": 10}
+    )
+    categories = list(find_categories(category_response))
     if not categories:
+        preview = json.dumps(category_response, ensure_ascii=False)[:2500]
+        print(f"GGSEL category response preview: {preview}", file=sys.stderr)
         raise RuntimeError("GGSEL category search returned no parseable categories for Stellaris")
     catalog_id, name, slug = next((c for c in categories if c[1].casefold() == "stellaris"), categories[0])
     body = {
