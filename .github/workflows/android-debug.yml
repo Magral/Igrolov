@@ -147,3 +147,37 @@ jobs:
           path: device-results/
           if-no-files-found: error
 
+  release:
+    needs: [build, device]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release:')
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v4
+      - name: Download verified APK
+        uses: actions/download-artifact@v4
+        with:
+          name: Igrolov-v${{ env.APP_VERSION }}-debug-${{ github.sha }}
+          path: downloaded-apk
+      - name: Prepare release files
+        run: |
+          mkdir -p release
+          apk=$(find downloaded-apk -type f -name '*.apk' -print -quit)
+          test -n "$apk"
+          cp "$apk" "release/Igrolov-${APP_VERSION}.apk"
+          notes="RELEASE_NOTES_${APP_VERSION//./}.md"
+          test -f "$notes"
+          cp "$notes" release-notes.md
+      - name: Publish stable GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.APP_VERSION }}
+          target_commitish: ${{ github.sha }}
+          name: Игролов ${{ env.APP_VERSION }}
+          body_path: release-notes.md
+          files: release/Igrolov-${{ env.APP_VERSION }}.apk
+          fail_on_unmatched_files: true
+
