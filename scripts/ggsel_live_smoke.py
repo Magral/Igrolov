@@ -131,20 +131,35 @@ def main():
         "min_price": "", "max_price": "", "currency": "wmr",
         "lang": "en", "platforms": ["Steam"], "page": 1,
     }
-    try:
-        products = post_json(CATEGORY_GOODS, body)
-    except RuntimeError as exc:
-        message = str(exc).lower()
-        if not any(term in message for term in ("name or service not known", "temporary failure in name resolution", "getaddrinfo failed", "nodename nor servname")):
-            raise
-        print("GGSEL api4 DNS unavailable; retrying product catalog through api.ggsel.com", file=sys.stderr)
-        products = post_json(CATEGORY_GOODS_FALLBACK, body)
-    if not isinstance(products, dict) or not isinstance(products.get("data"), dict):
-        raise RuntimeError("GGSEL product catalog returned an invalid response")
-    items = products["data"].get("items")
-    if not isinstance(items, list):
-        raise RuntimeError("GGSEL product catalog response has no items list")
-    print(f"GGSEL live smoke passed: exact category + page ID + product catalog ({catalog_id}: {name}, {len(items)} rows)")
+    api4_dns_unavailable = False
+    variants = [
+        ("wide-category", {**body, "limit": 60, "with_filters": True, "sort": "sortByPriceUp", "platforms": []}),
+        ("steam-filter", {**body, "limit": 60, "with_filters": True, "sort": "sortByPriceUp", "platforms": ["Steam"]}),
+        ("current", body),
+    ]
+    for label, request_body in variants:
+        if api4_dns_unavailable:
+            products = post_json(CATEGORY_GOODS_FALLBACK, request_body)
+        else:
+            try:
+                products = post_json(CATEGORY_GOODS, request_body)
+            except RuntimeError as exc:
+                message = str(exc).lower()
+                if not any(term in message for term in ("name or service not known", "temporary failure in name resolution", "getaddrinfo failed", "nodename nor servname")):
+                    raise
+                api4_dns_unavailable = True
+                print("GGSEL api4 DNS unavailable; retrying product catalog through api.ggsel.com", file=sys.stderr)
+                products = post_json(CATEGORY_GOODS_FALLBACK, request_body)
+        if not isinstance(products, dict) or not isinstance(products.get("data"), dict):
+            raise RuntimeError("GGSEL product catalog returned an invalid response")
+        items = products["data"].get("items")
+        if not isinstance(items, list):
+            raise RuntimeError("GGSEL product catalog response has no items list")
+        print(f"GGSEL live variant {label}: {len(items)} product rows")
+        if items:
+            print(f"GGSEL live smoke passed: exact category + page ID + product catalog ({catalog_id}: {name}, variant={label})")
+            return
+    raise RuntimeError("GGSEL product catalog returned zero rows for every known request parameter set")
 
 if __name__ == "__main__":
     try:
