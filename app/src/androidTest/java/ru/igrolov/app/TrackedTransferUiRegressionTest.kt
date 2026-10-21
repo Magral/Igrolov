@@ -81,15 +81,13 @@ class TrackedTransferUiRegressionTest {
         // Compose may expose a nested scrollable (for example, the search history
         // field) before the page container. Swipe the page viewport directly so
         // this regression remains reliable as search filters grow.
-        var trackButton=device.findObject(By.text("Отслеживать"))
         var attempts=0
-        while(!trackButton.exists() && attempts++<10) {
+        while(!device.hasObject(By.text("Отслеживать")) && attempts++<10) {
             device.swipe(device.displayWidth/2,device.displayHeight*3/4,device.displayWidth/2,device.displayHeight/3,12)
-            trackButton=device.findObject(By.text("Отслеживать"))
         }
-        assertTrue(trackButton.exists())
+        assertTrue(device.hasObject(By.text("Отслеживать")))
         assertTrue(device.hasObject(By.textContains("4914,00 ₽")))
-        trackButton.click()
+        device.findObject(By.text("Отслеживать")).click()
         device.findObject(By.text("Товары")).click()
         assertTrue(device.wait(Until.hasObject(By.text("4914,00 ₽")),10000))
         assertEquals("Stellaris",cached("123456").canonical);assertEquals(281990,cached("123456").steamAppId)
