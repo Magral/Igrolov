@@ -1,6 +1,6 @@
 # Игролов 1.1.4 — интеграция GGSEL
 
-Статус: проверки CI пройдены; ожидается публикация GitHub Release.
+Статус: релиз опубликован.
 
 - [x] Подключён публичный покупательский API GGSEL без авторизации Seller API.
 - [x] GGSEL ищется по точной категории Steam-игры и сохранённым алиасам.
@@ -13,4 +13,5 @@
 - [x] Поднята версия до 1.1.4 / versionCode 121.
 - [x] Unit-тесты, APK, instrumentation APK прошли GitHub Actions.
 - [x] UI-сценарии прошли на эмуляторах Android API 26 и 29.
-- [ ] Стабильный GitHub Release опубликован с APK.
+- [x] Стабильный GitHub Release опубликован с APK: [v1.1.4](https://github.com/Magral/Igrolov/releases/tag/v1.1.4).
+- Проверки release-коммита: [GitHub Actions run 39640441907](https://github.com/Magral/Igrolov/actions/runs/39640441907).

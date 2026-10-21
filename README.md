@@ -4,7 +4,7 @@ Android-приложение для поиска предложений Steam-и
 
 В 1.1.4 к поиску подключён покупательский каталог GGSEL. Результаты показываются с отдельной маркировкой источника и фильтром Plati/GGSEL; предложение принимается только с точной игрой, явным Steam Gift/Key, активным статусом и фиксированной ценой за одну копию.
 
-Релиз 1.1.4 готовится.
+Релиз 1.1.4 опубликован: [скачать APK](https://github.com/Magral/Igrolov/releases/download/v1.1.4/Igrolov-1.1.4.apk). Проверки GitHub Actions прошли на Android API 26 и 29 ([workflow](https://github.com/Magral/Igrolov/actions/runs/39640441907)).
 - Сборка: versionCode 121, versionName 1.1.4.
 - Чек-лист: [RELEASE_114_CHECKLIST.md](RELEASE_114_CHECKLIST.md), изменения: [CHANGELOG_114.md](CHANGELOG_114.md), заметки: [RELEASE_NOTES_114.md](RELEASE_NOTES_114.md).
 
