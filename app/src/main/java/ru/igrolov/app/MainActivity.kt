@@ -479,10 +479,15 @@ class MainActivity : ComponentActivity() {
             reloadWatches()
             val ids=loadIds()
             ioExecutor.execute {
-                val restored=ids.map { id -> TrackedPriceCache.decode(id,MonitorRoomStore.readTrackedProduct(this@MainActivity,id)) }
+                val restored=ids.map { id ->
+                    val legacyId=id.substringAfter(':',id)
+                    val cached=MonitorRoomStore.readTrackedProduct(this@MainActivity,id)
+                        ?: if(legacyId!=id) MonitorRoomStore.readTrackedProduct(this@MainActivity,legacyId) else null
+                    TrackedPriceCache.decode(id,cached)
+                }
                 runOnUiThread {
                     items=items.map { current ->
-                        if (current.price == null) restored.firstOrNull { it.id==current.id } ?: current else current
+                        if (current.price == null) restored.firstOrNull { it.storageKey==current.storageKey } ?: current else current
                     }
                 }
             }
@@ -529,13 +534,13 @@ class MainActivity : ComponentActivity() {
         }
         fun refresh() {
             busy = true
-            val ids = items.map { it.id }
-            if (ids.isEmpty()) { busy = false; return }
-            var remaining = ids.size
-            ids.forEach { id -> fetch(id) { found ->
+            val targets = items
+            if (targets.isEmpty()) { busy = false; return }
+            var remaining = targets.size
+            targets.forEach { target -> fetch(target) { found ->
                 cacheTracked(found)
                 items = items.map { current ->
-                    if (current.id != id) current
+                    if (current.storageKey != target.storageKey) current
                     else TrackedPriceCache.merge(current,found)
                 }
                 remaining--
@@ -942,8 +947,18 @@ class MainActivity : ComponentActivity() {
                         } else ""
                     }
                     if (id.length !in 4..12) message = "Не удалось определить ID. Введите числовой ID товара."
-                    else if (items.any { it.id == id }) message = "Товар уже добавлен"
-                    else { items = items + Tracked(id, "Товар $id", null, "Загрузка...", "https://plati.market/itm/$id"); saveIds(items.map { it.id }); entry = ""; message = "Товар добавлен"; fetch(id) { found -> cacheTracked(found); items = items.map { if (it.id == id) TrackedPriceCache.merge(it,found) else it } } }
+                    else if (items.any { it.storageKey == TrackedPriceCache.storageKey("Plati",id) }) message = "Товар уже добавлен"
+                    else {
+                        val tracked=Tracked(id,"Товар $id",null,"Загрузка...","https://plati.market/itm/$id")
+                        items = items + tracked
+                        saveIds(items.map { it.storageKey })
+                        entry = ""
+                        message = "Товар добавлен"
+                        fetch(tracked) { found ->
+                            cacheTracked(found)
+                            items = items.map { if (it.storageKey == tracked.storageKey) TrackedPriceCache.merge(it,found) else it }
+                        }
+                    }
                 }) { Text("Добавить") }
                 OutlinedButton(onClick = { refresh() }, enabled = !busy && items.isNotEmpty()) { Text(if (busy) "Обновление..." else "Обновить цены") }
             }
@@ -955,11 +970,16 @@ class MainActivity : ComponentActivity() {
                     ElevatedCard(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(12.dp)) {
                             Text(item.name, style = MaterialTheme.typography.titleMedium)
-                            Text("ID ${item.id} · ${item.status}", style = MaterialTheme.typography.bodySmall)
+                            Text("${item.marketplace} · ID ${item.id} · ${item.status}", style = MaterialTheme.typography.bodySmall)
                             Text(item.price?.let { String.format(Locale("ru", "RU"), "%.2f ₽", it) } ?: "Цена недоступна", style = MaterialTheme.typography.titleLarge)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                TextButton(onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.url))) }) { Text("Открыть Plati") }
-                                TextButton(onClick = { items = items.filterNot { it.id == item.id }; saveIds(items.map { it.id }); prefs.edit().remove("product_cache_${item.id}").apply(); ioExecutor.execute { MonitorRoomStore.writeTrackedProduct(this@MainActivity,item.id,null) } }) { Text("Удалить") }
+                                TextButton(onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.url))) }) { Text("Открыть ${item.marketplace}") }
+                                TextButton(onClick = {
+                                    items = items.filterNot { it.storageKey == item.storageKey }
+                                    saveIds(items.map { it.storageKey })
+                                    prefs.edit().remove("product_cache_${item.storageKey}").remove("product_cache_${item.id}").apply()
+                                    ioExecutor.execute { MonitorRoomStore.writeTrackedProduct(this@MainActivity,item.storageKey,null) }
+                                }) { Text("Удалить") }
                             }
                         }
                     }
@@ -1080,14 +1100,25 @@ class MainActivity : ComponentActivity() {
                                                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(productUrl)))
                                             }) { Text("Открыть на $marketplace") }
                                             TextButton(onClick = {
-                                                if (marketplace=="Plati" && items.none { it.id == id }) {
-                                                    val tracked=Tracked(id,title,price,"Ожидает обновления","https://plati.market/itm/$id",offerJson.optString("canonical",w.optString("name")),offerJson.optInt("steamAppId",w.optInt("steamAppId")))
+                                                val tracked=TrackedPriceCache.fromOffer(Offer(
+                                                    id,title,price,type,"РФ","Игра",available=true,priceVerified=true,
+                                                    canonical=offerJson.optString("canonical",w.optString("name")),
+                                                    steamAppId=offerJson.optInt("steamAppId",w.optInt("steamAppId")),
+                                                    marketplace=marketplace,productUrl=productUrl
+                                                ))
+                                                if(items.none { it.storageKey==tracked.storageKey }) {
                                                     items = items + tracked
                                                     cacheTracked(tracked)
-                                                    saveIds(items.map { it.id })
-                                                    fetch(id) { found -> cacheTracked(found); items = items.map { if (it.id == id) TrackedPriceCache.merge(it,found) else it } }
+                                                    saveIds(items.map { it.storageKey })
+                                                    fetch(tracked) { found ->
+                                                        cacheTracked(found)
+                                                        items = items.map { if (it.storageKey == tracked.storageKey) TrackedPriceCache.merge(it,found) else it }
+                                                    }
                                                 }
-                                            }, enabled = marketplace=="Plati" && items.none { it.id == id }) { Text(if(marketplace=="GGSEL") "Мониторится по игре" else "Отслеживать товар") }
+                                            }, enabled = marketplace in setOf("Plati","GGSEL") &&
+                                                items.none { it.storageKey==TrackedPriceCache.storageKey(marketplace,id) }) {
+                                                Text(if(items.any { it.storageKey==TrackedPriceCache.storageKey(marketplace,id) }) "Уже отслеживается" else "Отслеживать товар")
+                                            }
                                             TextButton(onClick = {
                                                 IgnoredStore.add(this@MainActivity, id, title)
                                                 ignoredIds = IgnoredStore.ids(this@MainActivity)
@@ -1215,16 +1246,21 @@ class MainActivity : ComponentActivity() {
                                     ))) },
                                         modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp)) { Text("Открыть", maxLines = 1) }
                                     TextButton(onClick = {
-                                        if (offer.marketplace == "Plati" && items.none { it.id == offer.id }) {
-                                            val tracked=TrackedPriceCache.fromOffer(offer)
+                                        val tracked=TrackedPriceCache.fromOffer(offer)
+                                        if(items.none { it.storageKey==tracked.storageKey }) {
                                             items = items + tracked
                                             cacheTracked(tracked)
-                                            saveIds(items.map { it.id })
-                                            fetch(offer.id) { found -> cacheTracked(found); items = items.map { if (it.id == offer.id) TrackedPriceCache.merge(it,found) else it } }
+                                            saveIds(items.map { it.storageKey })
+                                            fetch(tracked) { found ->
+                                                cacheTracked(found)
+                                                items = items.map { if (it.storageKey == tracked.storageKey) TrackedPriceCache.merge(it,found) else it }
+                                            }
                                         }
-                                    }, enabled = offer.marketplace == "Plati" && items.none { it.id == offer.id }, modifier = Modifier.weight(1f),
+                                    }, enabled = offer.marketplace in setOf("Plati","GGSEL") &&
+                                        items.none { it.storageKey==TrackedPriceCache.storageKey(offer.marketplace,offer.id) }, modifier = Modifier.weight(1f),
                                         contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp)) {
-                                        Text(if (offer.marketplace == "Plati") "Отслеживать" else "Трекер GGSEL позже",
+                                        Text(if (items.any { it.storageKey==TrackedPriceCache.storageKey(offer.marketplace,offer.id) })
+                                            "Уже отслеживается" else "Отслеживать",
                                             maxLines = 1, style = MaterialTheme.typography.labelSmall)
                                     }
                                 }
