@@ -14,7 +14,8 @@ data class WishlistGame(
     val steamPrice: String = "",
     val steamInitialPrice: String = "",
     val discountPercent: Int = 0,
-    val lowestPlatiPrice: Double? = null
+    val lowestPlatiPrice: Double? = null,
+    val lowestGgselPrice: Double? = null
 )
 
 data class WishlistProfile(
@@ -113,7 +114,8 @@ object SteamWishlist {
         games.distinctBy { it.appId }.take(500).forEach { game ->
             put(JSONObject().put("appId", game.appId).put("title", game.title)
                 .put("steamPrice", game.steamPrice).put("steamInitialPrice", game.steamInitialPrice)
-                .put("discountPercent", game.discountPercent).put("lowestPlatiPrice", game.lowestPlatiPrice))
+                .put("discountPercent", game.discountPercent).put("lowestPlatiPrice", game.lowestPlatiPrice)
+                .put("lowestGgselPrice", game.lowestGgselPrice))
         }
     }.toString()
 
@@ -124,7 +126,8 @@ object SteamWishlist {
             val appId = item.optInt("appId", 0).takeIf { it > 0 } ?: return@mapNotNull null
             WishlistGame(appId, item.optString("title", ""), item.optString("steamPrice", ""),
                 item.optString("steamInitialPrice", ""), item.optInt("discountPercent", 0).coerceIn(0, 100),
-                item.optDouble("lowestPlatiPrice").takeIf { item.has("lowestPlatiPrice") && it > 0.0 })
+                item.optDouble("lowestPlatiPrice").takeIf { item.has("lowestPlatiPrice") && it > 0.0 },
+                item.optDouble("lowestGgselPrice").takeIf { item.has("lowestGgselPrice") && it > 0.0 })
         }.distinctBy { it.appId }.take(500)
     } catch (_: Exception) { emptyList() }
 
