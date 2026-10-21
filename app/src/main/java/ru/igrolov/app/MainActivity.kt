@@ -297,6 +297,7 @@ class MainActivity : ComponentActivity() {
         var searchMessage by remember { mutableStateOf("Нажмите «Искать на Plati» для запроса к каталогу") }
         var searching by remember { mutableStateOf(false) }
         var searchGeneration by remember { mutableIntStateOf(0) }
+        var wishlistAutoSearchScroll by remember { mutableIntStateOf(0) }
         var visibleOfferLimit by remember { mutableIntStateOf(30) }
         var searchPage by remember { mutableIntStateOf(0) }
         var catalogLimit by remember { mutableIntStateOf(CatalogPageSettings.get(this@MainActivity)) }
@@ -593,6 +594,7 @@ class MainActivity : ComponentActivity() {
             searchFound = 0
             if (!hiddenWishlistSearch) {
                 offers = emptyList()
+                if (candidateOverride != null) wishlistAutoSearchScroll++
                 searchMessage = if (candidateOverride != null)
                     "Автопоиск Plati · выполняется для «$requestedGame»…"
                 else "Поиск предложений…"
@@ -660,6 +662,12 @@ class MainActivity : ComponentActivity() {
             }
         }
         val searchScroll = rememberScrollState()
+        LaunchedEffect(wishlistAutoSearchScroll, activeTab, settingsOpen) {
+            if (wishlistAutoSearchScroll > 0 && activeTab == 0 && !settingsOpen) {
+                delay(120)
+                searchScroll.animateScrollTo(searchScroll.maxValue)
+            }
+        }
         val productsScroll = rememberScrollState()
         val watchScroll = rememberScrollState()
         val directoryScroll = rememberScrollState()
