@@ -390,7 +390,6 @@ class MainActivity : ComponentActivity() {
         var wishlistMessage by remember { mutableStateOf("") }
         var wishlistImportedAt by remember { mutableLongStateOf(prefs.getLong("wishlist_imported_at", 0L)) }
         var wishlistVisibleLimit by remember { mutableIntStateOf(50) }
-        var pendingWishlistSearch by remember { mutableStateOf<WishlistGame?>(null) }
         var wishlistSearchingKeys by remember { mutableStateOf<Set<String>>(emptySet()) }
         var wishlistSearchStatuses by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
         var showAlertLog by remember { mutableStateOf(true) }
@@ -658,16 +657,6 @@ class MainActivity : ComponentActivity() {
                             } else ""
                     searchMessage = if (candidateOverride != null) "Автопоиск Plati · $summary" else summary
                 }
-            }
-        }
-        LaunchedEffect(activeTab, settingsOpen, pendingWishlistSearch) {
-            val game = pendingWishlistSearch
-            if (activeTab == 0 && !settingsOpen && game != null) {
-                pendingWishlistSearch = null
-                startCatalogSearch(
-                    candidateOverride = GameSearchResolver.Candidate(game.appId, game.title),
-                    wishlistProfileId = selectedWishlistId
-                )
             }
         }
         val searchScroll = rememberScrollState()
@@ -1128,9 +1117,10 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                     onOpenSearch = { game ->
-                        pendingWishlistSearch = game
-                        activeTab = 0
-                        settingsOpen = false
+                        startCatalogSearch(
+                            candidateOverride = GameSearchResolver.Candidate(game.appId, game.title),
+                            wishlistProfileId = selectedWishlistId
+                        )
                     },
                     onSearchPrice = { game ->
                         val profileId = selectedWishlistId
