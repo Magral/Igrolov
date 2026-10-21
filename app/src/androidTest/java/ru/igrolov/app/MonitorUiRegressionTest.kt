@@ -60,8 +60,8 @@ class MonitorUiRegressionTest {
         device.findObject(By.text("Три минимальные цены (1)")).click()
         assertTrue(scroll.scrollIntoView(UiSelector().text("Открыть на GGSEL")))
         assertTrue(device.hasObject(By.text("Мониторится по игре")))
-        assertTrue(scroll.scrollIntoView(UiSelector().text("Три минимальные цены (1)")))
-        device.findObject(By.text("Три минимальные цены (1)")).click()
+        assertTrue(scroll.scrollIntoView(UiSelector().text("Скрыть предложения")))
+        device.findObject(By.text("Скрыть предложения")).click()
         assertTrue(scroll.scrollIntoView(UiSelector().textStartsWith("История цен (")))
         if(!WatchStore.read(context).getJSONObject(0).has("eligibleCount")) {
             assertFalse("Old records without counters must not be labelled as an empty marketplace",device.hasObject(By.text("Подходящих предложений нет — это не ошибка сети.")))
