@@ -79,11 +79,48 @@ class GgselBuyerApiTest {
                     assertEquals(37770,body.getInt("digi_catalog"))
                     JSONObject("""{"data":{"items":[]}}""")
                 }
+                GgselBuyerApi.CATEGORY_SEARCH_URL -> {
+                    assertEquals("Stellaris",body.getString("search_term"))
+                    assertEquals(37770,body.getInt("digi_catalog"))
+                    assertEquals("stellaris",body.getString("url"))
+                    assertEquals(100,body.getInt("limit"))
+                    assertEquals("sortByPriceUp",body.getString("sort"))
+                    assertEquals(2,body.getJSONArray("content_type_ids").length())
+                    assertEquals("Steam",body.getJSONArray("platforms").getString(0))
+                    JSONObject("""{"data":{"items":[]}}""")
+                }
                 else -> error("Unexpected GGSEL endpoint: " + url)
             }
         },getCategoryPage={"""<script>{"id":12943,"digi_catalog":37770,"name":"Stellaris","url":"stellaris"}</script>"""})
         assertTrue(offers.isEmpty())
-        assertEquals(listOf(GgselBuyerApi.CATEGORY_QUERY_URL,GgselBuyerApi.CATEGORY_GOODS_URL,GgselBuyerApi.CATEGORY_GOODS_FALLBACK_URL),requested)
+        assertEquals(listOf(GgselBuyerApi.CATEGORY_QUERY_URL,GgselBuyerApi.CATEGORY_GOODS_URL,GgselBuyerApi.CATEGORY_GOODS_FALLBACK_URL,GgselBuyerApi.CATEGORY_SEARCH_URL),requested)
+    }
+
+    @Test fun searchesExactCategoryWhenCatalogEndpointReturnsNoAcceptedOffers() {
+        val game=ManualGameReference.Game("Stellaris",281990)
+        val requested=mutableListOf<String>()
+        val offers=GgselBuyerApi.find(game,post={url,body->
+            requested+=url
+            when(url) {
+                GgselBuyerApi.CATEGORY_QUERY_URL -> JSONObject("""{"data":[{"name":"Stellaris","url":"stellaris"}]}""")
+                GgselBuyerApi.CATEGORY_GOODS_URL -> JSONObject("""{"data":{"items":[]}}""")
+                GgselBuyerApi.CATEGORY_SEARCH_URL -> {
+                    assertEquals("Stellaris",body.getString("search_term"))
+                    assertEquals(37770,body.getInt("digi_catalog"))
+                    assertEquals("stellaris",body.getString("url"))
+                    JSONObject("""{"data":{"items":[
+                        {"id_goods":223344,"url":"stellaris-key","name":"Stellaris Steam Key РФ","forbidden_type":0,"price_for_one_wmr":"499.90","is_preorder":false,"options_check":false,"options":[]},
+                        {"id_goods":223345,"name":"Stellaris Steam Key РФ + soundtrack","forbidden_type":0,"price_for_one_wmr":"99","is_preorder":false,"options_check":false,"options":[]},
+                        {"id_goods":223346,"name":"Stellaris Steam account","forbidden_type":0,"price_for_one_wmr":"1","is_preorder":false,"options_check":false,"options":[]}
+                    ]}}""")
+                }
+                else -> error("Unexpected GGSEL endpoint: " + url)
+            }
+        },getCategoryPage={"""<script>{"id":12943,"digi_catalog":37770,"name":"Stellaris","url":"stellaris"}</script>"""})
+        assertEquals(1,offers.size)
+        assertEquals("ggsel:223344",offers.single().id)
+        assertEquals(499.9,offers.single().price,0.001)
+        assertEquals(listOf(GgselBuyerApi.CATEGORY_QUERY_URL,GgselBuyerApi.CATEGORY_GOODS_URL,GgselBuyerApi.CATEGORY_SEARCH_URL),requested)
     }
 
     @Test fun missingExactCategoryIsAConfirmedEmptyResultWithoutBroadSearch() {
