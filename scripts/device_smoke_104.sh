@@ -18,6 +18,7 @@ adb install -r "$current_apk"
 run_test verifyUpgradeData
 run_test launchAndNavigateFiltersSettingsAndMonitoring
 run_test wishlistImportIsSeparateFromOfferSearch
+run_test savedWishlistProfilesShowSteamPricesAndKeepSearchSeparate
 adb pull /sdcard/Android/data/ru.igrolov.app/files/wishlist.png device-results/wishlist.png
 adb shell am instrument -w -r -e class ru.igrolov.app.MonitorRegressionTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/monitor.txt
 grep -E 'OK \(2 tests\)' device-results/monitor.txt
