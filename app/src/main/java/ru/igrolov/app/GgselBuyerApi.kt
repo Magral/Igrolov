@@ -11,8 +11,8 @@ import java.net.UnknownHostException
 
 /** Public buyer-catalog access shared by manual search and scheduled price checks. */
 object GgselBuyerApi {
-    private const val CATEGORY_QUERY = "elastic/goods/query-categories"
-    private const val CATEGORY_GOODS = "elastic/goods/categories"
+    internal const val CATEGORY_QUERY_URL = "https://api.ggsel.com/elastic/goods/query-categories"
+    internal const val CATEGORY_GOODS_URL = "https://api4.ggsel.com/elastic/goods/categories"
 
     /** The injected request makes category selection and provider failures testable without live GGSEL calls. */
     fun find(
@@ -22,7 +22,7 @@ object GgselBuyerApi {
     ): List<Offer> {
         if (game.appId <= 0) throw IOException("Steam не подтвердил основную игру для поиска GGSEL")
         if (!active()) return emptyList()
-        val categories = post(CATEGORY_QUERY, JSONObject()
+        val categories = post(CATEGORY_QUERY_URL, JSONObject()
             .put("search_term", game.canonical)
             .put("lang", "ru")
             .put("limit", 10))
@@ -30,7 +30,7 @@ object GgselBuyerApi {
         val category = GgselCatalog.chooseCategory(
             GgselCatalog.categories(categories), listOf(game.canonical) + game.aliases
         ) ?: return emptyList()
-        val products = post(CATEGORY_GOODS, JSONObject()
+        val products = post(CATEGORY_GOODS_URL, JSONObject()
             .put("digi_catalog", category.id)
             .put("url", category.url)
             .put("limit", 100)
@@ -51,16 +51,19 @@ object GgselBuyerApi {
         return if (active()) GgselCatalog.offers(products, game) else emptyList()
     }
 
-    private fun postJson(path: String, body: JSONObject): JSONObject {
+    private fun postJson(endpoint: String, body: JSONObject): JSONObject {
         var last: Exception? = null
         for (attempt in 0..2) {
             try {
-                val connection = URL("https://api.ggsel.com/v2/$path").openConnection() as HttpURLConnection
+                val connection = URL(endpoint).openConnection() as HttpURLConnection
                 connection.connectTimeout = 12000
                 connection.readTimeout = 18000
                 connection.requestMethod = "POST"
                 connection.doOutput = true
-                connection.setRequestProperty("Accept", "application/json")
+                connection.setRequestProperty("Accept", "application/json, text/plain, */*")
+                connection.setRequestProperty("Origin", "https://ggsel.net")
+                connection.setRequestProperty("Referer", "https://ggsel.net/")
+                connection.setRequestProperty("Accept-Language", "ru-RU,ru;q=0.9,en;q=0.8")
                 connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
                 connection.setRequestProperty("User-Agent", "Igrolov Android")
                 try {

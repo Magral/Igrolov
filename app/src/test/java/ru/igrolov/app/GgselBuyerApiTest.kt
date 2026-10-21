@@ -12,13 +12,13 @@ class GgselBuyerApiTest {
         val offers=GgselBuyerApi.find(game,post={path,body->
             paths+=path
             when(path) {
-                "elastic/goods/query-categories" -> {
+                GgselBuyerApi.CATEGORY_QUERY_URL -> {
                     assertEquals("Stellaris",body.getString("search_term"))
                     JSONObject("""{"data":{"categories":[
                         {"digi_catalog":7,"name":"Stellaris DLC","url":"stellaris-dlc"},
                         {"digi_catalog":8,"name":"Stellaris","url":"stellaris"}]}}""")
                 }
-                "elastic/goods/categories" -> {
+                GgselBuyerApi.CATEGORY_GOODS_URL -> {
                     assertEquals(8,body.getInt("digi_catalog"))
                     assertEquals("stellaris",body.getString("url"))
                     assertEquals("wmr",body.getString("currency"))
@@ -31,6 +31,9 @@ class GgselBuyerApiTest {
             }
         })
         assertEquals(listOf("elastic/goods/query-categories","elastic/goods/categories"),paths)
+        assertEquals("https://api.ggsel.com/elastic/goods/query-categories",paths[0])
+        assertEquals("https://api4.ggsel.com/elastic/goods/categories",paths[1])
+        assertTrue(paths.none { "/v2/" in it })
         assertEquals(1,offers.size)
         assertEquals("ggsel:123456",offers.single().id)
         assertEquals("GGSEL",offers.single().marketplace)

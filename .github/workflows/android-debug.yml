@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  APP_VERSION: 1.1.5
+  APP_VERSION: 1.1.6
 
 permissions:
   contents: read
@@ -171,6 +171,8 @@ jobs:
           notes="RELEASE_NOTES_${APP_VERSION//./}.md"
           test -f "$notes"
           cp "$notes" release-notes.md
+      - name: Verify live GGSEL catalog endpoints
+        run: python3 scripts/ggsel_live_smoke.py
       - name: Publish stable GitHub Release
         uses: softprops/action-gh-release@v2
         with:

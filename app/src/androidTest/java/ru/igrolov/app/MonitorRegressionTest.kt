@@ -52,7 +52,7 @@ class MonitorRegressionTest {
                 override fun connect(){}
                 override fun disconnect(){}
                 override fun usingProxy()=false
-                override fun getResponseCode()=if(mode.get()==1 || (mode.get()==2 && url.path.contains("/10006/")) || (ggselOffline.get() && url.host=="api.ggsel.com"))503 else 200
+                override fun getResponseCode()=if(mode.get()==1 || (mode.get()==2 && url.path.contains("/10006/")) || (ggselOffline.get() && url.host in setOf("api.ggsel.com","api4.ggsel.com")))503 else 200
                 override fun getOutputStream()=ByteArrayOutputStream()
                 override fun getInputStream():ByteArrayInputStream {
                     if(getResponseCode()!=200)throw IOException("HTTP ${getResponseCode()}")
@@ -60,7 +60,7 @@ class MonitorRegressionTest {
                         url.host=="api.ggsel.com" && url.path.endsWith("query-categories") -> if(ggselEnabled.get())
                             JSONObject("""{"data":{"categories":[{"digi_catalog":77,"name":"Cyberpunk 2077","url":"cyberpunk-2077"}]}}""")
                             else JSONObject("""{"data":{"categories":[]}}""")
-                        url.host=="api.ggsel.com" && url.path.endsWith("/categories") -> JSONObject("""{"items":[
+                        url.host=="api4.ggsel.com" && url.path.endsWith("/categories") -> JSONObject("""{"items":[
                             {"id_goods":77777,"url":"cyberpunk-steam-key-ru","name":"Cyberpunk 2077 Steam Key РФ","forbidden_type":0,
                              "price_for_one_wmr":"50","is_preorder":false,"options_check":false,"options":[]}] }""")
                         url.path.contains("appdetails") -> JSONObject("""{"1091500":{"success":true,"data":{"name":"Cyberpunk 2077","type":"game","dlc":[2138330]}}}""")

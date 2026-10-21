@@ -1,13 +1,12 @@
-# Игролов 1.1.5
+# Игролов 1.1.6
 
 Android-приложение для поиска предложений Steam-игр на Plati и GGSEL, сравнения цен, списков желаний и ценового мониторинга.
 
-В 1.1.5 автоматический мониторинг игр проверяет Plati и GGSEL. Карточки и уведомления сохраняют источник и прямую ссылку на маркетплейс. При ошибке одного из источников предыдущая общая цена и история сохраняются, а проверка повторяется.
+В 1.1.6 исправлены маршруты публичного каталога GGSEL: поиск и мониторинг используют его API для категорий и предложений. Общая проверка по-прежнему отбрасывает аккаунты, DLC, неподтверждённые регионы и недоступные товары. В 1.1.5 добавлена поддержка GGSEL в мониторинге, сохранение источника и прямой ссылки, а также защита предыдущей истории при ошибке источника.
 
-**Релиз 1.1.5 опубликован:** [скачать APK](https://github.com/Magral/Igrolov/releases/download/v1.1.5/Igrolov-1.1.5.apk) · [страница релиза](https://github.com/Magral/Igrolov/releases/tag/v1.1.5).
-- Сборка: versionCode 122, versionName 1.1.5.
-- Проверки: [GitHub Actions](https://github.com/Magral/Igrolov/actions/runs/39661409606).
-- Чек-лист: [RELEASE_115_CHECKLIST.md](RELEASE_115_CHECKLIST.md), изменения: [CHANGELOG_115.md](CHANGELOG_115.md), заметки: [RELEASE_NOTES_115.md](RELEASE_NOTES_115.md).
+Релиз 1.1.6 готовится. Стабильный релиз: [Игролов 1.1.5](https://github.com/Magral/Igrolov/releases/tag/v1.1.5).
+- Сборка: versionCode 123, versionName 1.1.6.
+- Чек-лист: [RELEASE_116_CHECKLIST.md](RELEASE_116_CHECKLIST.md), изменения: [CHANGELOG_116.md](CHANGELOG_116.md), заметки: [RELEASE_NOTES_116.md](RELEASE_NOTES_116.md).
 
 ## Поиск
 
