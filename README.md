@@ -2,11 +2,11 @@
 
 Android-приложение для поиска Steam-игр на Plati, фильтрации Gift/Key, мониторинга товаров и ценовых уведомлений.
 
-В 1.1.0 добавлены закладки нескольких открытых Steam-профилей. Вкладка «Желания» показывает имя профиля, названия игр, AppID, цену Steam RU и скидку. Кнопка игры открывает существующий поиск; найденный минимум Plati сохраняется отдельно в профиле.
+В 1.1.3 добавлен запасной поиск по отличительной части названия игры. Если каталог продавца использует другое название, приложение предложит его для подтверждения и сохранит по Steam AppID. Повторный поиск использует алиас и проходит прежние проверки предложения.
 
-- Стабильный релиз опубликован: [скачать APK 1.1.0](https://github.com/Magral/Igrolov/releases/download/v1.1.0/Igrolov-1.1.0.apk). Полный CI: [GitHub Actions run 39599375992, попытка 2](https://github.com/Magral/Igrolov/actions/runs/39599375992).
-- Сборка: versionCode 117, versionName 1.1.0.
-- Чек-лист: [RELEASE_110_CHECKLIST.md](RELEASE_110_CHECKLIST.md), изменения: [CHANGELOG_110.md](CHANGELOG_110.md), заметки: [RELEASE_NOTES_110.md](RELEASE_NOTES_110.md).
+- Стабильный релиз: [скачать APK 1.1.3](https://github.com/Magral/Igrolov/releases/download/v1.1.3/Igrolov-1.1.3.apk). Полный CI: [GitHub Actions run 39625957695](https://github.com/Magral/Igrolov/actions/runs/39625957695).
+- Сборка: versionCode 120, versionName 1.1.3.
+- Чек-лист: [RELEASE_113_CHECKLIST.md](RELEASE_113_CHECKLIST.md), изменения: [CHANGELOG_113.md](CHANGELOG_113.md), заметки: [RELEASE_NOTES_113.md](RELEASE_NOTES_113.md).
 
 ## Поиск
 
@@ -20,6 +20,6 @@ Android-приложение для поиска Steam-игр на Plati, фил
 
 Стабильные APK публикуются в приватном [GitHub Releases](https://github.com/Magral/Igrolov/releases). Это прямой APK, не публикация в Google Play. Для обновления предыдущей установки сохраняется подпись приложения.
 
-Для сборки требуются JDK 17, Android SDK 35 и Gradle 8.9: gradle :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest.
+Для сборки требуются JDK 17, Android SDK 35 и Gradle 8.9: `gradle :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest`.
 
 Steam wishlist и цены получаются через публичные Steam endpoints. Steam может изменить формат или доступность этих endpoints. Импорт работает с открытыми профилями и не запрашивает вход, пароль или ключ API.
