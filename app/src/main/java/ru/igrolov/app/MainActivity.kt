@@ -47,6 +47,7 @@ class MainActivity : ComponentActivity() {
     // Bound concurrent product detail requests so large watch lists do not spawn unlimited threads.
     private val detailExecutor = Executors.newFixedThreadPool(4)
     private val ioExecutor = Executors.newSingleThreadExecutor()
+    private val wishlistExecutor = Executors.newSingleThreadExecutor()
     private val catalogExecutor = Executors.newSingleThreadExecutor()
     private val suggestionExecutor = Executors.newSingleThreadExecutor()
     private val watchSuggestionGeneration=java.util.concurrent.atomic.AtomicInteger(0)
@@ -60,6 +61,7 @@ class MainActivity : ComponentActivity() {
         suggestionExecutor.shutdownNow()
         detailExecutor.shutdownNow()
         ioExecutor.shutdownNow()
+        wishlistExecutor.shutdownNow()
         super.onDestroy()
     }
     private val askNotifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -76,7 +78,15 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WatchScheduler.start(this)
-        setContent { MaterialTheme { Screen() } }
+        setContent {
+            MaterialTheme(colorScheme = lightColorScheme(
+                primary = Color(0xFF315DA8),
+                secondary = Color(0xFF087E72),
+                tertiary = Color(0xFFB84F3A),
+                background = Color(0xFFF6F7FB),
+                surface = Color(0xFFFFFFFF)
+            )) { Screen() }
+        }
     }
     private fun fetch(id: String, callback: (Tracked) -> Unit) {
         detailExecutor.execute {
@@ -355,6 +365,12 @@ class MainActivity : ComponentActivity() {
         }
         var watches by remember { mutableStateOf("[]") }
         var alertLog by remember { mutableStateOf("[]") }
+        var wishlistProfile by remember { mutableStateOf(prefs.getString("wishlist_profile", "") ?: "") }
+        var wishlistGames by remember { mutableStateOf(SteamWishlist.decode(prefs.getString("wishlist_games", null))) }
+        var wishlistBusy by remember { mutableStateOf(false) }
+        var wishlistMessage by remember { mutableStateOf("") }
+        var wishlistImportedAt by remember { mutableLongStateOf(prefs.getLong("wishlist_imported_at", 0L)) }
+        var wishlistVisibleLimit by remember { mutableIntStateOf(50) }
         var showAlertLog by remember { mutableStateOf(true) }
         var watchMessage by remember { mutableStateOf("Укажите название игры и цену в рублях") }
         fun reloadWatches() {
@@ -468,7 +484,39 @@ class MainActivity : ComponentActivity() {
             }
         }
         LaunchedEffect(activeTab, settingsOpen) {
-            if (activeTab == 3 && !settingsOpen && topGames.isEmpty() && !topBusy) refreshTop()
+            if (activeTab == 4 && !settingsOpen && topGames.isEmpty() && !topBusy) refreshTop()
+        }
+        fun importWishlist() {
+            if (wishlistBusy) return
+            if (wishlistProfile.isBlank()) {
+                wishlistMessage = "Вставьте SteamID64 или ссылку на открытый профиль Steam."
+                return
+            }
+            wishlistBusy = true
+            wishlistMessage = "Загружаем открытый список из Steam…"
+            val profile = wishlistProfile.trim()
+            wishlistExecutor.execute {
+                try {
+                    val loaded = SteamWishlist.fetch(profile)
+                    val timestamp = System.currentTimeMillis()
+                    prefs.edit().putString("wishlist_profile", profile)
+                        .putString("wishlist_games", SteamWishlist.encode(loaded))
+                        .putLong("wishlist_imported_at", timestamp).apply()
+                    runOnUiThread {
+                        wishlistGames = loaded
+                        wishlistVisibleLimit = 50
+                        wishlistImportedAt = timestamp
+                        wishlistBusy = false
+                        wishlistMessage = if (loaded.isEmpty()) "В открытом списке пока нет игр."
+                            else "Загружено игр: ${loaded.size}. Поиск предложений запускается отдельно для выбранной игры."
+                    }
+                } catch (e: Exception) {
+                    runOnUiThread {
+                        wishlistBusy = false
+                        wishlistMessage = "Не удалось обновить список: ${e.message ?: "ошибка Steam"}. Сохранённая копия оставлена."
+                    }
+                }
+            }
         }
         val searchScroll = rememberScrollState()
         val productsScroll = rememberScrollState()
@@ -477,15 +525,15 @@ class MainActivity : ComponentActivity() {
         Column(Modifier.fillMaxSize()) {
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Игролов 1.0.8", style = MaterialTheme.typography.headlineSmall)
+                Text("Игролов 1.0.9", style = MaterialTheme.typography.headlineSmall)
                 IconButton(onClick = { settingsOpen = !settingsOpen; showDirectory = false }) {
                     Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                         color = MaterialTheme.colorScheme.onSurface)
                 }
             }
-            TabRow(selectedTabIndex = activeTab) {
-                listOf("Поиск", "Товары", "Мониторинг", "Лидеры продаж").forEachIndexed { index, title ->
-                    Tab(selected = activeTab == index, onClick = { activeTab = index; settingsOpen = false; showDirectory = false }, text = { Text(title, maxLines = 2, fontSize = 10.sp) })
+            ScrollableTabRow(selectedTabIndex = activeTab, edgePadding = 8.dp) {
+                listOf("Поиск", "Товары", "Мониторинг", "Желания", "Лидеры продаж").forEachIndexed { index, title ->
+                    Tab(selected = activeTab == index, onClick = { activeTab = index; settingsOpen = false; showDirectory = false }, text = { Text(title, maxLines = 1, fontSize = 12.sp) })
                 }
             }
             Column(Modifier.fillMaxSize().verticalScroll(if (settingsOpen) directoryScroll else when(activeTab) { 0 -> searchScroll; 1 -> productsScroll; 2 -> watchScroll; else -> directoryScroll }).padding(16.dp)) {
@@ -927,6 +975,67 @@ class MainActivity : ComponentActivity() {
             }
             } // конец вкладки поиска
             if (activeTab == 3 && !settingsOpen) {
+                ElevatedCard(Modifier.fillMaxWidth(), colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Список желаемого Steam", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text("Загрузите открытый профиль вручную. Импорт только сохраняет игры на устройстве; предложения ищутся отдельно.",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(
+                    wishlistProfile,
+                    { wishlistProfile = it },
+                    label = { Text("SteamID64 или ссылка на профиль") },
+                    placeholder = { Text("steamcommunity.com/profiles/…") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Button(onClick = { importWishlist() }, enabled = !wishlistBusy, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (wishlistBusy) "Загружаем из Steam…" else "Загрузить из Steam")
+                }
+                if (wishlistBusy) LinearProgressIndicator(Modifier.fillMaxWidth())
+                if (wishlistImportedAt > 0L) {
+                    val imported = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("ru", "RU"))
+                        .format(java.util.Date(wishlistImportedAt))
+                    Text("Последний импорт: $imported · игр: ${wishlistGames.size}", style = MaterialTheme.typography.bodySmall)
+                }
+                if (wishlistMessage.isNotBlank()) Text(wishlistMessage, style = MaterialTheme.typography.bodySmall,
+                    color = if (wishlistMessage.startsWith("Не удалось")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(8.dp))
+                if (wishlistGames.isEmpty() && wishlistImportedAt == 0L) {
+                    Text("Вставьте ссылку на открытый профиль или его SteamID64 и нажмите загрузку.", style = MaterialTheme.typography.bodyMedium)
+                }
+                wishlistGames.take(wishlistVisibleLimit).forEach { game ->
+                    ElevatedCard(Modifier.fillMaxWidth()) {
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(game.title.ifBlank { "Игра Steam #${game.appId}" }, style = MaterialTheme.typography.titleSmall)
+                                Text("Steam AppID ${game.appId}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            TextButton(onClick = {
+                                val title = game.title.ifBlank { "Steam #${game.appId}" }
+                                searchGeneration++
+                                activeCatalogGeneration.set(searchGeneration)
+                                searching = false
+                                offers = emptyList()
+                                steamGame = null
+                                selectedGame = GameSearchResolver.Candidate(game.appId, title)
+                                query = title
+                                searchMessage = "Игра выбрана из списка желаемого. Нажмите «Искать на Plati» для отдельного поиска."
+                                activeTab = 0
+                            }) { Text("Найти предложения") }
+                        }
+                    }
+                }
+                if (wishlistGames.size > wishlistVisibleLimit) {
+                    OutlinedButton(onClick = { wishlistVisibleLimit += 50 }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Показать ещё · ${minOf(wishlistVisibleLimit, wishlistGames.size)} из ${wishlistGames.size}")
+                    }
+                }
+            }
+            if (activeTab == 4 && !settingsOpen) {
                 Text("Лидеры продаж Steam", style = MaterialTheme.typography.titleLarge)
                 Text("Популярные платные игры по сортировке магазина Steam. Бесплатные игры скрыты. Это не отдельный рейтинг выручки Steam Charts.",
                     style = MaterialTheme.typography.bodySmall)

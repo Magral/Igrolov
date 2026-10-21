@@ -35,12 +35,12 @@ class ReleaseSmokeTest {
         assertEquals("2500",ManualSearchSettings.read(context).maxPrice)
         WatchStore.write(context,org.json.JSONArray())
         ManualSearchSettings.save(context,ManualSearchFilters())
-        assertEquals(115,PackageInfoCompat.getLongVersionCode(context.packageManager.getPackageInfo(context.packageName,0)))
+        assertEquals(116,PackageInfoCompat.getLongVersionCode(context.packageManager.getPackageInfo(context.packageName,0)))
     }
     @Test fun launchAndNavigateFiltersSettingsAndMonitoring() {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.0.8")),15000))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.0.9")),15000))
         device.findObject(By.text("Gift")).click()
         device.findObject(By.text("Key")).click()
         device.findObject(By.text("Товары")).click()
@@ -54,5 +54,17 @@ class ReleaseSmokeTest {
         UiScrollable(UiSelector().scrollable(true)).scrollToBeginning(15)
         assertTrue(device.wait(Until.hasObject(By.text("Поиск игры по названию")),5000))
         ManualSearchSettings.save(context,ManualSearchFilters())
+    }
+
+    @Test fun wishlistImportIsSeparateFromOfferSearch() {
+        val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.0.9")),15000))
+        device.findObject(By.text("Желания")).click()
+        assertTrue(device.wait(Until.hasObject(By.text("Загрузить из Steam")),5000))
+        assertFalse(device.hasObject(By.text("Искать на Plati")))
+        device.findObject(By.text("Загрузить из Steam")).click()
+        assertTrue(device.wait(Until.hasObject(By.textContains("Вставьте SteamID64")),3000))
+        assertFalse(device.hasObject(By.text("Искать на Plati")))
     }
 }
