@@ -9,6 +9,7 @@ class GgselBuyerApiTest {
     @Test fun requestsOnlyTheExactGameCategoryAndParsesItsActiveOffers() {
         val game=ManualGameReference.Game("Stellaris",281990,aliases=listOf("Stellaris: Galaxy Edition"))
         val paths=mutableListOf<String>()
+        val pageUrls=mutableListOf<String>()
         val offers=GgselBuyerApi.find(game,post={path,body->
             paths+=path
             when(path) {
@@ -16,11 +17,11 @@ class GgselBuyerApiTest {
                     assertEquals("Stellaris",body.getString("search_term"))
                     assertEquals("en",body.getString("lang"))
                     JSONObject("""{"data":{"categories":[
-                        {"digi_catalog":7,"name":"Stellaris DLC","url":"stellaris-dlc"},
-                        {"digi_catalog":8,"name":"Stellaris","url":"stellaris"}]}}""")
+                        {"name":"Stellaris DLC","url":"stellaris-dlc"},
+                        {"name":"Stellaris","url":"stellaris"}]}}""")
                 }
                 GgselBuyerApi.CATEGORY_GOODS_URL -> {
-                    assertEquals(8,body.getInt("digi_catalog"))
+                    assertEquals(281990,body.getInt("digi_catalog"))
                     assertEquals("en",body.getString("lang"))
                     assertEquals("stellaris",body.getString("url"))
                     assertEquals("wmr",body.getString("currency"))
@@ -31,7 +32,11 @@ class GgselBuyerApiTest {
                 }
                 else -> error("Unexpected GGSEL endpoint: $path")
             }
+        },getCategoryPage={url->
+            pageUrls+=url
+            """<script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"category":{"name":"Stellaris","digi_catalog":281990}}}}</script>"""
         })
+        assertEquals(listOf(GgselBuyerApi.CATEGORY_PAGE_BASE_URL+"stellaris"),pageUrls)
         assertEquals(listOf(GgselBuyerApi.CATEGORY_QUERY_URL,GgselBuyerApi.CATEGORY_GOODS_URL),paths)
         assertEquals("https://api.ggsel.com/elastic/goods/query-categories",paths[0])
         assertEquals("https://api4.ggsel.com/elastic/goods/categories",paths[1])
@@ -41,6 +46,23 @@ class GgselBuyerApiTest {
         assertEquals("GGSEL",offers.single().marketplace)
         assertEquals("РФ указана в названии",offers.single().rfStatus)
         assertTrue(offers.single().priceVerified && offers.single().available==true)
+    }
+
+    @Test fun doesNotRequestProductsWhenCategoryPageHasNoCatalogId() {
+        val game=ManualGameReference.Game("Stellaris",281990)
+        var goodsRequests=0
+        val error=runCatching {
+            GgselBuyerApi.find(game,post={path,_->
+                if(path==GgselBuyerApi.CATEGORY_QUERY_URL)
+                    JSONObject("""{"data":[{"name":"Stellaris","url":"stellaris"}]}""")
+                else {
+                    goodsRequests++
+                    JSONObject()
+                }
+            },getCategoryPage={"<html><body>blocked</body></html>"})
+        }.exceptionOrNull()
+        assertTrue(error is java.io.IOException)
+        assertEquals(0,goodsRequests)
     }
 
     @Test fun missingExactCategoryIsAConfirmedEmptyResultWithoutBroadSearch() {

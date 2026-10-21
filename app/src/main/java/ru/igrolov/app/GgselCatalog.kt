@@ -30,12 +30,26 @@ object GgselCatalog {
     }
 
     fun categories(root: JSONObject): List<Category> = objects(root).mapNotNull { item ->
-        val id = item.optLong("digi_catalog", item.optLong("id", 0L))
+        val id = item.optLong("digi_catalog", 0L)
         val name = item.optString("name").ifBlank { item.optString("title") }.trim()
         val url = item.optString("url").trim()
-        if (id <= 0 || name.isBlank() || !url.matches(Regex("[A-Za-z0-9_-]{1,160}"))) null
+        if (id < 0 || name.isBlank() || !url.matches(Regex("[A-Za-z0-9_-]{1,160}"))) null
         else Category(id, name, url)
     }.distinctBy { it.url }.toList()
+
+    /** Read the category ID embedded in the public catalog page's Next.js bootstrap data. */
+    fun categoryIdFromPageHtml(html: String): Long {
+        val script = Regex(
+            """(?is)<script\b(?=[^>]*\bid=["']__NEXT_DATA__["'])[^>]*>(.*?)</script\s*>"""
+        ).find(html)?.groupValues?.getOrNull(1) ?: return 0L
+        val category = runCatching {
+            JSONObject(script.trim())
+                .optJSONObject("props")
+                ?.optJSONObject("pageProps")
+                ?.optJSONObject("category")
+        }.getOrNull() ?: return 0L
+        return category.optLong("digi_catalog", 0L).takeIf { it > 0L } ?: 0L
+    }
 
     /** Only a category matching the canonical Steam title or a saved title alias is accepted. */
     fun chooseCategory(categories: List<Category>, names: List<String>): Category? {

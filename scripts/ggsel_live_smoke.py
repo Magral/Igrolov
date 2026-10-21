@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Read-only live smoke test for the public GGSEL buyer catalog endpoints."""
 import json
+import re
 import sys
 import time
 import urllib.error
@@ -8,12 +9,13 @@ import urllib.request
 
 CATEGORY_QUERY = "https://api.ggsel.com/elastic/goods/query-categories"
 CATEGORY_GOODS = "https://api4.ggsel.com/elastic/goods/categories"
+CATEGORY_PAGE = "https://ggsel.net/en/catalog/"
 HEADERS = {
     "Accept": "application/json, text/plain, */*",
     "Content-Type": "application/json",
     "Origin": "https://ggsel.net",
     "Referer": "https://ggsel.net/",
-    "Accept-Language": "ru-RU,ru;q=0.9,en;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
     "User-Agent": "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36 Igrolov/1.1.6",
 }
 
@@ -44,6 +46,33 @@ def post_json(url, payload):
         time.sleep(1 + attempt)
     raise RuntimeError(str(last))
 
+def get_text(url):
+    headers = {
+        "Accept": "text/html,application/xhtml+xml",
+        "Origin": "https://ggsel.net",
+        "Referer": "https://ggsel.net/",
+        "Accept-Language": "en-US,en;q=0.9",
+        "User-Agent": HEADERS["User-Agent"],
+    }
+    request = urllib.request.Request(url, headers=headers, method="GET")
+    with urllib.request.urlopen(request, timeout=20) as response:
+        if not 200 <= response.status < 300:
+            raise RuntimeError(f"{url}: HTTP {response.status}")
+        return response.read().decode("utf-8")
+
+def category_id_from_html(html):
+    match = re.search(
+        r"""<script\b(?=[^>]*\bid=["']__NEXT_DATA__["'])[^>]*>(.*?)</script\s*>""",
+        html, re.IGNORECASE | re.DOTALL
+    )
+    if not match:
+        return 0
+    try:
+        category = json.loads(match.group(1)).get("props", {}).get("pageProps", {}).get("category", {})
+        return int(category.get("digi_catalog") or 0)
+    except (ValueError, TypeError, json.JSONDecodeError):
+        return 0
+
 def find_categories(root):
     pending = [root]
     visited = 0
@@ -52,27 +81,26 @@ def find_categories(root):
         visited += 1
         if isinstance(value, dict):
             try:
-                catalog_id = int(value.get("digi_catalog", value.get("id", 0)))
+                catalog_id = int(value.get("digi_catalog", 0))
             except (TypeError, ValueError):
                 catalog_id = 0
             name = str(value.get("name", value.get("title", ""))).strip()
             slug = str(value.get("url", "")).strip()
-            if catalog_id > 0 and name and slug and slug.replace("-", "").replace("_", "").isalnum():
+            if catalog_id >= 0 and name and slug and slug.replace("-", "").replace("_", "").isalnum():
                 yield catalog_id, name, slug
             pending.extend(v for v in value.values() if isinstance(v, (dict, list)))
         elif isinstance(value, list):
             pending.extend(v for v in value if isinstance(v, (dict, list)))
 
 def main():
-    category_response = post_json(
-        CATEGORY_QUERY, {"search_term": "Stellaris", "lang": "en", "limit": 10}
-    )
-    categories = list(find_categories(category_response))
-    if not categories:
-        preview = json.dumps(category_response, ensure_ascii=False)[:2500]
-        print(f"GGSEL category response preview: {preview}", file=sys.stderr)
-        raise RuntimeError("GGSEL category search returned no parseable categories for Stellaris")
-    catalog_id, name, slug = next((c for c in categories if c[1].casefold() == "stellaris"), categories[0])
+    categories = list(find_categories(post_json(CATEGORY_QUERY, {"search_term": "Stellaris", "lang": "en", "limit": 10})))
+    exact = next((c for c in categories if c[1].casefold() == "stellaris"), None)
+    if exact is None:
+        raise RuntimeError(f"GGSEL did not return exact Stellaris category; found {[c[1] for c in categories[:10]]}")
+    _, name, slug = exact
+    catalog_id = category_id_from_html(get_text(CATEGORY_PAGE + slug))
+    if catalog_id <= 0:
+        raise RuntimeError(f"GGSEL category page did not expose digi_catalog for {name} ({slug})")
     body = {
         "digi_catalog": catalog_id, "url": slug, "limit": 5,
         "content_type_ids": [], "search_after": [], "with_filters": False,
@@ -82,9 +110,12 @@ def main():
         "lang": "en", "platforms": ["Steam"], "page": 1,
     }
     products = post_json(CATEGORY_GOODS, body)
-    print(f"GGSEL live smoke passed: category search + product catalog ({catalog_id}: {name})")
-    if not isinstance(products, dict):
+    if not isinstance(products, dict) or not isinstance(products.get("data"), dict):
         raise RuntimeError("GGSEL product catalog returned an invalid response")
+    items = products["data"].get("items")
+    if not isinstance(items, list):
+        raise RuntimeError("GGSEL product catalog response has no items list")
+    print(f"GGSEL live smoke passed: exact category + page ID + product catalog ({catalog_id}: {name}, {len(items)} rows)")
 
 if __name__ == "__main__":
     try:

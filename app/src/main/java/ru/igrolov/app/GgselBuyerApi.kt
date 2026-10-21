@@ -13,12 +13,14 @@ import java.net.UnknownHostException
 object GgselBuyerApi {
     internal const val CATEGORY_QUERY_URL = "https://api.ggsel.com/elastic/goods/query-categories"
     internal const val CATEGORY_GOODS_URL = "https://api4.ggsel.com/elastic/goods/categories"
+    internal const val CATEGORY_PAGE_BASE_URL = "https://ggsel.net/en/catalog/"
 
     /** The injected request makes category selection and provider failures testable without live GGSEL calls. */
     fun find(
         game: ManualGameReference.Game,
         active: () -> Boolean = { true },
-        post: (String, JSONObject) -> JSONObject = ::postJson
+        post: (String, JSONObject) -> JSONObject = ::postJson,
+        getCategoryPage: (String) -> String = ::getCategoryPageHtml
     ): List<Offer> {
         if (game.appId <= 0) throw IOException("Steam не подтвердил основную игру для поиска GGSEL")
         if (!active()) return emptyList()
@@ -30,8 +32,14 @@ object GgselBuyerApi {
         val category = GgselCatalog.chooseCategory(
             GgselCatalog.categories(categories), listOf(game.canonical) + game.aliases
         ) ?: return emptyList()
+        val categoryId = if (category.id > 0L) category.id else {
+            val pageHtml = getCategoryPage(CATEGORY_PAGE_BASE_URL + category.url)
+            if (!active()) return emptyList()
+            GgselCatalog.categoryIdFromPageHtml(pageHtml).takeIf { it > 0L }
+                ?: throw IOException("GGSEL category page has no digi_catalog for " + category.name)
+        }
         val products = post(CATEGORY_GOODS_URL, JSONObject()
-            .put("digi_catalog", category.id)
+            .put("digi_catalog", categoryId)
             .put("url", category.url)
             .put("limit", 100)
             .put("content_type_ids", JSONArray())
@@ -49,6 +57,28 @@ object GgselBuyerApi {
             .put("platforms", JSONArray().put("Steam"))
             .put("page", 1))
         return if (active()) GgselCatalog.offers(products, game) else emptyList()
+    }
+
+    private fun getCategoryPageHtml(endpoint: String): String {
+        val connection = URL(endpoint).openConnection() as HttpURLConnection
+        connection.connectTimeout = 12000
+        connection.readTimeout = 18000
+        connection.requestMethod = "GET"
+        connection.setRequestProperty("Accept", "text/html,application/xhtml+xml")
+        connection.setRequestProperty("Origin", "https://ggsel.net")
+        connection.setRequestProperty("Referer", "https://ggsel.net/")
+        connection.setRequestProperty("Accept-Language", "en-US,en;q=0.9")
+        connection.setRequestProperty(
+            "User-Agent",
+            "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36 Igrolov"
+        )
+        try {
+            val status = connection.responseCode
+            if (status !in 200..299) throw IOException("GGSEL category page HTTP " + status)
+            return connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+        } finally {
+            connection.disconnect()
+        }
     }
 
     private fun postJson(endpoint: String, body: JSONObject): JSONObject {
