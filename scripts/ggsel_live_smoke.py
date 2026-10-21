@@ -9,6 +9,7 @@ import urllib.request
 
 CATEGORY_QUERY = "https://api.ggsel.com/elastic/goods/query-categories"
 CATEGORY_GOODS = "https://api4.ggsel.com/elastic/goods/categories"
+CATEGORY_GOODS_FALLBACK = "https://api.ggsel.com/elastic/goods/categories"
 CATEGORY_PAGE = "https://ggsel.net/en/catalog/"
 HEADERS = {
     "Accept": "application/json, text/plain, */*",
@@ -130,7 +131,14 @@ def main():
         "min_price": "", "max_price": "", "currency": "wmr",
         "lang": "en", "platforms": ["Steam"], "page": 1,
     }
-    products = post_json(CATEGORY_GOODS, body)
+    try:
+        products = post_json(CATEGORY_GOODS, body)
+    except RuntimeError as exc:
+        message = str(exc).lower()
+        if not any(term in message for term in ("name or service not known", "temporary failure in name resolution", "getaddrinfo failed", "nodename nor servname")):
+            raise
+        print("GGSEL api4 DNS unavailable; retrying product catalog through api.ggsel.com", file=sys.stderr)
+        products = post_json(CATEGORY_GOODS_FALLBACK, body)
     if not isinstance(products, dict) or not isinstance(products.get("data"), dict):
         raise RuntimeError("GGSEL product catalog returned an invalid response")
     items = products["data"].get("items")

@@ -13,6 +13,7 @@ import java.net.UnknownHostException
 object GgselBuyerApi {
     internal const val CATEGORY_QUERY_URL = "https://api.ggsel.com/elastic/goods/query-categories"
     internal const val CATEGORY_GOODS_URL = "https://api4.ggsel.com/elastic/goods/categories"
+    internal const val CATEGORY_GOODS_FALLBACK_URL = "https://api.ggsel.com/elastic/goods/categories"
     internal const val CATEGORY_PAGE_BASE_URL = "https://ggsel.net/en/catalog/"
 
     /** The injected request makes category selection and provider failures testable without live GGSEL calls. */
@@ -38,7 +39,7 @@ object GgselBuyerApi {
             GgselCatalog.categoryIdFromPageHtml(pageHtml, category.name, category.url).takeIf { it > 0L }
                 ?: throw IOException("GGSEL category page has no digi_catalog for " + category.name)
         }
-        val products = post(CATEGORY_GOODS_URL, JSONObject()
+        val productsBody = JSONObject()
             .put("digi_catalog", categoryId)
             .put("url", category.url)
             .put("limit", 100)
@@ -55,7 +56,12 @@ object GgselBuyerApi {
             .put("currency", "wmr")
             .put("lang", "en")
             .put("platforms", JSONArray().put("Steam"))
-            .put("page", 1))
+            .put("page", 1)
+        val products = try {
+            post(CATEGORY_GOODS_URL, productsBody)
+        } catch (e: UnknownHostException) {
+            post(CATEGORY_GOODS_FALLBACK_URL, productsBody)
+        }
         return if (active()) GgselCatalog.offers(products, game) else emptyList()
     }
 

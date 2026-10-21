@@ -1,6 +1,7 @@
 package ru.igrolov.app
 
 import org.json.JSONObject
+import java.net.UnknownHostException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -63,6 +64,26 @@ class GgselBuyerApiTest {
         }.exceptionOrNull()
         assertTrue(error is java.io.IOException)
         assertEquals(0,goodsRequests)
+    }
+
+
+    @Test fun fallsBackToPrimaryApiHostOnlyWhenApi4CannotResolve() {
+        val game=ManualGameReference.Game("Stellaris",281990)
+        val requested=mutableListOf<String>()
+        val offers=GgselBuyerApi.find(game,post={url,body->
+            requested+=url
+            when(url) {
+                GgselBuyerApi.CATEGORY_QUERY_URL -> JSONObject("""{"data":[{"name":"Stellaris","url":"stellaris"}]}""")
+                GgselBuyerApi.CATEGORY_GOODS_URL -> throw UnknownHostException("api4 host unavailable")
+                GgselBuyerApi.CATEGORY_GOODS_FALLBACK_URL -> {
+                    assertEquals(37770,body.getInt("digi_catalog"))
+                    JSONObject("""{"data":{"items":[]}}""")
+                }
+                else -> error("Unexpected GGSEL endpoint: " + url)
+            }
+        },getCategoryPage={"""<script>{"id":12943,"digi_catalog":37770,"name":"Stellaris","url":"stellaris"}</script>"""})
+        assertTrue(offers.isEmpty())
+        assertEquals(listOf(GgselBuyerApi.CATEGORY_QUERY_URL,GgselBuyerApi.CATEGORY_GOODS_URL,GgselBuyerApi.CATEGORY_GOODS_FALLBACK_URL),requested)
     }
 
     @Test fun missingExactCategoryIsAConfirmedEmptyResultWithoutBroadSearch() {
