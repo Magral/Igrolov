@@ -65,7 +65,7 @@ def find_categories(root):
 
 def main():
     category_response = post_json(
-        CATEGORY_QUERY, {"search_term": "Stellaris", "lang": "ru", "limit": 10}
+        CATEGORY_QUERY, {"search_term": "Stellaris", "lang": "en", "limit": 10}
     )
     categories = list(find_categories(category_response))
     if not categories:
@@ -79,7 +79,7 @@ def main():
         "is_preorders": False, "ab_test_without_emoji": True,
         "sort": "sortByRec", "query_string": "", "with_forbidden": False,
         "min_price": "", "max_price": "", "currency": "wmr",
-        "lang": "ru", "platforms": ["Steam"], "page": 1,
+        "lang": "en", "platforms": ["Steam"], "page": 1,
     }
     products = post_json(CATEGORY_GOODS, body)
     print(f"GGSEL live smoke passed: category search + product catalog ({catalog_id}: {name})")

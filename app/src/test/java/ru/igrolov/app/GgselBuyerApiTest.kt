@@ -14,12 +14,14 @@ class GgselBuyerApiTest {
             when(path) {
                 GgselBuyerApi.CATEGORY_QUERY_URL -> {
                     assertEquals("Stellaris",body.getString("search_term"))
+                    assertEquals("en",body.getString("lang"))
                     JSONObject("""{"data":{"categories":[
                         {"digi_catalog":7,"name":"Stellaris DLC","url":"stellaris-dlc"},
                         {"digi_catalog":8,"name":"Stellaris","url":"stellaris"}]}}""")
                 }
                 GgselBuyerApi.CATEGORY_GOODS_URL -> {
                     assertEquals(8,body.getInt("digi_catalog"))
+                    assertEquals("en",body.getString("lang"))
                     assertEquals("stellaris",body.getString("url"))
                     assertEquals("wmr",body.getString("currency"))
                     assertEquals("Steam",body.getJSONArray("platforms").getString(0))

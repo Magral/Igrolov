@@ -24,7 +24,7 @@ object GgselBuyerApi {
         if (!active()) return emptyList()
         val categories = post(CATEGORY_QUERY_URL, JSONObject()
             .put("search_term", game.canonical)
-            .put("lang", "ru")
+            .put("lang", "en")
             .put("limit", 10))
         if (!active()) return emptyList()
         val category = GgselCatalog.chooseCategory(
@@ -45,7 +45,7 @@ object GgselBuyerApi {
             .put("min_price", "")
             .put("max_price", "")
             .put("currency", "wmr")
-            .put("lang", "ru")
+            .put("lang", "en")
             .put("platforms", JSONArray().put("Steam"))
             .put("page", 1))
         return if (active()) GgselCatalog.offers(products, game) else emptyList()
