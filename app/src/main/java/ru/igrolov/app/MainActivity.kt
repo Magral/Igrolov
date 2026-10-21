@@ -1089,7 +1089,9 @@ class MainActivity : ComponentActivity() {
                                 val price = offerJson.optDouble("price")
                                 val type = offerJson.optString("type")
                                 val marketplace=offerJson.optString("marketplace","Plati")
-                                val productUrl=offerJson.optString("url").ifBlank { "https://plati.market/itm/$id" }
+                                val productUrl=offerJson.optString("url").ifBlank {
+                                    if(marketplace=="GGSEL") "https://ggsel.net/" else "https://plati.market/itm/$id"
+                                }
                                 ElevatedCard(Modifier.fillMaxWidth()) {
                                     Column(Modifier.padding(10.dp)) {
                                         Text(title, style = MaterialTheme.typography.bodyMedium)
