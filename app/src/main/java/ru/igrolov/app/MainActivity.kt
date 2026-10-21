@@ -164,7 +164,7 @@ class MainActivity : ComponentActivity() {
                 runOnUiThread { if(generation == activeCatalogGeneration.get()) callback(emptyList(),"Steam не подтвердил выбранную основную игру. Повторите запрос или выберите другую игру.") }
                 return@execute
             }
-            val marketQuery=reference.aliases.firstOrNull {it.isNotBlank() && it.all {c->c.code<128}} ?: query.replace(Regex("[™®©]"),"")
+            val marketQuery=ManualGameReference.catalogQuery(query,reference.aliases)
             try {
                 // Marketplace-wide search endpoint used by the Plati site ecosystem.
                 // It is not the seller-specific shop_search.asp interface.
@@ -666,7 +666,7 @@ class MainActivity : ComponentActivity() {
         Column(Modifier.fillMaxSize()) {
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Игролов 1.1.1", style = MaterialTheme.typography.headlineSmall)
+                Text("Игролов 1.1.2", style = MaterialTheme.typography.headlineSmall)
                 IconButton(onClick = { settingsOpen = !settingsOpen; showDirectory = false }) {
                     Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                         color = MaterialTheme.colorScheme.onSurface)

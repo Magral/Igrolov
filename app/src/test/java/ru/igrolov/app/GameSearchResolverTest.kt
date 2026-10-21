@@ -35,4 +35,15 @@ class GameSearchResolverTest {
         assertEquals("Игра",ManualContentRules.classify("Civilization 6 Steam Key РФ","",civ))
         assertNotEquals("Игра",ManualContentRules.classify("Civilization VII Steam Key РФ","",civ))
     }
+    @Test fun zeroParadesDirectorCutSearchesItsOriginalMarketplaceTitle() {
+        val appId=2863680
+        val steamName="ZERO PARADES: Director's Cut"
+        val aliases=GameSearchResolver.aliases(appId,steamName)
+        val game=ManualGameReference.Game(steamName,appId,aliases=aliases)
+        val listing="ZERO PARADES: For Dead Spies Steam Ключ Россия + СНГ"
+
+        assertEquals("ZERO PARADES: For Dead Spies",ManualGameReference.catalogQuery(steamName,aliases))
+        assertEquals("Key",ManualOfferClassifier.titleType(listing,aliases.first()))
+        assertEquals("Игра",ManualContentRules.classify(listing,"",game))
+    }
 }

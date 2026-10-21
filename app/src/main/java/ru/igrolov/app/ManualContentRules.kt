@@ -7,6 +7,9 @@ import java.net.URL
 /** Lightweight manual reference: one main-game request, never hundreds of sequential DLC requests. */
 object ManualGameReference {
     data class Game(val canonical: String, val appId: Int = 0, val dlcIds: Set<Int> = emptySet(), val aliases: List<String> = emptyList())
+    fun catalogQuery(query: String, aliases: List<String>): String =
+        aliases.firstOrNull { it.isNotBlank() && it.all { c -> c.code < 128 } }
+            ?: query.replace(Regex("[™®©]"), "")
     fun lookup(query: String, selectedAppId: Int? = null): Game {
         return runCatching {
             val selected = selectedAppId?.takeIf {it>0}?.let {SteamGameReference.Suggestion(it,query)} ?: SteamGameReference.searchGames(query).firstOrNull {

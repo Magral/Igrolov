@@ -13,6 +13,8 @@ object GameSearchResolver {
         Candidate(255710,"Cities: Skylines",listOf("Cities Skylines","Cities Skylines 1","Ситис Скайлайнс")),
         Candidate(949230,"Cities: Skylines II",listOf("Cities Skylines 2","Ситис Скайлайнс 2")),
         Candidate(1222670,"The Sims 4",listOf("Sims 4","Симс 4")),
+        // Steam's Director's Cut app keeps marketplace listings under its original release title.
+        Candidate(2863680,"ZERO PARADES: Director's Cut",listOf("ZERO PARADES: For Dead Spies")),
         Candidate(1091500,"Cyberpunk 2077",listOf("Киберпанк 2077")),
         Candidate(990080,"Hogwarts Legacy",listOf("Хогвартс","Наследие Хогвартса")),
         Candidate(730,"Counter-Strike 2",listOf("CS2","КС2"))
