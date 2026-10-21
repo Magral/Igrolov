@@ -4,7 +4,7 @@ Android-приложение для поиска Steam-игр на Plati, фил
 
 В 1.1.0 добавлены закладки нескольких открытых Steam-профилей. Вкладка «Желания» показывает имя профиля, названия игр, AppID, цену Steam RU и скидку. Кнопка игры открывает существующий поиск; найденный минимум Plati сохраняется отдельно в профиле.
 
-- Релиз-кандидат проверен: [71 JVM-тест и 16 Android-сценариев на API 26/29](https://github.com/Magral/Igrolov/actions/runs/39597223321).
+- Стабильный релиз опубликован: [скачать APK 1.1.0](https://github.com/Magral/Igrolov/releases/download/v1.1.0/Igrolov-1.1.0.apk). Полный CI: [GitHub Actions run 39599375992, попытка 2](https://github.com/Magral/Igrolov/actions/runs/39599375992).
 - Сборка: versionCode 117, versionName 1.1.0.
 - Чек-лист: [RELEASE_110_CHECKLIST.md](RELEASE_110_CHECKLIST.md), изменения: [CHANGELOG_110.md](CHANGELOG_110.md), заметки: [RELEASE_NOTES_110.md](RELEASE_NOTES_110.md).
 

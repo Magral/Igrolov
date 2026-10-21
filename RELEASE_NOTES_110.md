@@ -8,6 +8,6 @@
 
 Вход в Steam, пароль и ключ API не требуются. Список доступен только для открытого профиля. Если Steam не отдаёт название или цену для конкретного AppID, приложение показывает состояние «Название игры не получено» или «Нет цены RU».
 
-Проверка кандидата: 71 JVM-тест и 16 Android-сценариев на каждом из API 26 и 29 прошли. В logcat нет FATAL EXCEPTION. GitHub Actions: [run 39597223321, попытка 2](https://github.com/Magral/Igrolov/actions/runs/39597223321). Версия сборки: versionCode 117, versionName 1.1.0.
+Проверка стабильной сборки: 71 JVM-тест и 16 Android-сценариев на каждом из API 26 и 29 прошли. В logcat нет FATAL EXCEPTION. GitHub Actions: [run 39599375992, попытка 2](https://github.com/Magral/Igrolov/actions/runs/39599375992). Версия сборки: versionCode 117, versionName 1.1.0.
 
-Публикация стабильного APK запускается отдельным release-коммитом после прохождения полного CI.
+Стабильный APK: [Igrolov-1.1.0.apk](https://github.com/Magral/Igrolov/releases/download/v1.1.0/Igrolov-1.1.0.apk). GitHub Release опубликован 21 октября 2026 года.
