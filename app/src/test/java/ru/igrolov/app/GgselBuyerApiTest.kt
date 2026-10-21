@@ -30,7 +30,7 @@ class GgselBuyerApiTest {
                 else -> error("Unexpected GGSEL endpoint: $path")
             }
         })
-        assertEquals(listOf("elastic/goods/query-categories","elastic/goods/categories"),paths)
+        assertEquals(listOf(GgselBuyerApi.CATEGORY_QUERY_URL,GgselBuyerApi.CATEGORY_GOODS_URL),paths)
         assertEquals("https://api.ggsel.com/elastic/goods/query-categories",paths[0])
         assertEquals("https://api4.ggsel.com/elastic/goods/categories",paths[1])
         assertTrue(paths.none { "/v2/" in it })
