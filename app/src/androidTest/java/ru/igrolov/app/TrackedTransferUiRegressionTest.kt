@@ -63,13 +63,15 @@ class TrackedTransferUiRegressionTest {
         assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.6")),15000))
         return device
     }
-    private fun cached(id:String)=TrackedPriceCache.decode(id,context.getSharedPreferences("tracked_products",0).getString("product_cache_$id",null))
-    private fun cachedFromRoom(id:String)=TrackedPriceCache.decode(id,MonitorRoomStore.readTrackedProduct(context,id))
+    private fun key(id:String)=TrackedPriceCache.storageKey("Plati",id)
+    private fun cached(id:String)=TrackedPriceCache.decode(key(id),context.getSharedPreferences("tracked_products",0).getString("product_cache_${key(id)}",null))
+    private fun cachedFromRoom(id:String)=TrackedPriceCache.decode(key(id),MonitorRoomStore.readTrackedProduct(context,key(id)))
 
     @Test fun addFromSearchRefreshPriceAndKeepItOnNetworkFailure() {
         val price=AtomicInteger(4914);val offline=AtomicBoolean(false)
         installApi(price,offline)
-        context.getSharedPreferences("tracked_products",0).edit().putString("ids","").remove("product_cache_123456").commit()
+        context.getSharedPreferences("tracked_products",0).edit().putString("ids","").remove("product_cache_123456").remove("product_cache_${key("123456")}").commit()
+        MonitorRoomStore.writeTrackedProduct(context,key("123456"),null)
         ManualSearchSettings.save(context,ManualSearchFilters())
         val device=open()
         device.findObject(By.clazz("android.widget.EditText")).text="Stellaris"
@@ -119,7 +121,10 @@ class TrackedTransferUiRegressionTest {
         assertEquals(5300.0,cached("123457").price!!,0.001)
         assertEquals("Stellaris",cached("123457").canonical)
         device.takeScreenshot(File(context.getExternalFilesDir(null),"tracked-restart.png"))
-        context.getSharedPreferences("tracked_products",0).edit().putString("ids","").remove("product_cache_123456").remove("product_cache_123457").commit()
+        context.getSharedPreferences("tracked_products",0).edit().putString("ids","")
+            .remove("product_cache_123456").remove("product_cache_123457")
+            .remove("product_cache_${key("123456")}").remove("product_cache_${key("123457")}").commit()
         MonitorRoomStore.writeTrackedProduct(context,"123456",null);MonitorRoomStore.writeTrackedProduct(context,"123457",null)
+        MonitorRoomStore.writeTrackedProduct(context,key("123456"),null);MonitorRoomStore.writeTrackedProduct(context,key("123457"),null)
     }
 }
