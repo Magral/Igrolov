@@ -79,7 +79,7 @@ def category_id_from_html(html, expected_name, expected_slug):
 
     # Current GGSEL App Router pages serialize category metadata in hydration data.
     pattern = re.compile(
-        r"""(?is)\{[^{}]{0,5000}?"digi_catalog"\s*:\s*"?(\d+)"?[^{}]{0,2000}?"name"\s*:\s*"([^"\\]+)"[^{}]{0,1000}?"url"\s*:\s*"([^"\\]+)"[^{}]{0,5000}?\}"""
+        r"""(?is)\{[^{}]{0,5000}?"digi_catalog"\s*:\s*"?(\d+)"?[^{}]{0,2000}?"name"\s*:\s*"([^"\\]+)"[^{}]{0,1000}?"url"\s*:\s*"([^"\\]+)"""
     )
     for candidate in pattern.finditer(html):
         if candidate.group(2).casefold() == expected_name.casefold() and candidate.group(3) == expected_slug:

@@ -63,7 +63,7 @@ object GgselCatalog {
 
         // Current GGSEL pages serialize category data in the App Router hydration stream.
         val categoryObject = Regex(
-            """(?is)\{[^{}]{0,5000}?"digi_catalog"\s*:\s*"?(\d+)"?[^{}]{0,2000}?"name"\s*:\s*"([^"\\]+)"[^{}]{0,1000}?"url"\s*:\s*"([^"\\]+)"[^{}]{0,5000}?\}"""
+            """(?is)\{[^{}]{0,5000}?"digi_catalog"\s*:\s*"?(\d+)"?[^{}]{0,2000}?"name"\s*:\s*"([^"\\]+)"[^{}]{0,1000}?"url"\s*:\s*"([^"\\]+)"""
         )
         for (candidate in categoryObject.findAll(html)) {
             val id = candidate.groupValues[1].toLongOrNull() ?: continue
