@@ -14,7 +14,9 @@ class SteamWishlistTest {
 
     @Test fun resolvesVanityProfileXmlAndKeepsVanityAsSeparateInput() {
         assertEquals("Gamer_123", SteamWishlist.vanityName("https://steamcommunity.com/id/Gamer_123/"))
-        assertEquals("76561198000000000", SteamWishlist.parsePublicProfileId("<profile><steamID64>76561198000000000</steamID64></profile>"))
+        val profile = SteamWishlist.parsePublicProfile("<profile><steamID>Alex &amp; Sam</steamID><steamID64>76561198000000000</steamID64></profile>")
+        assertEquals("76561198000000000", profile.first)
+        assertEquals("Alex & Sam", profile.second)
         assertNull(SteamWishlist.parsePublicProfileId("<profile><steamID64>123</steamID64></profile>"))
     }
 
@@ -27,10 +29,23 @@ class SteamWishlistTest {
 
     @Test fun enrichesWishlistTitlesFromSteamAppDetailsAndKeepsFallbacks() {
         val games = listOf(WishlistGame(730), WishlistGame(281990, "Steam #281990"))
-        val response = """{"730":{"success":true,"data":{"name":"Counter-Strike 2"}},"281990":{"success":false}}"""
+        val response = """{"730":{"success":true,"data":{"name":"Counter-Strike 2","price_overview":{"currency":"RUB","initial":199900,"final":99900,"discount_percent":50,"initial_formatted":"1 999 руб.","final_formatted":"999 руб."}}},"281990":{"success":false}}"""
         val titled = SteamWishlist.applyTitles(games, response)
         assertEquals("Counter-Strike 2", titled[0].title)
+        assertEquals("999 руб.", titled[0].steamPrice)
+        assertEquals("1 999 руб.", titled[0].steamInitialPrice)
+        assertEquals(50, titled[0].discountPercent)
         assertEquals("Steam #281990", titled[1].title)
+    }
+
+    @Test fun storesMultipleNamedProfilesAndWishlistPrices() {
+        val profiles = listOf(
+            WishlistProfile("76561198000000000", "Alex", "https://steamcommunity.com/profiles/76561198000000000", listOf(
+                WishlistGame(730, "Counter-Strike 2", "999 руб.", "1 999 руб.", 50, 750.0)
+            ), 1234L),
+            WishlistProfile("76561198000000001", "Sam", "76561198000000001")
+        )
+        assertEquals(profiles, SteamWishlist.decodeProfiles(SteamWishlist.encodeProfiles(profiles)))
     }
 
     @Test fun cachedWishlistSurvivesRoundTripAndDropsInvalidIds() {
@@ -43,3 +58,4 @@ class SteamWishlistTest {
         } catch (_: IllegalArgumentException) { }
     }
 }
+

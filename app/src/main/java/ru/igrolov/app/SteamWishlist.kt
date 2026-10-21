@@ -6,7 +6,24 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 
-data class WishlistGame(val appId: Int, val title: String = "")
+data class WishlistGame(
+    val appId: Int,
+    val title: String = "",
+    val steamPrice: String = "",
+    val steamInitialPrice: String = "",
+    val discountPercent: Int = 0,
+    val lowestPlatiPrice: Double? = null
+)
+
+data class WishlistProfile(
+    val steamId64: String,
+    val displayName: String,
+    val input: String,
+    val games: List<WishlistGame> = emptyList(),
+    val importedAt: Long = 0L
+)
+
+data class WishlistSnapshot(val steamId64: String, val displayName: String, val games: List<WishlistGame>)
 
 /** Small boundary around Steam's currently undocumented public wishlist endpoint. */
 object SteamWishlist {
@@ -31,9 +48,20 @@ object SteamWishlist {
         return parts[1].takeIf { it.matches(Regex("[A-Za-z0-9_-]{2,64}")) }
     }
 
-    fun parsePublicProfileId(xml: String): String? =
-        Regex("<steamID64>\\s*([0-9]{17})\\s*</steamID64>", RegexOption.IGNORE_CASE)
+    fun parsePublicProfile(xml: String): Pair<String?, String?> {
+        val id = Regex("<steamID64>\\s*([0-9]{17})\\s*</steamID64>", RegexOption.IGNORE_CASE)
             .find(xml)?.groupValues?.get(1)
+        val name = Regex("<steamID>(.*?)</steamID>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
+            .find(xml)?.groupValues?.get(1)?.let(::decodeXml)?.trim()?.takeIf { it.isNotBlank() }
+        return id to name
+    }
+
+    fun parsePublicProfileId(xml: String): String? = parsePublicProfile(xml).first
+
+    private fun decodeXml(value: String): String = value
+        .replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
+        .replace("&quot;", "\"").replace("&apos;", "'")
+        .replace(Regex("&#(\\d+);")) { it.groupValues[1].toIntOrNull()?.toChar()?.toString() ?: it.value }
 
     fun parseWishlist(json: String): List<WishlistGame> {
         val root = JSONObject(json)
@@ -57,13 +85,22 @@ object SteamWishlist {
         return games.map { game ->
             val entry = root.optJSONObject(game.appId.toString())
             val data = entry?.takeIf { it.optBoolean("success") }?.optJSONObject("data")
-            game.copy(title = data?.optString("name")?.trim()?.takeIf { it.isNotBlank() } ?: game.title)
+            val price = data?.optJSONObject("price_overview")
+            game.copy(
+                title = data?.optString("name")?.trim()?.takeIf { it.isNotBlank() } ?: game.title,
+                steamPrice = if (data?.optBoolean("is_free", false) == true) "Бесплатно"
+                    else price?.optString("final_formatted", "")?.takeIf { it.isNotBlank() } ?: game.steamPrice,
+                steamInitialPrice = price?.optString("initial_formatted", "")?.takeIf { it.isNotBlank() } ?: game.steamInitialPrice,
+                discountPercent = price?.optInt("discount_percent", game.discountPercent)?.coerceIn(0, 100) ?: game.discountPercent
+            )
         }
     }
 
     fun encode(games: List<WishlistGame>): String = JSONArray().apply {
         games.distinctBy { it.appId }.take(500).forEach { game ->
-            put(JSONObject().put("appId", game.appId).put("title", game.title))
+            put(JSONObject().put("appId", game.appId).put("title", game.title)
+                .put("steamPrice", game.steamPrice).put("steamInitialPrice", game.steamInitialPrice)
+                .put("discountPercent", game.discountPercent).put("lowestPlatiPrice", game.lowestPlatiPrice))
         }
     }.toString()
 
@@ -72,13 +109,36 @@ object SteamWishlist {
         (0 until array.length()).mapNotNull { index ->
             val item = array.optJSONObject(index) ?: return@mapNotNull null
             val appId = item.optInt("appId", 0).takeIf { it > 0 } ?: return@mapNotNull null
-            WishlistGame(appId, item.optString("title", ""))
+            WishlistGame(appId, item.optString("title", ""), item.optString("steamPrice", ""),
+                item.optString("steamInitialPrice", ""), item.optInt("discountPercent", 0).coerceIn(0, 100),
+                item.optDouble("lowestPlatiPrice").takeIf { item.has("lowestPlatiPrice") && it > 0.0 })
         }.distinctBy { it.appId }.take(500)
     } catch (_: Exception) { emptyList() }
 
-    fun fetch(input: String): List<WishlistGame> {
+    fun encodeProfiles(profiles: List<WishlistProfile>): String = JSONArray().apply {
+        profiles.distinctBy { it.steamId64 }.take(20).forEach { profile ->
+            put(JSONObject().put("steamId64", profile.steamId64).put("displayName", profile.displayName)
+                .put("input", profile.input).put("games", JSONArray(encode(profile.games)))
+                .put("importedAt", profile.importedAt))
+        }
+    }.toString()
+
+    fun decodeProfiles(raw: String?): List<WishlistProfile> = try {
+        val rows = JSONArray(raw ?: "[]")
+        (0 until rows.length()).mapNotNull { index ->
+            val item = rows.optJSONObject(index) ?: return@mapNotNull null
+            val id = item.optString("steamId64", "").takeIf(id64::matches) ?: return@mapNotNull null
+            WishlistProfile(id, item.optString("displayName", "").ifBlank { "Steam " + id },
+                item.optString("input", id), decode(item.optJSONArray("games")?.toString()), item.optLong("importedAt", 0L))
+        }.distinctBy { it.steamId64 }.take(20)
+    } catch (_: Exception) { emptyList() }
+
+    fun fetch(input: String): List<WishlistGame> = fetchSnapshot(input).games
+
+    fun fetchSnapshot(input: String): WishlistSnapshot {
         val id = profileId(input) ?: vanityName(input)?.let(::resolveVanity)
             ?: throw IllegalArgumentException("Укажите SteamID64 или ссылку на открытый профиль Steam")
+        val profileName = fetchProfileMetadata(id)
         val encoded = URLEncoder.encode(id, "UTF-8")
         val connection = URL("https://api.steampowered.com/IWishlistService/GetWishlist/v1/?steamid=$encoded")
             .openConnection() as HttpURLConnection
@@ -89,21 +149,43 @@ object SteamWishlist {
         try {
             if (connection.responseCode !in 200..299) throw java.io.IOException("Steam HTTP ${connection.responseCode}")
             val games = parseWishlist(connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
-            return games.chunked(80).flatMap { batch ->
-                val ids = batch.joinToString(",") { it.appId.toString() }
-                val details = runCatching {
-                    val detailConnection = URL("https://store.steampowered.com/api/appdetails?appids=$ids&filters=basic&cc=ru&l=russian")
-                        .openConnection() as HttpURLConnection
-                    detailConnection.connectTimeout = 10000
-                    detailConnection.readTimeout = 15000
-                    detailConnection.setRequestProperty("Accept", "application/json")
-                    try {
-                        if (detailConnection.responseCode !in 200..299) error("Steam details HTTP ${detailConnection.responseCode}")
-                        detailConnection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-                    } finally { detailConnection.disconnect() }
-                }.getOrNull()
-                if (details == null) batch else runCatching { applyTitles(batch, details) }.getOrDefault(batch)
-            }
+            val pool = Executors.newFixedThreadPool(4)
+            val detailed = try {
+                games.chunked(4).flatMap { batch ->
+                    pool.invokeAll(batch.map { game -> Callable { runCatching { fetchAppDetails(game) }.getOrDefault(game) } })
+                        .mapNotNull { task -> runCatching { task.get() }.getOrNull() }
+                }
+            } finally { pool.shutdownNow() }
+            return WishlistSnapshot(id, profileName ?: "Steam " + id, detailed)
+        } finally { connection.disconnect() }
+    }
+
+    private fun fetchAppDetails(game: WishlistGame): WishlistGame {
+        val connection = URL("https://store.steampowered.com/api/appdetails?appids=" + game.appId + "&cc=ru&l=russian")
+            .openConnection() as HttpURLConnection
+        connection.connectTimeout = 10000
+        connection.readTimeout = 15000
+        connection.setRequestProperty("Accept", "application/json")
+        connection.setRequestProperty("User-Agent", "Igrolov Android")
+        try {
+            if (connection.responseCode !in 200..299) return game
+            val body = connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+            return runCatching { applyTitles(listOf(game), body).first() }.getOrDefault(game)
+        } finally { connection.disconnect() }
+    }
+
+    private fun fetchProfileMetadata(id: String): String? {
+        val connection = URL("https://steamcommunity.com/profiles/" + id + "/?xml=1")
+            .openConnection() as HttpURLConnection
+        connection.connectTimeout = 12000
+        connection.readTimeout = 15000
+        connection.setRequestProperty("User-Agent", "Igrolov Android")
+        try {
+            if (connection.responseCode !in 200..299) return null
+            val body = connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+            return parsePublicProfile(body).second
+        } catch (_: Exception) {
+            return null
         } finally { connection.disconnect() }
     }
 
@@ -120,3 +202,4 @@ object SteamWishlist {
         } finally { connection.disconnect() }
     }
 }
+

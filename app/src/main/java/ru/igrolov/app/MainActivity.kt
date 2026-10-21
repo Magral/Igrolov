@@ -3,6 +3,7 @@ package ru.igrolov.app
 import android.os.Bundle
 import android.text.Html
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.style.TextDecoration
 import android.Manifest
 import android.os.Build
 import androidx.activity.result.contract.ActivityResultContracts
@@ -366,13 +367,33 @@ class MainActivity : ComponentActivity() {
         var watches by remember { mutableStateOf("[]") }
         var alertLog by remember { mutableStateOf("[]") }
         var wishlistProfile by remember { mutableStateOf(prefs.getString("wishlist_profile", "") ?: "") }
-        var wishlistGames by remember { mutableStateOf(SteamWishlist.decode(prefs.getString("wishlist_games", null))) }
+        var wishlistProfiles by remember {
+            mutableStateOf(SteamWishlist.decodeProfiles(prefs.getString("wishlist_profiles", null)).ifEmpty {
+                val legacyId = SteamWishlist.profileId(prefs.getString("wishlist_profile", "") ?: "")
+                if (legacyId == null) emptyList() else listOf(WishlistProfile(
+                    legacyId, "Steam " + legacyId, prefs.getString("wishlist_profile", legacyId) ?: legacyId,
+                    SteamWishlist.decode(prefs.getString("wishlist_games", null)), prefs.getLong("wishlist_imported_at", 0L)
+                ))
+            })
+        }
+        var selectedWishlistId by remember {
+            mutableStateOf(prefs.getString("wishlist_selected_profile", null) ?: wishlistProfiles.firstOrNull()?.steamId64)
+        }
+        var wishlistGames by remember {
+            mutableStateOf(wishlistProfiles.firstOrNull { it.steamId64 == selectedWishlistId }?.games
+                ?: SteamWishlist.decode(prefs.getString("wishlist_games", null)))
+        }
         var wishlistBusy by remember { mutableStateOf(false) }
         var wishlistMessage by remember { mutableStateOf("") }
         var wishlistImportedAt by remember { mutableLongStateOf(prefs.getLong("wishlist_imported_at", 0L)) }
         var wishlistVisibleLimit by remember { mutableIntStateOf(50) }
+        var wishlistSearchAppId by remember { mutableStateOf<Int?>(null) }
         var showAlertLog by remember { mutableStateOf(true) }
         var watchMessage by remember { mutableStateOf("Укажите название игры и цену в рублях") }
+        fun persistWishlistProfiles(profiles: List<WishlistProfile>) {
+            wishlistProfiles = profiles.distinctBy { it.steamId64 }.take(20)
+            prefs.edit().putString("wishlist_profiles", SteamWishlist.encodeProfiles(wishlistProfiles)).apply()
+        }
         fun reloadWatches() {
             ioExecutor.execute {
                 val latestWatches=WatchStore.read(this@MainActivity).toString()
@@ -493,22 +514,31 @@ class MainActivity : ComponentActivity() {
                 return
             }
             wishlistBusy = true
-            wishlistMessage = "Загружаем открытый список из Steam…"
+            wishlistMessage = "Загружаем профиль, список и цены Steam RU…"
             val profile = wishlistProfile.trim()
             wishlistExecutor.execute {
                 try {
-                    val loaded = SteamWishlist.fetch(profile)
+                    val snapshot = SteamWishlist.fetchSnapshot(profile)
                     val timestamp = System.currentTimeMillis()
-                    prefs.edit().putString("wishlist_profile", profile)
-                        .putString("wishlist_games", SteamWishlist.encode(loaded))
-                        .putLong("wishlist_imported_at", timestamp).apply()
                     runOnUiThread {
-                        wishlistGames = loaded
+                        val previous = wishlistProfiles.firstOrNull { it.steamId64 == snapshot.steamId64 }
+                        val games = snapshot.games.map { game ->
+                            game.copy(lowestPlatiPrice = previous?.games?.firstOrNull { it.appId == game.appId }?.lowestPlatiPrice)
+                        }
+                        val savedProfile = WishlistProfile(snapshot.steamId64, snapshot.displayName, profile, games, timestamp)
+                        persistWishlistProfiles(listOf(savedProfile) + wishlistProfiles.filterNot { it.steamId64 == snapshot.steamId64 })
+                        selectedWishlistId = snapshot.steamId64
+                        wishlistProfile = profile
+                        prefs.edit().putString("wishlist_profile", profile)
+                            .putString("wishlist_games", SteamWishlist.encode(games))
+                            .putString("wishlist_selected_profile", snapshot.steamId64)
+                            .putLong("wishlist_imported_at", timestamp).apply()
+                        wishlistGames = games
                         wishlistVisibleLimit = 50
                         wishlistImportedAt = timestamp
                         wishlistBusy = false
-                        wishlistMessage = if (loaded.isEmpty()) "В открытом списке пока нет игр."
-                            else "Загружено игр: ${loaded.size}. Поиск предложений запускается отдельно для выбранной игры."
+                        wishlistMessage = if (games.isEmpty()) "В открытом списке пока нет игр."
+                            else "Сохранён профиль «${snapshot.displayName}». Игр: ${games.size}. Цены Steam RU обновлены; поиск Plati запускается по кнопке у игры."
                     }
                 } catch (e: Exception) {
                     runOnUiThread {
@@ -525,7 +555,7 @@ class MainActivity : ComponentActivity() {
         Column(Modifier.fillMaxSize()) {
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Игролов 1.0.9", style = MaterialTheme.typography.headlineSmall)
+                Text("Игролов 1.1.0", style = MaterialTheme.typography.headlineSmall)
                 IconButton(onClick = { settingsOpen = !settingsOpen; showDirectory = false }) {
                     Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                         color = MaterialTheme.colorScheme.onSurface)
@@ -651,9 +681,31 @@ class MainActivity : ComponentActivity() {
                     val ready = found.count { ManualContentRules.visible(it, "Игра", "Все") }
                     val unavailable = found.count { it.available != true }
                     val uncertainPrice = found.count { it.available == true && !it.priceVerified }
+                    val wishlistAppId = wishlistSearchAppId
+                    val wishlistSearch = wishlistAppId != null && identity?.appId == wishlistAppId
+                    val minimum = if (wishlistSearch) found.asSequence()
+                            .filter { ManualContentRules.visible(it, selectedType, editionFilter) && it.available == true && it.priceVerified && it.price > 0.0 }
+                            .minOfOrNull { it.price } else null
+                    if (wishlistSearch) {
+                        if (minimum != null && selectedWishlistId != null) {
+                            val updatedProfiles = wishlistProfiles.map { profile ->
+                                if (profile.steamId64 != selectedWishlistId) profile else profile.copy(games = profile.games.map { game ->
+                                    if (game.appId == wishlistAppId) game.copy(lowestPlatiPrice = minimum) else game
+                                })
+                            }
+                            persistWishlistProfiles(updatedProfiles)
+                            wishlistGames = updatedProfiles.firstOrNull { it.steamId64 == selectedWishlistId }?.games.orEmpty()
+                            prefs.edit().putString("wishlist_games", SteamWishlist.encode(wishlistGames)).apply()
+                        }
+                        wishlistSearchAppId = null
+                    }
                     searchMessage = if (failure.isNotBlank()) "Ошибка поиска: $failure" else
                         "Проверено: ${found.size} · основная игра с подтверждёнными наличием и ценой: $ready. " +
-                        "Скрыто без подтверждённого наличия: $unavailable; без точной цены варианта: $uncertainPrice."
+                        "Скрыто без подтверждённого наличия: $unavailable; без точной цены варианта: $uncertainPrice." +
+                        if (wishlistSearch) {
+                            if (minimum != null) " Минимальная подтверждённая Plati цена сохранена в списке желаемого."
+                            else " Подтверждённая Plati цена не найдена; сохранённое значение не изменено."
+                        } else ""
 
                 }
             }, enabled = query.isNotBlank() && !searching && !suggestionBusy && manualFilters.valid) { Text(if (searching) "Ищем..." else "Искать на Plati") }
@@ -978,54 +1030,109 @@ class MainActivity : ComponentActivity() {
                 ElevatedCard(Modifier.fillMaxWidth(), colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("Список желаемого Steam", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                        Text("Загрузите открытый профиль вручную. Импорт только сохраняет игры на устройстве; предложения ищутся отдельно.",
+                        Text("Закрепляйте открытые профили друзей. Для каждого сохраняются имя Steam, список и цены региона RU.",
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
                     }
                 }
                 Spacer(Modifier.height(12.dp))
+                if (wishlistProfiles.isNotEmpty()) {
+                    Text("Профили", style = MaterialTheme.typography.titleMedium)
+                    wishlistProfiles.forEach { profile ->
+                        TextButton(onClick = {
+                            selectedWishlistId = profile.steamId64
+                            wishlistProfile = profile.input
+                            wishlistGames = profile.games
+                            wishlistImportedAt = profile.importedAt
+                            wishlistVisibleLimit = 50
+                            wishlistMessage = "Выбран профиль «${profile.displayName}»."
+                            prefs.edit().putString("wishlist_selected_profile", profile.steamId64)
+                                .putString("wishlist_profile", profile.input)
+                                .putString("wishlist_games", SteamWishlist.encode(profile.games))
+                                .putLong("wishlist_imported_at", profile.importedAt).apply()
+                        }, modifier = Modifier.fillMaxWidth()) {
+                            Text((if (profile.steamId64 == selectedWishlistId) "●  " else "○  ") + profile.displayName + " · " + profile.steamId64.takeLast(4),
+                                modifier = Modifier.fillMaxWidth(), maxLines = 1)
+                        }
+                    }
+                }
                 OutlinedTextField(
                     wishlistProfile,
                     { wishlistProfile = it },
-                    label = { Text("SteamID64 или ссылка на профиль") },
-                    placeholder = { Text("steamcommunity.com/profiles/…") },
+                    label = { Text("Добавить профиль Steam") },
+                    placeholder = { Text("SteamID64, /profiles/… или /id/…") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 Button(onClick = { importWishlist() }, enabled = !wishlistBusy, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (wishlistBusy) "Загружаем из Steam…" else "Загрузить из Steam")
+                    val selected = wishlistProfiles.firstOrNull { it.steamId64 == selectedWishlistId }
+                    val enteredId = SteamWishlist.profileId(wishlistProfile)
+                    Text(if (wishlistBusy) "Загружаем из Steam…" else if (selected != null && enteredId == selected.steamId64)
+                        "Обновить список и цены Steam RU" else "Загрузить и закрепить профиль")
+                }
+                val activeProfile = wishlistProfiles.firstOrNull { it.steamId64 == selectedWishlistId }
+                if (activeProfile != null) {
+                    TextButton(onClick = {
+                        val remaining = wishlistProfiles.filterNot { it.steamId64 == activeProfile.steamId64 }
+                        persistWishlistProfiles(remaining)
+                        val next = remaining.firstOrNull()
+                        selectedWishlistId = next?.steamId64
+                        wishlistProfile = next?.input.orEmpty()
+                        wishlistGames = next?.games.orEmpty()
+                        wishlistImportedAt = next?.importedAt ?: 0L
+                        prefs.edit().putString("wishlist_selected_profile", next?.steamId64)
+                            .putString("wishlist_profile", next?.input.orEmpty())
+                            .putString("wishlist_games", SteamWishlist.encode(next?.games.orEmpty()))
+                            .putLong("wishlist_imported_at", next?.importedAt ?: 0L).apply()
+                    }) { Text("Удалить профиль «${activeProfile.displayName}»") }
                 }
                 if (wishlistBusy) LinearProgressIndicator(Modifier.fillMaxWidth())
                 if (wishlistImportedAt > 0L) {
                     val imported = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("ru", "RU"))
                         .format(java.util.Date(wishlistImportedAt))
-                    Text("Последний импорт: $imported · игр: ${wishlistGames.size}", style = MaterialTheme.typography.bodySmall)
+                    Text("${activeProfile?.displayName ?: "Последний импорт"} · обновлено $imported · игр: ${wishlistGames.size}", style = MaterialTheme.typography.bodySmall)
                 }
                 if (wishlistMessage.isNotBlank()) Text(wishlistMessage, style = MaterialTheme.typography.bodySmall,
                     color = if (wishlistMessage.startsWith("Не удалось")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(8.dp))
                 if (wishlistGames.isEmpty() && wishlistImportedAt == 0L) {
-                    Text("Вставьте ссылку на открытый профиль или его SteamID64 и нажмите загрузку.", style = MaterialTheme.typography.bodyMedium)
+                    Text("Вставьте открытый профиль Steam и загрузите его, чтобы закрепить в списке профилей.", style = MaterialTheme.typography.bodyMedium)
                 }
                 wishlistGames.take(wishlistVisibleLimit).forEach { game ->
                     ElevatedCard(Modifier.fillMaxWidth()) {
-                        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text(game.title.ifBlank { "Игра Steam #${game.appId}" }, style = MaterialTheme.typography.titleSmall)
-                                Text("Steam AppID ${game.appId}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    Text(game.title.ifBlank { "Название игры не получено" }, style = MaterialTheme.typography.titleSmall)
+                                    Text("Steam AppID ${game.appId}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                                    Text(game.steamPrice.ifBlank { "Нет цены RU" }, style = MaterialTheme.typography.titleSmall)
+                                    if (game.discountPercent > 0) {
+                                        if (game.steamInitialPrice.isNotBlank()) Text(game.steamInitialPrice,
+                                            style = MaterialTheme.typography.bodySmall.copy(textDecoration = TextDecoration.LineThrough),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text("−${game.discountPercent}% · Steam RU", style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.primary)
+                                    } else Text("Steam RU", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    game.lowestPlatiPrice?.let { price ->
+                                        Text("Plati от ${String.format(Locale("ru", "RU"), "%.0f", price)} ₽",
+                                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+                                    }
+                                }
                             }
                             TextButton(onClick = {
-                                val title = game.title.ifBlank { "Steam #${game.appId}" }
+                                val title = game.title.ifBlank { "" }
                                 searchGeneration++
                                 activeCatalogGeneration.set(searchGeneration)
                                 searching = false
                                 offers = emptyList()
                                 steamGame = null
-                                selectedGame = GameSearchResolver.Candidate(game.appId, title)
+                                wishlistSearchAppId = game.appId
+                                selectedGame = GameSearchResolver.Candidate(game.appId, title.ifBlank { "Steam AppID ${game.appId}" })
                                 query = title
-                                searchMessage = "Игра выбрана из списка желаемого. Нажмите «Искать на Plati» для отдельного поиска."
+                                searchMessage = "Игра выбрана из списка желаемого. Нажмите «Искать на Plati»; минимальная подтверждённая цена сохранится в профиле."
                                 activeTab = 0
-                            }) { Text("Найти предложения") }
+                            }, enabled = game.title.isNotBlank()) { Text("Искать Plati") }
                         }
                     }
                 }
@@ -1240,3 +1347,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+

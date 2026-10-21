@@ -40,7 +40,7 @@ class ReleaseSmokeTest {
     @Test fun launchAndNavigateFiltersSettingsAndMonitoring() {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.0.9")),15000))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.0")),15000))
         device.findObject(By.text("Gift")).click()
         device.findObject(By.text("Key")).click()
         device.findObject(By.text("Товары")).click()
@@ -59,12 +59,12 @@ class ReleaseSmokeTest {
     @Test fun wishlistImportIsSeparateFromOfferSearch() {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.0.9")),15000))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.0")),15000))
         device.findObject(By.text("Желания")).click()
-        assertTrue(device.wait(Until.hasObject(By.text("Загрузить из Steam")),5000))
+        assertTrue(device.wait(Until.hasObject(By.text("Загрузить и закрепить профиль")),5000))
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"wishlist.png"))
         assertFalse(device.hasObject(By.text("Искать на Plati")))
-        device.findObject(By.text("Загрузить из Steam")).click()
+        device.findObject(By.text("Загрузить и закрепить профиль")).click()
         assertTrue(device.wait(Until.hasObject(By.textContains("Вставьте SteamID64")),3000))
         assertFalse(device.hasObject(By.text("Искать на Plati")))
     }
