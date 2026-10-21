@@ -35,7 +35,7 @@ object GgselCatalog {
         val url = item.optString("url").trim()
         if (id <= 0 || name.isBlank() || !url.matches(Regex("[A-Za-z0-9_-]{1,160}"))) null
         else Category(id, name, url)
-    }.distinctBy { it.url }
+    }.distinctBy { it.url }.toList()
 
     /** Only a category matching the canonical Steam title or a saved title alias is accepted. */
     fun chooseCategory(categories: List<Category>, names: List<String>): Category? {

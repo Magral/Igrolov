@@ -714,12 +714,12 @@ class MainActivity : ComponentActivity() {
                 }
                 if (!hiddenWishlistSearch) offers = found
                 searching = false
-                val ready = finalOffers.count { ManualContentRules.visible(it, "Игра", "Все") }
-                val unavailable = finalOffers.count { it.available != true }
-                val uncertainPrice = finalOffers.count { it.available == true && !it.priceVerified }
+                val ready = found.count { ManualContentRules.visible(it, "Игра", "Все") }
+                val unavailable = found.count { it.available != true }
+                val uncertainPrice = found.count { it.available == true && !it.priceVerified }
                 val wishlistSearch = wishlistProfileId != null && identity?.appId != null
                 val wishlistRules = if (wishlistSearch) GameRuleStore.read(this@MainActivity, requestedGame) else null
-                val minimum = if (wishlistSearch) finalOffers.asSequence()
+                val minimum = if (wishlistSearch) found.asSequence()
                     .filter { it.marketplace == "Plati" }
                     .filter {
                         ManualSearchFilter.rejection(it, manualFilters, wishlistRules!!, ignoredIds) == null &&
@@ -748,9 +748,9 @@ class MainActivity : ComponentActivity() {
                     })
                 }
                 if (!hiddenWishlistSearch) {
-                    val summary = if (failure.isNotBlank() && finalOffers.isEmpty()) "Ошибка поиска: $failure" else
+                    val summary = if (failure.isNotBlank() && found.isEmpty()) "Ошибка поиска: $failure" else
                         (if (failure.isNotBlank()) "Часть каталогов недоступна ($failure). " else "") +
-                        "Проверено: ${finalOffers.size} · основная игра с подтверждёнными наличием и ценой: $ready. " +
+                        "Проверено: ${found.size} · основная игра с подтверждёнными наличием и ценой: $ready. " +
                             "Скрыто без подтверждённого наличия: $unavailable; без точной цены варианта: $uncertainPrice." +
                             if (wishlistSearch) {
                                 if (minimum != null) " Минимальная подтверждённая Plati цена сохранена в списке желаемого."
