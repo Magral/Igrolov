@@ -106,6 +106,7 @@ class ReleaseSmokeTest {
         assertTrue(device.wait(Until.hasObject(By.textContains("Ищем минимальную цену")),5000))
         assertTrue(device.hasObject(By.text("900 руб.")))
         device.findObject(By.text("Stellaris")).click()
+        assertTrue(device.wait(Until.hasObject(By.text("Поиск игры по названию")),5000))
         val searchScroll=UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(20)
         assertTrue(searchScroll.scrollTextIntoView("Автопоиск Plati"))
         assertTrue(device.wait(Until.hasObject(By.textContains("Автопоиск Plati")),5000))
