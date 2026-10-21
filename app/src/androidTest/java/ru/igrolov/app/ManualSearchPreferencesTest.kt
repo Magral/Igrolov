@@ -17,7 +17,7 @@ class ManualSearchPreferencesTest {
     private fun open():UiDevice {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.0.9")),15000))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.0")),15000))
         return device
     }
     @Test fun saveFiltersFromScreen() {
