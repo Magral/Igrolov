@@ -4,7 +4,7 @@ import org.json.JSONObject
 
 /** Older versions cached catalog/default teaser prices without validating purchase options. */
 object TrackedPriceCache {
-    private const val SCHEMA=107
+    private const val SCHEMA=106
 
     fun storageKey(marketplace:String,id:String):String = "${if(marketplace=="GGSEL") "GGSEL" else "Plati"}:$id"
 
