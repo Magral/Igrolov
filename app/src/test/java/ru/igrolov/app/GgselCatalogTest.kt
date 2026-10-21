@@ -36,7 +36,7 @@ class GgselCatalogTest {
     @Test fun parsesActiveFixedPriceSteamGameOffersAndRejectsDlcAccountsAndUnknownStock() {
         val root = JSONObject("""
             {"data":{"pages":[{"items":[
-              {"id_goods":123456,"url":"stellaris-steam-key-ru-123456","name":"Stellaris Steam Key RU","forbidden_type":0,"price_for_one_wmr":"499.90","price_wmr_for_one":"499.90","price_wmr":"999.90","is_active":true,"is_preorder":false,"options_check":false,"options":[]},
+              {"id_goods":123456,"url":"stellaris-steam-key-ru-123456","name":"Stellaris Steam Key RU","forbidden_type":0,"price_for_one_wmr":"","price_wmr_for_one":"499.90","price_wmr":"999.90","is_active":true,"is_preorder":false,"options_check":false,"options":[]},
               {"id_goods":123457,"name":"Stellaris Steam Gift RU","forbidden_type":1,"price_for_one_wmr":"1","options_check":false},
               {"id_goods":123458,"name":"Stellaris: Utopia Steam Key RU","forbidden_type":0,"price_for_one_wmr":"5","options_check":false},
               {"id_goods":123459,"name":"Stellaris Steam Account RU","forbidden_type":0,"price_for_one_wmr":"2","options_check":false},
