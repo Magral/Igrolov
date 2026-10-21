@@ -62,6 +62,7 @@ class ReleaseSmokeTest {
         assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.0.9")),15000))
         device.findObject(By.text("Желания")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Загрузить из Steam")),5000))
+        device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"wishlist.png"))
         assertFalse(device.hasObject(By.text("Искать на Plati")))
         device.findObject(By.text("Загрузить из Steam")).click()
         assertTrue(device.wait(Until.hasObject(By.textContains("Вставьте SteamID64")),3000))
