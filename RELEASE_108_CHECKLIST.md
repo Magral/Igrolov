@@ -1,6 +1,6 @@
 # Игролов 1.0.8 — надёжная очередь ручных проверок
 
-Статус: кандидат `1.0.8` (`versionCode=115`) проверен на API 26 и 29. Стабильный Release не опубликован.
+Статус: стабильный Release `v1.0.8` опубликован; `versionCode=115`. Выпускной CI прошёл на API 26 и 29.
 
 - [x] Ручная проверка после добавления игры ставится следом за уже выполняющейся ручной проверкой; очередь не теряется из-за `KEEP`.
 - [x] Добавить регрессионный сценарий: запросить новую ручную проверку, пока предыдущая стоит в очереди, убедиться, что в цепочке остаются обе.
@@ -8,4 +8,4 @@
 - [x] Проверить поиск и мониторинг на API 26 и 29, JVM-тесты, логи, отчёты и APK.
 - [x] Зафиксировать результаты CI и обновить README/заметки релиза.
 
-Успешный [GitHub Actions run 123](https://github.com/Magral/Igrolov/actions/runs/39419248041): 65 JVM-тестов и 14 Android-сценариев на каждом API. Логи без `FATAL EXCEPTION`. Собран [APK 1.0.8](https://github.com/Magral/Igrolov/actions/runs/39419248041/artifacts/12263695620). Стабильный Release создаётся отдельной job после полного успешного CI для коммита с префиксом `release:`.
+Успешный [выпускной GitHub Actions run](https://github.com/Magral/Igrolov/actions/runs/39575103925): 65 JVM-тестов и 14 Android-сценариев на каждом API. Опубликованы [GitHub Release v1.0.8](https://github.com/Magral/Igrolov/releases/tag/v1.0.8) и [APK 1.0.8](https://github.com/Magral/Igrolov/releases/download/v1.0.8/Igrolov-1.0.8.apk).
