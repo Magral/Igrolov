@@ -14,6 +14,7 @@ object GgselBuyerApi {
     internal const val CATEGORY_QUERY_URL = "https://api.ggsel.com/elastic/goods/query-categories"
     internal const val CATEGORY_GOODS_URL = "https://api4.ggsel.com/elastic/goods/categories"
     internal const val CATEGORY_GOODS_FALLBACK_URL = "https://api.ggsel.com/elastic/goods/categories"
+    internal const val CATEGORY_SEARCH_URL = "https://api.ggsel.com/elastic/goods/query"
     internal const val CATEGORY_PAGE_BASE_URL = "https://ggsel.net/en/catalog/"
 
     /** The injected request makes category selection and provider failures testable without live GGSEL calls. */
@@ -57,12 +58,36 @@ object GgselBuyerApi {
             .put("lang", "en")
             .put("platforms", JSONArray().put("Steam"))
             .put("page", 1)
-        val products = try {
+        val catalogProducts = try {
             post(CATEGORY_GOODS_URL, productsBody)
         } catch (e: UnknownHostException) {
             post(CATEGORY_GOODS_FALLBACK_URL, productsBody)
         }
-        return if (active()) GgselCatalog.offers(products, game) else emptyList()
+        if (!active()) return emptyList()
+        val catalogOffers = GgselCatalog.offers(catalogProducts, game)
+        if (catalogOffers.isNotEmpty()) return catalogOffers
+
+        // The public category endpoint can return an empty items array even when the page
+        // advertises active goods. Use the same exact category and game title in the site's
+        // public query endpoint, then run every row through the identical strict classifier.
+        val searchProducts = post(CATEGORY_SEARCH_URL, JSONObject()
+            .put("search_term", game.canonical)
+            .put("digi_catalog", categoryId)
+            .put("url", category.url)
+            .put("limit", 100)
+            .put("search_after", JSONArray())
+            .put("is_preorders", false)
+            .put("with_filters", true)
+            .put("with_categories", false)
+            .put("sort", "sortByPriceUp")
+            .put("content_type_ids", JSONArray().put(48).put(2))
+            .put("with_forbidden", false)
+            .put("min_price", "")
+            .put("max_price", "")
+            .put("currency", "wmr")
+            .put("lang", "en")
+            .put("platforms", JSONArray().put("Steam")))
+        return if (active()) GgselCatalog.offers(searchProducts, game) else emptyList()
     }
 
     private fun getCategoryPageHtml(endpoint: String): String {
