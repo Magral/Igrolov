@@ -61,5 +61,18 @@ class SteamWishlistTest {
             fail("Malformed responses must not be treated as an empty wishlist")
         } catch (_: IllegalArgumentException) { }
     }
+
+    @Test fun persistsIndependentConfirmedMinimumPricesForPlatiAndGgsel() {
+        val game = WishlistGame(281990, "Stellaris", lowestPlatiPrice = 499.0, lowestGgselPrice = 475.0)
+        val decoded = SteamWishlist.decode(SteamWishlist.encode(listOf(game))).single()
+        assertEquals(499.0, decoded.lowestPlatiPrice!!, 0.0)
+        assertEquals(475.0, decoded.lowestGgselPrice!!, 0.0)
+    }
+
+    @Test fun oldWishlistCacheKeepsPlatiPriceAndDefaultsGgselToUnknown() {
+        val decoded = SteamWishlist.decode("""[{"appId":281990,"title":"Stellaris","lowestPlatiPrice":499.0}]""").single()
+        assertEquals(499.0, decoded.lowestPlatiPrice!!, 0.0)
+        assertNull(decoded.lowestGgselPrice)
+    }
 }
 
