@@ -123,6 +123,26 @@ class GgselBuyerApiTest {
         assertEquals(listOf(GgselBuyerApi.CATEGORY_QUERY_URL,GgselBuyerApi.CATEGORY_GOODS_URL,GgselBuyerApi.CATEGORY_SEARCH_URL),requested)
     }
 
+    @Test fun fallsBackToQueryWhenApi4Returns404() {
+        val game=ManualGameReference.Game("Stellaris",281990)
+        val requested=mutableListOf<String>()
+        val offers=GgselBuyerApi.find(game,post={url,_->
+            requested+=url
+            when(url) {
+                GgselBuyerApi.CATEGORY_QUERY_URL -> JSONObject("""{"data":[{"name":"Stellaris","url":"stellaris"}]}""")
+                GgselBuyerApi.CATEGORY_GOODS_URL -> throw java.io.IOException("GGSEL HTTP 404")
+                GgselBuyerApi.CATEGORY_GOODS_FALLBACK_URL -> JSONObject("""{"data":{"items":[]}}""")
+                GgselBuyerApi.CATEGORY_SEARCH_URL -> JSONObject("""{"data":{"items":[
+                    {"id_goods":445566,"url":"stellaris-steam-gift","name":"Stellaris Steam Gift РФ","forbidden_type":0,"price_for_one_wmr":"599","is_preorder":false,"options_check":false,"options":[]}
+                ]}}""")
+                else -> error("Unexpected GGSEL endpoint: " + url)
+            }
+        },getCategoryPage={"""<script>{"id":12943,"digi_catalog":37770,"name":"Stellaris","url":"stellaris"}</script>"""})
+        assertEquals(1,offers.size)
+        assertEquals("ggsel:445566",offers.single().id)
+        assertEquals(listOf(GgselBuyerApi.CATEGORY_QUERY_URL,GgselBuyerApi.CATEGORY_GOODS_URL,GgselBuyerApi.CATEGORY_GOODS_FALLBACK_URL,GgselBuyerApi.CATEGORY_SEARCH_URL),requested)
+    }
+
     @Test fun missingExactCategoryIsAConfirmedEmptyResultWithoutBroadSearch() {
         var calls=0
         val offers=GgselBuyerApi.find(ManualGameReference.Game("Zero Parades: Director's Cut",123),post={_,_->

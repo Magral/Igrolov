@@ -175,10 +175,43 @@ def main():
         raise RuntimeError("GGSEL search endpoint returned an invalid product list")
     print(f"GGSEL live search fallback: {len(search_items)} product rows")
     matching = [item for item in search_items if isinstance(item, dict) and "stellaris" in str(item.get("name", "")).casefold()]
+
+    def app_compatible(item):
+        product_id = str(item.get("id_goods", ""))
+        try:
+            forbidden = int(item.get("forbidden_type", -1))
+        except (TypeError, ValueError):
+            forbidden = -1
+        price_value = None
+        for key in ("price_for_one_wmr", "price_wmr", "price"):
+            raw = str(item.get(key, "")).replace(" ", "").replace(",", ".")
+            try:
+                parsed = float(raw)
+            except (TypeError, ValueError):
+                continue
+            if parsed > 0:
+                price_value = parsed
+                break
+        return (
+            re.fullmatch(r"[0-9]{4,12}", product_id) is not None
+            and forbidden == 0
+            and price_value is not None
+            and not bool(item.get("is_preorder", False))
+            and not bool(item.get("options_check", False))
+            and not (isinstance(item.get("options"), list) and item["options"])
+        )
+
+    compatible = [item for item in matching if app_compatible(item)]
     if matching:
-        print(f"GGSEL live smoke passed: exact category + page ID + query endpoint ({catalog_id}: {name}, {len(matching)} Stellaris rows)")
+        sample = matching[0]
+        fields = ("id_goods", "name", "forbidden_type", "price_for_one_wmr", "price_wmr", "price", "is_preorder", "options_check", "options", "url")
+        print("GGSEL live Stellaris item keys: " + ", ".join(sorted(sample.keys())))
+        print("GGSEL live Stellaris sample: " + json.dumps({key: sample.get(key) for key in fields if key in sample}, ensure_ascii=False))
+    print(f"GGSEL live search fallback: {len(search_items)} rows, {len(matching)} Stellaris rows, {len(compatible)} app-compatible active priced rows")
+    if compatible:
+        print(f"GGSEL live smoke passed: exact category + page ID + query endpoint + active priced product ({catalog_id}: {name})")
         return
-    raise RuntimeError("GGSEL product/category APIs returned no Stellaris rows")
+    raise RuntimeError("GGSEL query endpoint returned no parser-compatible active Stellaris product rows")
 
 if __name__ == "__main__":
     try:

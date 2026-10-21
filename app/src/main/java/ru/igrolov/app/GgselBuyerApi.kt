@@ -62,6 +62,11 @@ object GgselBuyerApi {
             post(CATEGORY_GOODS_URL, productsBody)
         } catch (e: UnknownHostException) {
             post(CATEGORY_GOODS_FALLBACK_URL, productsBody)
+        } catch (e: IOException) {
+            // Some GGSEL hosts resolve but still return 404 for the catalog route.
+            // Retry through the primary public host before using the query endpoint.
+            if (e.message?.matches(Regex("GGSEL HTTP 4[0-9]{2}")) != true) throw e
+            post(CATEGORY_GOODS_FALLBACK_URL, productsBody)
         }
         if (!active()) return emptyList()
         val catalogOffers = GgselCatalog.offers(catalogProducts, game)
