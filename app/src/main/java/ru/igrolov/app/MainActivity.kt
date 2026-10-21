@@ -567,7 +567,11 @@ class MainActivity : ComponentActivity() {
                     runOnUiThread {
                         val previous = wishlistProfiles.firstOrNull { it.steamId64 == snapshot.steamId64 }
                         val games = snapshot.games.map { game ->
-                            game.copy(lowestPlatiPrice = previous?.games?.firstOrNull { it.appId == game.appId }?.lowestPlatiPrice)
+                            val previousGame = previous?.games?.firstOrNull { it.appId == game.appId }
+                        game.copy(
+                            lowestPlatiPrice = previousGame?.lowestPlatiPrice,
+                            lowestGgselPrice = previousGame?.lowestGgselPrice
+                        )
                         }
                         val savedProfile = WishlistProfile(snapshot.steamId64, snapshot.displayName, profile, games, timestamp)
                         persistWishlistProfiles(listOf(savedProfile) + wishlistProfiles.filterNot { it.steamId64 == snapshot.steamId64 })
@@ -676,30 +680,41 @@ class MainActivity : ComponentActivity() {
                 val uncertainPrice = found.count { it.available == true && !it.priceVerified }
                 val wishlistSearch = wishlistProfileId != null && identity?.appId != null
                 val wishlistRules = if (wishlistSearch) GameRuleStore.read(this@MainActivity, requestedGame) else null
-                val minimum = if (wishlistSearch) found.asSequence()
-                    .filter { it.marketplace == "Plati" }
+                val minimaByMarketplace = if (wishlistSearch) found.asSequence()
                     .filter {
                         ManualSearchFilter.rejection(it, manualFilters, wishlistRules!!, ignoredIds) == null &&
                             it.available == true && it.priceVerified && it.price > 0.0
                     }
-                    .minOfOrNull { it.price } else null
+                    .groupBy { it.marketplace }
+                    .mapValues { (_, marketOffers) -> marketOffers.minOf { it.price } }
+                else emptyMap()
+                val platiMinimum = minimaByMarketplace["Plati"]
+                val ggselMinimum = minimaByMarketplace["GGSEL"]
+                val hasWishlistMinimum = platiMinimum != null || ggselMinimum != null
                 if (wishlistSearch && wishlistProfileId != null && identity != null) {
                     val updatedProfiles = wishlistProfiles.map { profile ->
-                        if (profile.steamId64 != wishlistProfileId || minimum == null) profile else profile.copy(games = profile.games.map { game ->
-                            if (game.appId == identity.appId) game.copy(lowestPlatiPrice = minimum) else game
+                        if (profile.steamId64 != wishlistProfileId || !hasWishlistMinimum) profile else profile.copy(games = profile.games.map { game ->
+                            if (game.appId == identity.appId) game.copy(
+                                lowestPlatiPrice = platiMinimum ?: game.lowestPlatiPrice,
+                                lowestGgselPrice = ggselMinimum ?: game.lowestGgselPrice
+                            ) else game
                         })
                     }
-                    if (minimum != null) {
+                    if (hasWishlistMinimum) {
                         persistWishlistProfiles(updatedProfiles)
                         if (selectedWishlistId == wishlistProfileId) {
                             wishlistGames = updatedProfiles.firstOrNull { it.steamId64 == wishlistProfileId }?.games.orEmpty()
                             prefs.edit().putString("wishlist_games", SteamWishlist.encode(wishlistGames)).apply()
                         }
                     }
+                    val updatedSources = listOfNotNull(
+                        platiMinimum?.let { "Plati" },
+                        ggselMinimum?.let { "GGSEL" }
+                    )
                     val key = "$wishlistProfileId:${identity.appId}"
                     wishlistSearchingKeys = wishlistSearchingKeys - key
                     wishlistSearchStatuses = wishlistSearchStatuses + (key to when {
-                        minimum != null -> "Минимум найден в Plati"
+                        hasWishlistMinimum -> "Минимум обновлён: ${updatedSources.joinToString(" · ")}"
                         failure.isNotBlank() -> "Ошибка поиска цен"
                         else -> "Подтверждённая цена не найдена"
                     })
@@ -710,8 +725,12 @@ class MainActivity : ComponentActivity() {
                         "Проверено: ${found.size} · основная игра с подтверждёнными наличием и ценой: $ready. " +
                             "Скрыто без подтверждённого наличия: $unavailable; без точной цены варианта: $uncertainPrice." +
                             if (wishlistSearch) {
-                                if (minimum != null) " Минимальная подтверждённая Plati цена сохранена в списке желаемого."
-                                else " Подтверждённая Plati цена не найдена; сохранённое значение не изменено."
+                                if (hasWishlistMinimum) " Подтверждённые минимумы сохранены: " +
+                                    listOfNotNull(
+                                        platiMinimum?.let { "Plati ${String.format(Locale("ru", "RU"), "%.0f ₽", it)}" },
+                                        ggselMinimum?.let { "GGSEL ${String.format(Locale("ru", "RU"), "%.0f ₽", it)}" }
+                                    ).joinToString(" · ") + "."
+                                else " Подтверждённые цены не найдены; сохранённые значения не изменены."
                             } else ""
                     searchMessage = if (candidateOverride != null) "Автопоиск цен · $summary" else summary
                 }
@@ -1462,7 +1481,7 @@ class MainActivity : ComponentActivity() {
         ElevatedCard(Modifier.fillMaxWidth(), colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Список желаемого Steam", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                Text("Закрепляйте открытые профили друзей. Нажмите название игры для поиска Plati; «Искать» проверяет цену прямо в списке.",
+                Text("Закрепляйте открытые профили друзей. Нажмите название игры для поиска предложений; «Искать» проверяет цены на Plati и GGSEL прямо в списке.",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
             }
         }
@@ -1524,6 +1543,10 @@ class MainActivity : ComponentActivity() {
                             } else Text("Steam RU", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             game.lowestPlatiPrice?.let { price ->
                                 Text("Plati от ${String.format(Locale("ru", "RU"), "%.0f", price)} ₽",
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+                            }
+                            game.lowestGgselPrice?.let { price ->
+                                Text("GGSEL от ${String.format(Locale("ru", "RU"), "%.0f", price)} ₽",
                                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
                             }
                             val searchKey = selectedId?.let { "$it:${game.appId}" }
