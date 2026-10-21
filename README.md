@@ -1,16 +1,16 @@
-# Игролов 1.1.2
+# Игролов 1.1.3
 
 Android-приложение для поиска Steam-игр на Plati, фильтрации Gift/Key, мониторинга товаров и ценовых уведомлений.
 
-В 1.1.0 добавлены закладки нескольких открытых Steam-профилей. В 1.1.1 исправлены ники Steam и поиск цен из списка желаемого. В 1.1.2 исправлен поиск ZERO PARADES: Director's Cut, чьи предложения на площадке продавцов опубликованы под исходным названием ZERO PARADES: For Dead Spies.
+В 1.1.0 добавлены закладки нескольких открытых Steam-профилей. Вкладка «Желания» показывает имя профиля, названия игр, AppID, цену Steam RU и скидку. Кнопка игры открывает существующий поиск; найденный минимум Plati сохраняется отдельно в профиле.
 
-- Стабильный релиз опубликован: [скачать APK 1.1.2](https://github.com/Magral/Igrolov/releases/download/v1.1.2/Igrolov-1.1.2.apk). Полный CI: [GitHub Actions run 39622281810](https://github.com/Magral/Igrolov/actions/runs/39622281810).
-- Сборка: versionCode 119, versionName 1.1.2.
-- Чек-лист: [RELEASE_112_CHECKLIST.md](RELEASE_112_CHECKLIST.md), изменения: [CHANGELOG_112.md](CHANGELOG_112.md), заметки: [RELEASE_NOTES_112.md](RELEASE_NOTES_112.md).
+- Стабильный релиз опубликован: [скачать APK 1.1.0](https://github.com/Magral/Igrolov/releases/download/v1.1.0/Igrolov-1.1.0.apk). Полный CI: [GitHub Actions run 39599375992, попытка 2](https://github.com/Magral/Igrolov/actions/runs/39599375992).
+- Сборка: versionCode 117, versionName 1.1.0.
+- Чек-лист: [RELEASE_110_CHECKLIST.md](RELEASE_110_CHECKLIST.md), изменения: [CHANGELOG_110.md](CHANGELOG_110.md), заметки: [RELEASE_NOTES_110.md](RELEASE_NOTES_110.md).
 
 ## Поиск
 
-Точное название Steam и AppID используются для поиска. Каталожные алиасы помогают находить предложения, размещённые под предыдущим названием игры. Результаты проходят проверки способа передачи, состава, доступности, региона и актуальной цены.
+Название Steam и AppID остаются основной точкой поиска; при отсутствии подтверждённых товаров приложение может предложить альтернативное название продавца, которое пользователь подтверждает и сохраняет по AppID. Предложения проверяются по типу Gift/Key, составу, доступности, РФ и актуальной цене. Проверка карточки и расчёт варианта выполняются в фоне с ограничением параллельности.
 
 ## Мониторинг
 
@@ -20,6 +20,6 @@ Android-приложение для поиска Steam-игр на Plati, фил
 
 Стабильные APK публикуются в приватном [GitHub Releases](https://github.com/Magral/Igrolov/releases). Это прямой APK, не публикация в Google Play. Для обновления предыдущей установки сохраняется подпись приложения.
 
-Для сборки требуются JDK 17, Android SDK 35 и Gradle 8.9: `gradle :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest`.
+Для сборки требуются JDK 17, Android SDK 35 и Gradle 8.9: gradle :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest.
 
 Steam wishlist и цены получаются через публичные Steam endpoints. Steam может изменить формат или доступность этих endpoints. Импорт работает с открытыми профилями и не запрашивает вход, пароль или ключ API.

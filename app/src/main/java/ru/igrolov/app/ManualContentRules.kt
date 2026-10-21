@@ -8,9 +8,9 @@ import java.net.URL
 object ManualGameReference {
     data class Game(val canonical: String, val appId: Int = 0, val dlcIds: Set<Int> = emptySet(), val aliases: List<String> = emptyList())
     fun catalogQuery(query: String, aliases: List<String>): String =
-        aliases.firstOrNull { it.isNotBlank() && it.all { c -> c.code < 128 } }
+        aliases.firstOrNull { it.isNotBlank() }
             ?: query.replace(Regex("[™®©]"), "")
-    fun lookup(query: String, selectedAppId: Int? = null): Game {
+    fun lookup(query: String, selectedAppId: Int? = null, additionalAliases: List<String> = emptyList()): Game {
         return runCatching {
             val selected = selectedAppId?.takeIf {it>0}?.let {SteamGameReference.Suggestion(it,query)} ?: SteamGameReference.searchGames(query).firstOrNull {
                 OfferRules.normalize(it.name) == OfferRules.normalize(query)
@@ -23,8 +23,8 @@ object ManualGameReference {
             if (data?.optString("type") != "game") return Game(query)
             val dlc = data.optJSONArray("dlc")
             Game(data.optString("name", query), selected.id,
-                if (dlc == null) emptySet() else (0 until dlc.length()).map { dlc.optInt(it) }.filter { it > 0 }.toSet(), GameSearchResolver.aliases(selected.id,data.optString("name",query)))
-        }.getOrElse { Game(query) }
+                if (dlc == null) emptySet() else (0 until dlc.length()).map { dlc.optInt(it) }.filter { it > 0 }.toSet(), (additionalAliases+GameSearchResolver.aliases(selected.id,data.optString("name",query))).distinct())
+        }.getOrElse { Game(query,selectedAppId ?: 0,aliases=additionalAliases) }
     }
 }
 

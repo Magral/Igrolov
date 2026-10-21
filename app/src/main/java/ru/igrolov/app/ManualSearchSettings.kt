@@ -21,14 +21,25 @@ object ManualSearchSettings {
         .put("maxPrice",filters.maxPrice.takeIf {filters.valid}.orEmpty()).put("confirmedRf",filters.confirmedRf).toString()
     fun read(context:Context)=decode(context.getSharedPreferences(PREFS,0).getString("filters",null))
     fun save(context:Context,filters:ManualSearchFilters) {context.getSharedPreferences(PREFS,0).edit().putString("filters",encode(filters)).apply()}
-    fun games(context:Context):List<GameSearchResolver.Candidate> = runCatching {
-        val a=JSONArray(context.getSharedPreferences(PREFS,0).getString("games","[]"))
+    fun decodeGames(raw:String?):List<GameSearchResolver.Candidate> = runCatching {
+        val a=JSONArray(raw ?: "[]")
         (0 until minOf(a.length(),20)).mapNotNull {i-> val j=a.optJSONObject(i) ?: return@mapNotNull null
-            val id=j.optInt("id");val name=j.optString("name");if(id>0 && name.isNotBlank())GameSearchResolver.Candidate(id,name) else null}
+            val id=j.optInt("id");val name=j.optString("name");val aliases=j.optJSONArray("aliases")?.let {a -> (0 until minOf(a.length(),12)).map {a.optString(it)}.filter {it.isNotBlank()} }.orEmpty()
+            if(id>0 && name.isNotBlank())GameSearchResolver.Candidate(id,name,aliases) else null}
     }.getOrDefault(emptyList())
+    fun encodeGames(games:List<GameSearchResolver.Candidate>):String {
+        val a=JSONArray();games.take(20).forEach {a.put(JSONObject().put("id",it.appId).put("name",it.name).put("aliases",JSONArray(it.aliases.distinct().take(12))))}
+        return a.toString()
+    }
+    fun games(context:Context):List<GameSearchResolver.Candidate> = decodeGames(context.getSharedPreferences(PREFS,0).getString("games","[]"))
     fun rememberGame(context:Context,game:GameSearchResolver.Candidate) {
-        val a=JSONArray();(listOf(game)+games(context).filterNot {it.appId==game.appId}).take(20).forEach {a.put(JSONObject().put("id",it.appId).put("name",it.name))}
-        context.getSharedPreferences(PREFS,0).edit().putString("games",a.toString()).apply()
+        val updated=(listOf(game)+games(context).filterNot {it.appId==game.appId}).take(20)
+        context.getSharedPreferences(PREFS,0).edit().putString("games",encodeGames(updated)).apply()
+    }
+    fun rememberAlias(context:Context,game:GameSearchResolver.Candidate,alias:String) {
+        val clean=alias.trim().replace(Regex("\\s+")," ")
+        if(clean.isBlank() || clean.length>120 || GameSearchResolver.normalized(clean)==GameSearchResolver.normalized(game.name)) return
+        rememberGame(context,game.copy(aliases=(game.aliases+clean).distinct().take(12)))
     }
 }
 object ManualSearchFilter {

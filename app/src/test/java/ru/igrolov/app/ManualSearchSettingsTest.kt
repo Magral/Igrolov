@@ -12,6 +12,11 @@ class ManualSearchSettingsTest {
         assertEquals(ManualSearchFilters(),ManualSearchSettings.decode("""{"type":"Account","edition":"anything","maxPrice":"NaN"}"""))
         for(value in listOf("NaN","Infinity","-1","0","1e12","oops")) assertFalse(value,ManualSearchFilters(maxPrice=value).valid)
     }
+    @Test fun marketplaceAliasesPersistWithTheSteamAppId() {
+        val game=GameSearchResolver.Candidate(2863680,"ZERO PARADES: Director's Cut",listOf("ZERO PARADES: For Dead Spies"))
+        assertEquals(game,ManualSearchSettings.decodeGames(ManualSearchSettings.encodeGames(listOf(game))).single())
+        assertTrue(ManualSearchSettings.decodeGames("broken").isEmpty())
+    }
     @Test fun savedFiltersNeverBypassStockPriceOrRegionExclusions() {
         val filters=ManualSearchFilters(edition="Все")
         for(bad in listOf(offer().copy(available=false),offer().copy(available=null),offer().copy(priceVerified=false),offer().copy(variablePrice=true),offer().copy(rfStatus="РФ исключена"),offer().copy(detailsChecked=false)))

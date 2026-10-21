@@ -152,16 +152,16 @@ class MainActivity : ComponentActivity() {
         throw last ?: java.io.IOException("Нет соединения")
     }
 
-    private fun searchCatalog(query: String, pageCount: Int, generation: Int, selectedAppId: Int?, progress: (Int, Int, Int) -> Unit, callback: (List<Offer>, String) -> Unit) {
+    private fun searchCatalog(query: String, pageCount: Int, generation: Int, selectedAppId: Int?, additionalAliases: List<String>, progress: (Int, Int, Int) -> Unit, callback: (List<Offer>, String, List<String>) -> Unit) {
         catalogExecutor.execute {
             val found = mutableListOf<Offer>()
             val seenIds = mutableSetOf<String>()
             val sellerIds = mutableMapOf<String, String>()
             var failure = ""
-            val reference = ManualGameReference.lookup(query,selectedAppId)
+            val reference = ManualGameReference.lookup(query,selectedAppId,additionalAliases)
             if (generation != activeCatalogGeneration.get()) return@execute
             if(selectedAppId != null && reference.appId != selectedAppId) {
-                runOnUiThread { if(generation == activeCatalogGeneration.get()) callback(emptyList(),"Steam не подтвердил выбранную основную игру. Повторите запрос или выберите другую игру.") }
+                runOnUiThread { if(generation == activeCatalogGeneration.get()) callback(emptyList(),"Steam не подтвердил выбранную основную игру. Повторите запрос или выберите другую игру.",emptyList()) }
                 return@execute
             }
             val marketQuery=ManualGameReference.catalogQuery(query,reference.aliases)
@@ -228,8 +228,26 @@ class MainActivity : ComponentActivity() {
                         if (generation == activeCatalogGeneration.get()) progress(pageCount, pageCount, checked)
                     }
                 })
+            var aliasSuggestions = emptyList<String>()
+            if (enriched.isEmpty() && failure.isBlank() && generation == activeCatalogGeneration.get()) {
+                val core = CatalogAliasResolver.fallbackQuery(reference.canonical)
+                if (core != null && !reference.aliases.any { GameSearchResolver.normalized(it) == GameSearchResolver.normalized(core) }) {
+                    runCatching {
+                        val params = linkedMapOf("query" to core, "searchmode" to "10", "sortmode" to "2", "pagesize" to "100",
+                            "pagenum" to "1", "owner" to "1", "details" to "1", "checkhidesales" to "1", "host" to "plati.market")
+                            .entries.joinToString("&") { (k, v) -> "${URLEncoder.encode(k, "UTF-8")}=${URLEncoder.encode(v, "UTF-8")}" }
+                        val root = getCatalogJson("https://api.digiseller.com/api/products/search2?$params")
+                        if (root.optInt("retval", 0) == 0) {
+                            val result = root.optJSONObject("result")
+                            val raw = root.optJSONObject("items")?.optJSONArray("item") ?: root.optJSONArray("items") ?: result?.optJSONArray("items")
+                            val titles = if (raw == null) emptyList() else (0 until raw.length()).mapNotNull { raw.optJSONObject(it)?.optString("name")?.takeIf { it.isNotBlank() } }
+                            aliasSuggestions = CatalogAliasResolver.suggestions(core, titles)
+                        }
+                    }
+                }
+            }
             if (generation == activeCatalogGeneration.get()) runOnUiThread {
-                if (generation == activeCatalogGeneration.get()) callback(enriched, failure)
+                if (generation == activeCatalogGeneration.get()) callback(enriched, failure, aliasSuggestions)
             }
         }
     }
@@ -295,6 +313,10 @@ class MainActivity : ComponentActivity() {
         var directorySuggestions by remember { mutableStateOf<List<SteamGameReference.Suggestion>>(emptyList()) }
         var directorySelectedAppId by remember { mutableStateOf<Int?>(null) }
         var searchMessage by remember { mutableStateOf("Нажмите «Искать на Plati» для запроса к каталогу") }
+        var pendingAliasGame by remember { mutableStateOf<GameSearchResolver.Candidate?>(null) }
+        var pendingAliasSuggestions by remember { mutableStateOf<List<String>>(emptyList()) }
+        var pendingAliasProfileId by remember { mutableStateOf<String?>(null) }
+        var pendingAliasHiddenWishlist by remember { mutableStateOf(false) }
         var searching by remember { mutableStateOf(false) }
         var searchGeneration by remember { mutableIntStateOf(0) }
         var visibleOfferLimit by remember { mutableIntStateOf(30) }
@@ -567,7 +589,9 @@ class MainActivity : ComponentActivity() {
                 else searchMessage = "Проверьте ценовой фильтр"
                 return
             }
-            val identity = candidateOverride ?: selectedGame ?: GameSearchResolver.exact(query, gameSuggestions)
+            val selectedIdentity = candidateOverride ?: selectedGame ?: GameSearchResolver.exact(query, gameSuggestions)
+            val savedAliases = selectedIdentity?.let { candidate -> ManualSearchSettings.games(this@MainActivity).firstOrNull { it.appId == candidate.appId }?.aliases.orEmpty() }.orEmpty()
+            val identity = selectedIdentity?.copy(aliases = (selectedIdentity.aliases + savedAliases).distinct())
             if (candidateOverride == null && selectedGame == null && gameSuggestions.isNotEmpty() && identity == null) {
                 searching = false
                 searchMessage = "Выберите точную игру из предложений Steam"
@@ -606,13 +630,29 @@ class MainActivity : ComponentActivity() {
             if (identity != null) ManualSearchSettings.rememberGame(this@MainActivity, identity)
             steamGame = null
 
-            searchCatalog(requestedGame, searchTotalPages, generation, identity?.appId, { page, _, count ->
+            searchCatalog(requestedGame, searchTotalPages, generation, identity?.appId, identity?.aliases.orEmpty(), { page, _, count ->
                 if (generation == searchGeneration) {
                     searchPage = page
                     searchFound = count
                 }
-            }) { found, failure ->
+            }) { found, failure, aliasSuggestions ->
                 if (generation != searchGeneration) return@searchCatalog
+                if (aliasSuggestions.isNotEmpty() && identity != null) {
+                    searching = false
+                    pendingAliasGame = identity
+                    pendingAliasSuggestions = aliasSuggestions
+                    pendingAliasProfileId = wishlistProfileId
+                    pendingAliasHiddenWishlist = hiddenWishlistSearch
+                    if (wishlistKey != null) {
+                        wishlistSearchingKeys = wishlistSearchingKeys - wishlistKey
+                        wishlistSearchStatuses = wishlistSearchStatuses + (wishlistKey to "Найдено другое название · требуется подтверждение")
+                    }
+                    if (!hiddenWishlistSearch) {
+                        offers = emptyList()
+                        searchMessage = "По точному названию Steam подтверждённая цена не найдена. Найдены возможные названия товара в каталоге."
+                    }
+                    return@searchCatalog
+                }
                 if (!hiddenWishlistSearch) offers = found
                 searching = false
                 val ready = found.count { ManualContentRules.visible(it, "Игра", "Все") }
@@ -659,14 +699,51 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+        fun dismissAliasPrompt() {
+            val appId = pendingAliasGame?.appId
+            val profileId = pendingAliasProfileId
+            if (pendingAliasHiddenWishlist && appId != null && profileId != null) {
+                val key = "$profileId:$appId"
+                wishlistSearchStatuses = wishlistSearchStatuses + (key to "Подтверждённая цена не найдена")
+            }
+            pendingAliasGame = null
+            pendingAliasSuggestions = emptyList()
+            pendingAliasProfileId = null
+        }
         val searchScroll = rememberScrollState()
         val productsScroll = rememberScrollState()
         val watchScroll = rememberScrollState()
         val directoryScroll = rememberScrollState()
         Column(Modifier.fillMaxSize()) {
+            val aliasGame = pendingAliasGame
+            if (aliasGame != null && pendingAliasSuggestions.isNotEmpty()) {
+                AlertDialog(
+                    onDismissRequest = { dismissAliasPrompt() },
+                    title = { Text("Подтвердить название в каталоге") },
+                    text = {
+                        Column {
+                            Text("Для «${aliasGame.name}» не нашлось подтверждённых предложений по названию Steam. Выберите возможное название продавца. После сохранения поиск повторится с теми же фильтрами.")
+                            Spacer(Modifier.height(8.dp))
+                            pendingAliasSuggestions.forEach { alias ->
+                                TextButton(onClick = {
+                                    val profileId = pendingAliasProfileId
+                                    val hidden = pendingAliasHiddenWishlist
+                                    val updated = aliasGame.copy(aliases = (aliasGame.aliases + alias).distinct())
+                                    ManualSearchSettings.rememberAlias(this@MainActivity, aliasGame, alias)
+                                    pendingAliasGame = null
+                                    pendingAliasSuggestions = emptyList()
+                                    pendingAliasProfileId = null
+                                    startCatalogSearch(updated, profileId, hidden)
+                                }, modifier = Modifier.fillMaxWidth()) { Text(alias) }
+                            }
+                        }
+                    },
+                    confirmButton = { TextButton(onClick = { dismissAliasPrompt() }) { Text("Пропустить") } }
+                )
+            }
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Игролов 1.1.2", style = MaterialTheme.typography.headlineSmall)
+                Text("Игролов 1.1.3", style = MaterialTheme.typography.headlineSmall)
                 IconButton(onClick = { settingsOpen = !settingsOpen; showDirectory = false }) {
                     Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                         color = MaterialTheme.colorScheme.onSurface)
