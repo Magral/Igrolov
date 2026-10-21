@@ -4,7 +4,7 @@ Android-приложение для поиска Steam-игр на Plati, фил
 
 В 1.1.0 добавлены закладки нескольких открытых Steam-профилей. В 1.1.1 исправлены ники Steam и поиск цен из списка желаемого. В 1.1.2 исправлен поиск ZERO PARADES: Director's Cut, чьи предложения на площадке продавцов опубликованы под исходным названием ZERO PARADES: For Dead Spies.
 
-- Стабильный релиз: [скачать APK 1.1.2](https://github.com/Magral/Igrolov/releases/download/v1.1.2/Igrolov-1.1.2.apk).
+- Стабильный релиз опубликован: [скачать APK 1.1.2](https://github.com/Magral/Igrolov/releases/download/v1.1.2/Igrolov-1.1.2.apk). Полный CI: [GitHub Actions run 39622281810](https://github.com/Magral/Igrolov/actions/runs/39622281810).
 - Сборка: versionCode 119, versionName 1.1.2.
 - Чек-лист: [RELEASE_112_CHECKLIST.md](RELEASE_112_CHECKLIST.md), изменения: [CHANGELOG_112.md](CHANGELOG_112.md), заметки: [RELEASE_NOTES_112.md](RELEASE_NOTES_112.md).
 
