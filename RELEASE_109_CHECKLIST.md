@@ -1,6 +1,6 @@
 # Игролов 1.0.9 — импорт списка желаемого Steam
 
-Статус: код 1.0.9 прошёл полный GitHub Actions run; выпускной коммит повторно проверяется перед публикацией стабильного Release.
+Статус: стабильный GitHub Release `v1.0.9` опубликован; `versionCode=116`.
 
 - [x] Импорт открытого списка по SteamID64 или публичной ссылке профиля; пароль и авторизация не запрашиваются.
 - [x] Сохранение игр и даты обновления на устройстве; сбой импорта не стирает ранее загруженный список.
@@ -12,4 +12,8 @@
 - [x] 15 Android-сценариев успешны на API 26 и 29, включая проверку раздельного импорта и поиска.
 - [x] Архивы device-тестов проверены; скриншот списка желаемого присутствует, `FATAL EXCEPTION` в `logcat` отсутствует.
 - [x] Проверенный кандидат: [GitHub Actions run 39581176315](https://github.com/Magral/Igrolov/actions/runs/39581176315); APK-кандидат и device-отчёты загружены в артефакты запуска.
-- [ ] Выпускной коммит `release: publish v1.0.9` проходит CI и публикует GitHub Release с APK `Igrolov-1.0.9.apk`.
+- [x] Выпускной коммит `release: publish v1.0.9` прошёл полный CI и опубликовал Release с APK `Igrolov-1.0.9.apk`.
+
+Выпускной [GitHub Actions run 39582972362](https://github.com/Magral/Igrolov/actions/runs/39582972362) завершился успешно: 70 JVM-тестов, сборка APK и 15 Android-сценариев на API 26 и 29. `logcat` без `FATAL EXCEPTION`.
+
+Стабильный [Release v1.0.9](https://github.com/Magral/Igrolov/releases/tag/v1.0.9) · [скачать APK](https://github.com/Magral/Igrolov/releases/download/v1.0.9/Igrolov-1.0.9.apk) (около 9 МБ).

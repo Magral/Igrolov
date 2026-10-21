@@ -8,4 +8,6 @@
 
 Список загружается через недокументированный Steam endpoint, поэтому Valve может изменить его формат или доступность. В таком случае приложение показывает ошибку и сохраняет локальную копию.
 
-Сборка: `versionCode=116`. Кандидат прошёл 70 JVM-тестов и 15 Android-сценариев на API 26 и 29; логи приложения без `FATAL EXCEPTION`. Повторная проверка и публикация стабильного APK выполняются выпускным GitHub Actions run. Подробности: [чек-лист 1.0.9](RELEASE_109_CHECKLIST.md).
+Сборка: `versionCode=116`. 70 JVM-тестов и 15 Android-сценариев на API 26 и 29 прошли; логи приложения без `FATAL EXCEPTION`. Выпускной [GitHub Actions run](https://github.com/Magral/Igrolov/actions/runs/39582972362) успешен.
+
+Стабильный [Release v1.0.9](https://github.com/Magral/Igrolov/releases/tag/v1.0.9) · [скачать APK](https://github.com/Magral/Igrolov/releases/download/v1.0.9/Igrolov-1.0.9.apk). Подробности: [чек-лист 1.0.9](RELEASE_109_CHECKLIST.md).
