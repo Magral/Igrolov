@@ -134,6 +134,8 @@ jobs:
           else
             gh release download v1.0.4.1 --repo "$GITHUB_REPOSITORY" --pattern Igrolov-1.0.4.1.apk -D baseline
           fi
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
       - name: Retry Android Emulator SDK installation
         run: |
           sdkmanager --version
