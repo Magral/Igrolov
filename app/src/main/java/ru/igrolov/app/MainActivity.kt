@@ -531,9 +531,9 @@ class MainActivity : ComponentActivity() {
                         color = MaterialTheme.colorScheme.onSurface)
                 }
             }
-            ScrollableTabRow(selectedTabIndex = activeTab, edgePadding = 8.dp) {
-                listOf("Поиск", "Товары", "Мониторинг", "Желания", "Лидеры продаж").forEachIndexed { index, title ->
-                    Tab(selected = activeTab == index, onClick = { activeTab = index; settingsOpen = false; showDirectory = false }, text = { Text(title, maxLines = 1, fontSize = 12.sp) })
+            TabRow(selectedTabIndex = activeTab) {
+                listOf("Поиск", "Товары", "Мониторинг", "Желания", "Лидеры").forEachIndexed { index, title ->
+                    Tab(selected = activeTab == index, onClick = { activeTab = index; settingsOpen = false; showDirectory = false }, text = { Text(title, maxLines = 1, fontSize = 10.sp) })
                 }
             }
             Column(Modifier.fillMaxSize().verticalScroll(if (settingsOpen) directoryScroll else when(activeTab) { 0 -> searchScroll; 1 -> productsScroll; 2 -> watchScroll; else -> directoryScroll }).padding(16.dp)) {
