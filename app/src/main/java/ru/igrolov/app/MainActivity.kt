@@ -366,7 +366,10 @@ class MainActivity : ComponentActivity() {
         }
         var watches by remember { mutableStateOf("[]") }
         var alertLog by remember { mutableStateOf("[]") }
-        var wishlistProfile by remember { mutableStateOf(prefs.getString("wishlist_profile", "") ?: "") }
+        var wishlistProfile by remember {
+            mutableStateOf(if (prefs.getString("wishlist_profiles", null).isNullOrBlank())
+                prefs.getString("wishlist_profile", "") ?: "" else "")
+        }
         var wishlistProfiles by remember {
             mutableStateOf(SteamWishlist.decodeProfiles(prefs.getString("wishlist_profiles", null)).ifEmpty {
                 val legacyId = SteamWishlist.profileId(prefs.getString("wishlist_profile", "") ?: "")
@@ -509,13 +512,15 @@ class MainActivity : ComponentActivity() {
         }
         fun importWishlist() {
             if (wishlistBusy) return
-            if (wishlistProfile.isBlank()) {
+            val profile = wishlistProfile.trim().ifBlank {
+                wishlistProfiles.firstOrNull { it.steamId64 == selectedWishlistId }?.input.orEmpty()
+            }
+            if (profile.isBlank()) {
                 wishlistMessage = "Вставьте SteamID64 или ссылку на открытый профиль Steam."
                 return
             }
             wishlistBusy = true
             wishlistMessage = "Загружаем профиль, список и цены Steam RU…"
-            val profile = wishlistProfile.trim()
             wishlistExecutor.execute {
                 try {
                     val snapshot = SteamWishlist.fetchSnapshot(profile)
@@ -528,7 +533,7 @@ class MainActivity : ComponentActivity() {
                         val savedProfile = WishlistProfile(snapshot.steamId64, snapshot.displayName, profile, games, timestamp)
                         persistWishlistProfiles(listOf(savedProfile) + wishlistProfiles.filterNot { it.steamId64 == snapshot.steamId64 })
                         selectedWishlistId = snapshot.steamId64
-                        wishlistProfile = profile
+                        wishlistProfile = ""
                         prefs.edit().putString("wishlist_profile", profile)
                             .putString("wishlist_games", SteamWishlist.encode(games))
                             .putString("wishlist_selected_profile", snapshot.steamId64)
@@ -1040,7 +1045,7 @@ class MainActivity : ComponentActivity() {
                     wishlistProfiles.forEach { profile ->
                         TextButton(onClick = {
                             selectedWishlistId = profile.steamId64
-                            wishlistProfile = profile.input
+                            wishlistProfile = ""
                             wishlistGames = profile.games
                             wishlistImportedAt = profile.importedAt
                             wishlistVisibleLimit = 50
@@ -1058,16 +1063,15 @@ class MainActivity : ComponentActivity() {
                 OutlinedTextField(
                     wishlistProfile,
                     { wishlistProfile = it },
-                    label = { Text("Добавить профиль Steam") },
+                    label = { Text("Новый профиль Steam") },
                     placeholder = { Text("SteamID64, /profiles/… или /id/…") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 Button(onClick = { importWishlist() }, enabled = !wishlistBusy, modifier = Modifier.fillMaxWidth()) {
                     val selected = wishlistProfiles.firstOrNull { it.steamId64 == selectedWishlistId }
-                    val enteredId = SteamWishlist.profileId(wishlistProfile)
-                    Text(if (wishlistBusy) "Загружаем из Steam…" else if (selected != null && enteredId == selected.steamId64)
-                        "Обновить список и цены Steam RU" else "Загрузить и закрепить профиль")
+                    Text(if (wishlistBusy) "Загружаем из Steam…" else if (wishlistProfile.isBlank() && selected != null)
+                        "Обновить «${selected.displayName}» · Steam RU" else "Загрузить и закрепить профиль")
                 }
                 val activeProfile = wishlistProfiles.firstOrNull { it.steamId64 == selectedWishlistId }
                 if (activeProfile != null) {
@@ -1076,7 +1080,7 @@ class MainActivity : ComponentActivity() {
                         persistWishlistProfiles(remaining)
                         val next = remaining.firstOrNull()
                         selectedWishlistId = next?.steamId64
-                        wishlistProfile = next?.input.orEmpty()
+                        wishlistProfile = ""
                         wishlistGames = next?.games.orEmpty()
                         wishlistImportedAt = next?.importedAt ?: 0L
                         prefs.edit().putString("wishlist_selected_profile", next?.steamId64)

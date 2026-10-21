@@ -86,6 +86,13 @@ class ReleaseSmokeTest {
         device.findObject(By.text("Желания")).click()
         assertTrue(device.wait(Until.hasObject(By.textContains("Alex")),5000))
         assertTrue(device.hasObject(By.textContains("Friend")))
+        device.pressBack()
+        if (!device.wait(Until.hasObject(By.textContains("Alex")),1500)) {
+            context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+            assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.1.0")),15000))
+            device.findObject(By.text("Желания")).click()
+            assertTrue(device.wait(Until.hasObject(By.textContains("Alex")),5000))
+        }
         val scroll=UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(20)
         assertTrue(scroll.scrollTextIntoView("Stellaris"))
         assertTrue(device.hasObject(By.text("Stellaris")))
