@@ -60,7 +60,7 @@ class TrackedTransferUiRegressionTest {
     private fun open():UiDevice {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.0.8")),15000))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.0.9")),15000))
         return device
     }
     private fun cached(id:String)=TrackedPriceCache.decode(id,context.getSharedPreferences("tracked_products",0).getString("product_cache_$id",null))
