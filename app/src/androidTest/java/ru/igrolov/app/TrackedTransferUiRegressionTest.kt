@@ -77,7 +77,7 @@ class TrackedTransferUiRegressionTest {
         device.findObject(By.clazz("android.widget.EditText")).text="Stellaris"
         assertTrue(device.wait(Until.hasObject(By.text("Stellaris · Steam #281990")),15000))
         device.findObject(By.text("Stellaris · Steam #281990")).click()
-        val scroll=UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(30)
+        val scroll=UiScrollable(UiSelector().className("android.widget.ScrollView").scrollable(true)).setMaxSearchSwipes(30)
         assertTrue(scroll.scrollTextIntoView("Искать"));device.findObject(By.text("Искать")).click()
         assertTrue(device.wait(Until.hasObject(By.textContains("Проверено:")),15000))
         // Compose may expose a nested scrollable (for example, the search history

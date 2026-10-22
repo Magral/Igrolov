@@ -25,7 +25,7 @@ class ManualSearchPreferencesTest {
         val device=open()
         device.findObject(By.text("Key")).click()
         device.findObject(By.text("Только подтверждённая РФ")).click()
-        val scroll=UiScrollable(UiSelector().scrollable(true))
+        val scroll=UiScrollable(UiSelector().className("android.widget.ScrollView").scrollable(true))
         assertTrue(scroll.scrollTextIntoView("Цена до, ₽"))
         val fields=device.findObjects(By.clazz("android.widget.EditText"))
         // Price is the last visible text field; the query field may have scrolled away.
@@ -41,7 +41,7 @@ class ManualSearchPreferencesTest {
         assertEquals(expected,ManualSearchSettings.read(context))
         assertTrue(ManualSearchSettings.games(context).any {it.appId==281990})
         val device=open()
-        val scroll=UiScrollable(UiSelector().scrollable(true))
+        val scroll=UiScrollable(UiSelector().className("android.widget.ScrollView").scrollable(true))
         assertTrue(scroll.scrollTextIntoView("2500"))
         assertTrue(device.hasObject(By.text("2500")))
         assertEquals(expected,ManualSearchSettings.read(context))

@@ -54,7 +54,7 @@ class MonitorUiRegressionTest {
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.2.7")),15000))
         device.findObject(By.text("Мониторинг")).click()
-        val scroll=UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(30)
+        val scroll=UiScrollable(UiSelector().className("android.widget.ScrollView").scrollable(true)).setMaxSearchSwipes(30)
         assertTrue(scroll.scrollIntoView(UiSelector().text("Источники · Plati: 0 · GGSEL: 1")))
         assertTrue(scroll.scrollIntoView(UiSelector().text("Три минимальные цены (1)")))
         device.findObject(By.text("Три минимальные цены (1)")).click()
