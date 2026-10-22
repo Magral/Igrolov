@@ -1,8 +1,6 @@
 package ru.igrolov.app
 
 import android.os.Bundle
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.text.Html
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.style.TextDecoration
@@ -22,11 +20,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.sp
@@ -50,8 +45,12 @@ import java.net.URLEncoder
 import java.util.Locale
 import java.util.concurrent.Executors
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.platform.LocalContext
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 
 data class Offer(val id: String, val name: String, val price: Double, val type: String, val rfStatus: String, val edition: String, val categoryLabel: String = "", val detailsChecked: Boolean = false, val variablePrice: Boolean = false, val available: Boolean? = null, val priceVerified: Boolean = false, val purchaseNote: String = "", val canonical:String="", val steamAppId:Int=0, val marketplace:String="Plati", val productUrl:String="")
 
@@ -59,8 +58,6 @@ data class Tracked(val id: String, val name: String, val price: Double?, val sta
 
 class MainActivity : ComponentActivity() {
     // Bound concurrent product detail requests so large watch lists do not spawn unlimited threads.
-    private val artworkCache = LinkedHashMap<String, Bitmap>(48, 0.75f, true)
-    private val artworkPermits = java.util.concurrent.Semaphore(4)
     private val detailExecutor = Executors.newFixedThreadPool(4)
     private val ioExecutor = Executors.newSingleThreadExecutor()
     private val wishlistExecutor = Executors.newSingleThreadExecutor()
@@ -435,8 +432,8 @@ class MainActivity : ComponentActivity() {
         } finally { pool.shutdownNow() }
     }
 
-    // Initial paid top sellers: keep the existing 100-game view, but retain the next Steam offset for the discount subsection.
-    private fun loadPaidTopSellers(callback: (List<SteamTopSeller>, String, Int, Boolean) -> Unit) {
+    // Publish verified games in small batches so the first results appear before the full ranking is checked.
+    private fun loadPaidTopSellers(callback: (List<SteamTopSeller>, String, Int, Boolean, Boolean) -> Unit) {
         Thread {
             val games = linkedMapOf<Int, SteamTopSeller>()
             var nextStart = 0
@@ -445,15 +442,20 @@ class MainActivity : ComponentActivity() {
             try {
                 for (pageIndex in 0 until 2) {
                     val page = fetchSteamRankingPage(nextStart, 50, "TopSellers", "", "us", "english")
-                    page.games.forEach { games.putIfAbsent(it.appId, it) }
+                    val freshGames = page.games.filter { games[it.appId] == null }.take(100 - games.size)
+                    freshGames.chunked(10).forEach { batch ->
+                        enrichSteamGames(batch).forEach { games.putIfAbsent(it.appId, it) }
+                        val snapshot = games.values.toList()
+                        runOnUiThread { callback(snapshot, "", page.nextStart, page.hasMore, false) }
+                    }
                     nextStart = page.nextStart
                     hasMore = page.hasMore
-                    if (page.games.isEmpty() || !hasMore) break
+                    if (page.games.isEmpty() || !hasMore || games.size >= 100) break
                 }
                 if (games.isEmpty()) error = "Steam не вернул список. Попробуйте обновить позже."
             } catch (e: Exception) { error = e.message ?: "Ошибка загрузки Steam" }
-            val checked = enrichSteamGames(games.values.take(100))
-            runOnUiThread { callback(checked, error, nextStart, hasMore) }
+            val snapshot = games.values.toList()
+            runOnUiThread { callback(snapshot, error, nextStart, hasMore, true) }
         }.start()
     }
 
@@ -461,14 +463,14 @@ class MainActivity : ComponentActivity() {
     private fun loadPopularNewReleasePage(
         start: Int,
         count: Int,
-        callback: (SteamRankingPage, String) -> Unit
+        callback: (SteamRankingPage, String, Boolean) -> Unit
     ) {
         loadSteamRankingPage(start, count, "Released_DESC", "popularnew", "ru", "russian", callback)
     }
 
     private fun loadDiscountedTopSellerPage(
         start: Int,
-        callback: (SteamRankingPage, String) -> Unit
+        callback: (SteamRankingPage, String, Boolean) -> Unit
     ) {
         loadSteamRankingPage(start, 50, "TopSellers", "", "us", "english", callback)
     }
@@ -480,7 +482,7 @@ class MainActivity : ComponentActivity() {
         filter: String,
         country: String,
         language: String,
-        callback: (SteamRankingPage, String) -> Unit
+        callback: (SteamRankingPage, String, Boolean) -> Unit
     ) {
         Thread {
             var error = ""
@@ -489,126 +491,77 @@ class MainActivity : ComponentActivity() {
                 page = fetchSteamRankingPage(start, count, sortBy, filter, country, language)
                 if (page.games.isEmpty() && start == 0) error = "Steam не вернул список. Попробуйте обновить позже."
             } catch (e: Exception) { error = e.message ?: "Ошибка загрузки Steam" }
-            val checked = enrichSteamGames(page.games)
-            val result = page.copy(games = checked)
-            runOnUiThread { callback(result, error) }
+
+            val checkedGames = mutableListOf<SteamTopSeller>()
+            page.games.chunked(10).forEach { batch ->
+                enrichSteamGames(batch).forEach { checkedGames.add(it) }
+                val partialPage = page.copy(games = checkedGames.toList())
+                runOnUiThread { callback(partialPage, error, false) }
+            }
+            val result = page.copy(games = checkedGames.toList())
+            runOnUiThread { callback(result, error, true) }
         }.start()
     }
 
-    private fun cachedArtwork(url: String): Bitmap? = synchronized(artworkCache) { artworkCache[url] }
-
-    private fun rememberArtwork(url: String, bitmap: Bitmap) {
-        synchronized(artworkCache) {
-            artworkCache[url] = bitmap
-            if (artworkCache.size > 40) {
-                val oldest = artworkCache.entries.iterator()
-                oldest.next()
-                oldest.remove()
-            }
-        }
-    }
-
-    private fun readArtworkDiskCache(appId: Int): Bitmap? {
-        if (appId <= 0) return null
-        val file = java.io.File(filesDir, "steam_artwork/$appId.jpg")
-        if (!file.isFile) return null
-        return BitmapFactory.decodeFile(file.absolutePath) ?: run {
-            file.delete()
-            null
-        }
-    }
-
-    private fun writeArtworkDiskCache(appId: Int, bitmap: Bitmap) {
-        if (appId <= 0) return
-        runCatching {
-            val directory = java.io.File(filesDir, "steam_artwork")
-            if (!directory.exists()) directory.mkdirs()
-            val target = java.io.File(directory, "$appId.jpg")
-            val temporary = java.io.File(directory, "$appId.tmp")
-            java.io.FileOutputStream(temporary).use { bitmap.compress(Bitmap.CompressFormat.JPEG, 88, it) }
-            if (!temporary.renameTo(target)) {
-                temporary.copyTo(target, overwrite = true)
-                temporary.delete()
-            }
-            directory.listFiles()?.filter { it.isFile && it.extension == "jpg" }
-                ?.sortedByDescending { it.lastModified() }
-                ?.drop(120)?.forEach { it.delete() }
-        }
-    }
-
-    private fun downloadArtwork(url: String): Bitmap? {
-        if (url.isBlank()) return null
-        for (attempt in 0..2) {
-            var retry = false
-            try {
-                val connection = URL(url).openConnection() as HttpURLConnection
-                connection.connectTimeout = 8000
-                connection.readTimeout = 10000
-                connection.setRequestProperty("User-Agent", "Igrolov Android")
-                try {
-                    val status = connection.responseCode
-                    if (status in 400..499) return null
-                    if (status !in 200..299) throw java.io.IOException("Steam artwork HTTP $status")
-                    return connection.inputStream.use { BitmapFactory.decodeStream(it) }
-                        ?: throw java.io.IOException("Steam artwork decode failed")
-                } finally { connection.disconnect() }
-            } catch (_: java.io.IOException) {
-                retry = attempt < 2
-            } catch (_: Exception) {
-                retry = attempt < 2
-            }
-            if (!retry) return null
-            try { Thread.sleep(400L * (attempt + 1)) } catch (_: InterruptedException) {
-                Thread.currentThread().interrupt()
-                return null
-            }
-        }
-        return null
-    }
-
-    private fun loadSteamArtwork(url: String, appId: Int?): Bitmap? {
-        if (!url.isNullOrBlank()) cachedArtwork(url)?.let { return it }
-        appId?.let { readArtworkDiskCache(it) }?.let { bitmap ->
-            if (!url.isNullOrBlank()) rememberArtwork(url, bitmap)
-            return bitmap
-        }
-
-        var bitmap = downloadArtwork(url)
-        if (bitmap == null && appId != null && appId > 0) {
-            // Use Steam's own appdetails metadata as the fallback source. The US store page
-            // provides artwork even when the game has no Russian store listing.
-            val officialArtworkUrl = runCatching {
-                val raw = steamGet("https://store.steampowered.com/api/appdetails?appids=$appId&cc=us&l=russian")
-                SteamTopSellerParser.applyGlobalMetadata(SteamTopSeller(appId, ""), raw).headerImageUrl
-            }.getOrDefault("")
-            if (officialArtworkUrl.isNotBlank() && officialArtworkUrl != url) {
-                bitmap = downloadArtwork(officialArtworkUrl)
-            }
-        }
-        if (bitmap != null) {
-            if (!url.isNullOrBlank()) rememberArtwork(url, bitmap)
-            appId?.let { writeArtworkDiskCache(it, bitmap) }
-        }
-        return bitmap
-    }
+    private fun steamFallbackArtworkUrl(appId: Int): String = runCatching {
+        val raw = steamGet("https://store.steampowered.com/api/appdetails?appids=$appId&cc=us&l=russian")
+        SteamTopSellerParser.applyGlobalMetadata(SteamTopSeller(appId, ""), raw).headerImageUrl
+    }.getOrDefault("")
 
     @Composable
     private fun SteamArtwork(url: String, modifier: Modifier = Modifier, appId: Int? = null) {
-        var bitmap by remember(url, appId) { mutableStateOf(cachedArtwork(url)) }
-        LaunchedEffect(url, appId) {
-            if (bitmap == null && (url.isNotBlank() || appId != null)) {
-                bitmap = withContext(Dispatchers.IO) {
-                    artworkPermits.acquire()
-                    try { loadSteamArtwork(url, appId) }
-                    finally { artworkPermits.release() }
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
+        val artworkPrefs = remember(context) { context.getSharedPreferences("steam_artwork_urls", MODE_PRIVATE) }
+        var imageUrl by remember(url, appId) {
+            mutableStateOf(
+                appId?.let { artworkPrefs.getString(it.toString(), null) }
+                    ?.takeIf { !it.isNullOrBlank() } ?: url
+            )
+        }
+        var fallbackTried by remember(url, appId) { mutableStateOf(false) }
+
+        LaunchedEffect(imageUrl, appId) {
+            if (imageUrl.isBlank() && appId != null && appId > 0 && !fallbackTried) {
+                fallbackTried = true
+                val fallbackUrl = withContext(Dispatchers.IO) { steamFallbackArtworkUrl(appId) }
+                if (fallbackUrl.isNotBlank()) {
+                    artworkPrefs.edit().putString(appId.toString(), fallbackUrl).apply()
+                    imageUrl = fallbackUrl
                 }
             }
         }
-        if (bitmap != null) {
-            Image(bitmap!!.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop, modifier = modifier)
-        } else {
-            Box(modifier.background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center) { Text("🎮", style = MaterialTheme.typography.bodySmall) }
+
+        Box(
+            modifier.background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("🎮", style = MaterialTheme.typography.bodySmall)
+            if (imageUrl.isNotBlank()) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(imageUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = null,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = modifier,
+                    onError = {
+                        if (!fallbackTried && appId != null && appId > 0) {
+                            fallbackTried = true
+                            scope.launch {
+                                val fallbackUrl = withContext(Dispatchers.IO) {
+                                    steamFallbackArtworkUrl(appId)
+                                }
+                                if (fallbackUrl.isNotBlank() && fallbackUrl != imageUrl) {
+                                    artworkPrefs.edit().putString(appId.toString(), fallbackUrl).apply()
+                                    imageUrl = fallbackUrl
+                                }
+                            }
+                        }
+                    }
+                )
+            }
         }
     }
 
@@ -832,7 +785,7 @@ class MainActivity : ComponentActivity() {
                                  onSettings: () -> Unit, onTab: (Int) -> Unit) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Игролов 1.3.2", style = MaterialTheme.typography.headlineSmall)
+            Text("Игролов 1.3.3", style = MaterialTheme.typography.headlineSmall)
             IconButton(onClick = onSettings) {
                 Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                     color = MaterialTheme.colorScheme.onSurface)
@@ -1101,24 +1054,24 @@ class MainActivity : ComponentActivity() {
                     newReleaseGames = emptyList()
                     newReleaseNextStart = 0
                     newReleaseHasMore = true
-                    loadPopularNewReleasePage(0, 30) { page, error ->
+                    loadPopularNewReleasePage(0, 30) { page, error, isFinal ->
                         newReleaseGames = page.games
                         newReleaseNextStart = page.nextStart
                         newReleaseHasMore = page.hasMore
                         topError = error
-                        topBusy = false
+                        topBusy = !isFinal
                     }
                 }
                 SteamLeaderSection.TOP_SELLERS, SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> {
                     discountedExtraGames = emptyList()
                     discountedNextStart = 100
                     discountedHasMore = true
-                    loadPaidTopSellers { games, error, nextStart, hasMore ->
+                    loadPaidTopSellers { games, error, nextStart, hasMore, isFinal ->
                         topGames = games
                         discountedNextStart = nextStart
                         discountedHasMore = hasMore
                         topError = error
-                        topBusy = false
+                        topBusy = !isFinal
                     }
                 }
             }
@@ -1129,21 +1082,21 @@ class MainActivity : ComponentActivity() {
             topError = ""
             when (leaderSection) {
                 SteamLeaderSection.POPULAR_NEW_RELEASES ->
-                    loadPopularNewReleasePage(newReleaseNextStart, 30) { page, error ->
+                    loadPopularNewReleasePage(newReleaseNextStart, 30) { page, error, isFinal ->
                         newReleaseGames = (newReleaseGames + page.games).distinctBy { it.appId }
                         newReleaseNextStart = page.nextStart
                         newReleaseHasMore = page.hasMore
                         topError = error
-                        loadMoreBusy = false
+                        loadMoreBusy = !isFinal
                     }
                 SteamLeaderSection.DISCOUNTED_TOP_SELLERS ->
-                    loadDiscountedTopSellerPage(discountedNextStart) { page, error ->
+                    loadDiscountedTopSellerPage(discountedNextStart) { page, error, isFinal ->
                         discountedExtraGames = (discountedExtraGames + page.games.filter { it.discountPercent > 0 })
                             .distinctBy { it.appId }
                         discountedNextStart = page.nextStart
                         discountedHasMore = page.hasMore
                         topError = error
-                        loadMoreBusy = false
+                        loadMoreBusy = !isFinal
                     }
                 SteamLeaderSection.TOP_SELLERS -> loadMoreBusy = false
             }

@@ -74,7 +74,7 @@ class GameCardMonitoringTest {
             .putString("wishlist_selected_profile", id).commit()
         val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Игролов 1.3.2")) })
+        assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Игролов 1.3.3")) })
         compose.onNodeWithText("Лидеры").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Загружено: 1 из 100")) })
