@@ -52,15 +52,15 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T09:17:48.559Z
+- Обновлено (UTC): 2026-10-22T09:25:37.663Z
 - Ветка: `main`.
-- HEAD: [`edcc22f57a05`](https://github.com/Magral/Igrolov/commit/edcc22f57a055b277d3d6730d70b3553390676bf).
+- HEAD: [`ba2bf7a04d3f`](https://github.com/Magral/Igrolov/commit/ba2bf7a04d3f3d8b4cd7d66adf244fbd51dcf8a9).
 - Последний опубликованный стабильный GitHub Release: [v1.2.6](https://github.com/Magral/Igrolov/releases/tag/v1.2.6); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [ba2bf7a](https://github.com/Magral/Igrolov/commit/ba2bf7a04d3f3d8b4cd7d66adf244fbd51dcf8a9) — release: Игролов 1.2.7 — scroll UI tests through the outer gutter
 - [edcc22f](https://github.com/Magral/Igrolov/commit/edcc22f57a055b277d3d6730d70b3553390676bf) — release: Игролов 1.2.7 — verify batch controls through the containing list
 - [aa79350](https://github.com/Magral/Igrolov/commit/aa79350ea2f2fa6d45751bae53c42517e5473b07) — release: Игролов 1.2.7 — сохранённые минимумы и очередь проверки игр
 - [d3e312f](https://github.com/Magral/Igrolov/commit/d3e312f48d4755e66a4d3fc2ee55d094ff883c37) — docs: close 1.2.6 checklist and refresh project context [skip ci]
 - [0bf9fe1](https://github.com/Magral/Igrolov/commit/0bf9fe1a3671771696270f90d706e216398e4749) — release: Игролов 1.2.6 — await monitor dialog and retain UI evidence
-- [e0cd9e0](https://github.com/Magral/Igrolov/commit/e0cd9e0b7a2aa08cba7ef8d8c3441503c0dafc35) — release: Игролов 1.2.6 — verify duplicate prevention through card behavior
 <!-- AUTO_CONTEXT_END -->
