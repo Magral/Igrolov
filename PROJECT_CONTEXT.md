@@ -58,14 +58,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T19:40:16.030Z
+- Обновлено (UTC): 2026-10-22T19:47:41.071Z
 - Ветка: `main`.
-- HEAD: [`7e46a0730808`](https://github.com/Magral/Igrolov/commit/7e46a073080813f0e5d7e22cb60b041663daf767).
+- HEAD: [`ca5bf7137887`](https://github.com/Magral/Igrolov/commit/ca5bf71378871f55afc505b9feb2e3bb91b41ce1).
 - Последний опубликованный стабильный GitHub Release: [v1.2.9](https://github.com/Magral/Igrolov/releases/tag/v1.2.9); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [ca5bf71](https://github.com/Magral/Igrolov/commit/ca5bf71378871f55afc505b9feb2e3bb91b41ce1) — test: scroll to monitor list controls
 - [7e46a07](https://github.com/Magral/Igrolov/commit/7e46a073080813f0e5d7e22cb60b041663daf767) — test: wait for monitor list to load
 - [e1e737f](https://github.com/Magral/Igrolov/commit/e1e737fa6c9efe709561b7f78958729a267555c1) — test: expect version code 135 after upgrade
 - [a5cc112](https://github.com/Magral/Igrolov/commit/a5cc1121531431a07bf5d8fe791df4f2cce3564a) — feat: prepare Игролов 1.3.0 monitor list controls
-- [3e9014e](https://github.com/Magral/Igrolov/commit/3e9014e8ed63736fa9b4f40a48a65c593a4de23d) — docs: close Игролов 1.2.9 release checklist
 <!-- AUTO_CONTEXT_END -->
