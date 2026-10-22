@@ -57,14 +57,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T18:08:45.714Z
+- Обновлено (UTC): 2026-10-22T18:14:12.245Z
 - Ветка: `main`.
-- HEAD: [`7456727bf688`](https://github.com/Magral/Igrolov/commit/7456727bf688e2afacb27e60b7780da76e09342f).
+- HEAD: [`ce1fa1579aca`](https://github.com/Magral/Igrolov/commit/ce1fa1579acaff4f26059b2fc2d3d9655b918b02).
 - Последний опубликованный стабильный GitHub Release: [v1.2.8](https://github.com/Magral/Igrolov/releases/tag/v1.2.8); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [ce1fa15](https://github.com/Magral/Igrolov/commit/ce1fa1579acaff4f26059b2fc2d3d9655b918b02) — test: click visible wishlist details action directly
 - [7456727](https://github.com/Magral/Igrolov/commit/7456727bf688e2afacb27e60b7780da76e09342f) — test: use supported semantics collection indexing
 - [94de2ed](https://github.com/Magral/Igrolov/commit/94de2ed39ae5b5004864f7144d14acd912689893) — fix: show Steam details from wishlist
 - [b172fa5](https://github.com/Magral/Igrolov/commit/b172fa54b8d2687c31527a59a8a162672b6b5031) — docs: close Игролов 1.2.8 release checklist
-- [3330ba7](https://github.com/Magral/Igrolov/commit/3330ba791c70da88cd9bb5b62c76815bfbfe94c8) — release: finalize Игролов 1.2.8
 <!-- AUTO_CONTEXT_END -->
