@@ -6,7 +6,7 @@ Android-приложение для поиска предложений Steam-и
 
 Стабильный релиз: [Игролов 1.2.3](https://github.com/Magral/Igrolov/releases/tag/v1.2.3).
 - Сборка: versionCode 128, versionName 1.2.3.
-- Чек-лист: [RELEASE_123_CHECKLIST.md](RELEASE_122_CHECKLIST.md), изменения: [CHANGELOG_123.md](CHANGELOG_122.md), заметки: [RELEASE_NOTES_123.md](RELEASE_NOTES_122.md).
+- Чек-лист: [RELEASE_123_CHECKLIST.md](RELEASE_123_CHECKLIST.md), изменения: [CHANGELOG_123.md](CHANGELOG_123.md), заметки: [RELEASE_NOTES_123.md](RELEASE_NOTES_123.md).
 
 ## Поиск
 
