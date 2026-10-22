@@ -52,14 +52,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T10:19:46.633Z
+- Обновлено (UTC): 2026-10-22T10:29:25.729Z
 - Ветка: `main`.
-- HEAD: [`d6c98a53343f`](https://github.com/Magral/Igrolov/commit/d6c98a53343f5d9daecfff1b6fff31a757d2bb17).
+- HEAD: [`f98c082ae3e8`](https://github.com/Magral/Igrolov/commit/f98c082ae3e8a59b56b22487839777336cf278a3).
 - Последний опубликованный стабильный GitHub Release: [v1.2.6](https://github.com/Magral/Igrolov/releases/tag/v1.2.6); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [f98c082](https://github.com/Magral/Igrolov/commit/f98c082ae3e8a59b56b22487839777336cf278a3) — release: Игролов 1.2.7 — synchronize tab and card actions with Compose
 - [d6c98a5](https://github.com/Magral/Igrolov/commit/d6c98a53343f5d9daecfff1b6fff31a757d2bb17) — release: Игролов 1.2.7 — target batch controls with Compose test semantics
 - [afec6eb](https://github.com/Magral/Igrolov/commit/afec6eb2bed2cb9750876efc9beadf2593293ab3) — release: Игролов 1.2.7 — await accessibility scroll animation before tapping
 - [0bcfe7f](https://github.com/Magral/Igrolov/commit/0bcfe7f6743035a143e1afa62aa9f6c528598703) — release: Игролов 1.2.7 — use accessibility list scrolling in UI checks
-- [ba2bf7a](https://github.com/Magral/Igrolov/commit/ba2bf7a04d3f3d8b4cd7d66adf244fbd51dcf8a9) — release: Игролов 1.2.7 — scroll UI tests through the outer gutter
 <!-- AUTO_CONTEXT_END -->
