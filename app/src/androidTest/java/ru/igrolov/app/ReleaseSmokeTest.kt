@@ -75,10 +75,11 @@ class ReleaseSmokeTest {
         compose.waitForIdle()
         compose.onNodeWithText("Поиск").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
-        UiScrollable(UiSelector().scrollable(true)).scrollToBeginning(15)
+        UiTestScroll.reveal(compose,"Поиск игры по названию")
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Поиск игры по названию")) })
         assertTrue(device.hasObject(By.text("GGSEL")))
         assertTrue(device.hasObject(By.text("Plati")))
+        UiTestScroll.reveal(compose,"Искать")
         assertTrue(device.hasObject(By.text("Искать")))
         ManualSearchSettings.save(context,ManualSearchFilters())
     }
@@ -124,7 +125,6 @@ class ReleaseSmokeTest {
         compose.waitForIdle()
             assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.textContains("Namtar")) })
         }
-        val scroll=UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(20)
         UiTestScroll.reveal(compose,"Stellaris")
         assertTrue(device.hasObject(By.text("Stellaris")))
         if (!device.hasObject(By.textContains("Plati от 750 ₽"))) {
