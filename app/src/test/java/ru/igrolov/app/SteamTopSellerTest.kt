@@ -48,6 +48,14 @@ class SteamTopSellerTest {
         assertTrue(result.steamPrice.isBlank())
     }
 
+    @Test fun successfulDetailsWithEmptyPriceOverviewDoNotProveAvailability() {
+        val game = SteamTopSeller(281990, "Stellaris")
+        val result = SteamTopSellerParser.applyRuDetails(game,
+            """{"281990":{"success":true,"data":{"type":"game","name":"Stellaris","price_overview":{"final_formatted":""}}}}""", null)
+        assertEquals(SteamRuAvailability.UNKNOWN, result.availability)
+        assertTrue(result.steamPrice.isBlank())
+    }
+
     @Test fun dlcTypeIsMarkedForExclusionFromLeaderRows() {
         val game = SteamTopSeller(1234, "An expansion")
         val result = SteamTopSellerParser.applyRuDetails(game,

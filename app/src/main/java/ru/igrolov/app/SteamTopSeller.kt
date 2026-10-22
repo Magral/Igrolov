@@ -75,13 +75,14 @@ object SteamTopSellerParser {
         val data = entry.optJSONObject("data") ?: return game
         if (data.optString("type") != "game") return game.copy(availability = SteamRuAvailability.UNKNOWN, isGame = false)
         val price = data.optJSONObject("price_overview")
+        val finalFormatted = price?.optString("final_formatted", "")?.trim().orEmpty()
         val isFree = data.optBoolean("is_free", false)
-        val available = isFree || price != null
+        val available = isFree || finalFormatted.isNotBlank()
         return game.copy(
             title = data.optString("name").trim().ifBlank { game.title },
-            steamPrice = if (isFree) "Бесплатно" else price?.optString("final_formatted", "").orEmpty(),
-            steamInitialPrice = price?.optString("initial_formatted", "").orEmpty(),
-            discountPercent = price?.optInt("discount_percent", 0)?.coerceIn(0, 100) ?: 0,
+            steamPrice = if (isFree) "Бесплатно" else if (available) finalFormatted else "",
+            steamInitialPrice = if (available) price?.optString("initial_formatted", "").orEmpty() else "",
+            discountPercent = if (available) price?.optInt("discount_percent", 0)?.coerceIn(0, 100) ?: 0 else 0,
             availability = if (available) SteamRuAvailability.AVAILABLE else SteamRuAvailability.UNKNOWN
         )
     }
