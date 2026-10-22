@@ -47,14 +47,14 @@ Android-приложение для отслеживания игр, предл�
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T07:10:51.842Z
+- Обновлено (UTC): 2026-10-22T07:39:35.315Z
 - Ветка: `main`.
-- HEAD: [`9a13de9aac26`](https://github.com/Magral/Igrolov/commit/9a13de9aac263c302243deb54446c7ee18fd3c9e).
+- HEAD: [`2875a9f8f2a8`](https://github.com/Magral/Igrolov/commit/2875a9f8f2a8c070e635b18fe145f870ca6712b7).
 - Последний опубликованный стабильный GitHub Release: [v1.2.5](https://github.com/Magral/Igrolov/releases/tag/v1.2.5); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [2875a9f](https://github.com/Magral/Igrolov/commit/2875a9f8f2a8c070e635b18fe145f870ca6712b7) — release: Игролов 1.2.6 — отзывы Steam и мониторинг из карточек
 - [9a13de9](https://github.com/Magral/Igrolov/commit/9a13de9aac263c302243deb54446c7ee18fd3c9e) — docs: close Игролов 1.2.5 release checklist
 - [fe0379f](https://github.com/Magral/Igrolov/commit/fe0379f17599e84011ece8437f5a038e63f2e646) — release: Игролов 1.2.5 — карточки поиска и материалы Steam
 - [b0a7b83](https://github.com/Magral/Igrolov/commit/b0a7b83d2788f6259aa8752a3a6c27430d65807e) — docs: close Igrolov 1.2.4 release checklist
-- [9653982](https://github.com/Magral/Igrolov/commit/9653982f34467be40494f00a608f39d43ef35d1d) — release: Igrolov 1.2.4 — Steam leader pagination and artwork
 <!-- AUTO_CONTEXT_END -->
