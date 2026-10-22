@@ -52,14 +52,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T10:45:44.759Z
+- Обновлено (UTC): 2026-10-22T10:52:37.009Z
 - Ветка: `main`.
-- HEAD: [`b02c39f1b031`](https://github.com/Magral/Igrolov/commit/b02c39f1b0311868262eb2a348f76856e3dae86a).
+- HEAD: [`9a3328e6094a`](https://github.com/Magral/Igrolov/commit/9a3328e6094abe05480e40e47508bfc7f2dc4198).
 - Последний опубликованный стабильный GitHub Release: [v1.2.6](https://github.com/Magral/Igrolov/releases/tag/v1.2.6); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [9a3328e](https://github.com/Magral/Igrolov/commit/9a3328e6094abe05480e40e47508bfc7f2dc4198) — release: Игролов 1.2.7 — reveal the search action in navigation smoke
 - [b02c39f](https://github.com/Magral/Igrolov/commit/b02c39f1b0311868262eb2a348f76856e3dae86a) — release: Игролов 1.2.7 — advance Compose frames during UI waits
 - [3245790](https://github.com/Magral/Igrolov/commit/32457901df4b5d4452fd66da411af484843577ed) — release: Игролов 1.2.7 — dispatch semantic actions in cache UI verification
 - [f98c082](https://github.com/Magral/Igrolov/commit/f98c082ae3e8a59b56b22487839777336cf278a3) — release: Игролов 1.2.7 — synchronize tab and card actions with Compose
-- [d6c98a5](https://github.com/Magral/Igrolov/commit/d6c98a53343f5d9daecfff1b6fff31a757d2bb17) — release: Игролов 1.2.7 — target batch controls with Compose test semantics
 <!-- AUTO_CONTEXT_END -->
