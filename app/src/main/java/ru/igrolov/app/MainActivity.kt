@@ -724,6 +724,50 @@ class MainActivity : ComponentActivity() {
         content()
     }
 
+    private class CatalogueUiState(prefs: android.content.SharedPreferences, context: Context) {
+        var wishlistProfile by mutableStateOf(if (prefs.getString("wishlist_profiles", null).isNullOrBlank())
+            prefs.getString("wishlist_profile", "") ?: "" else "")
+        var wishlistProfiles by mutableStateOf(SteamWishlist.decodeProfiles(prefs.getString("wishlist_profiles", null)).ifEmpty {
+            val legacyId = SteamWishlist.profileId(prefs.getString("wishlist_profile", "") ?: "")
+            if (legacyId == null) emptyList() else listOf(WishlistProfile(
+                legacyId, "Steam " + legacyId, prefs.getString("wishlist_profile", legacyId) ?: legacyId,
+                SteamWishlist.decode(prefs.getString("wishlist_games", null)), prefs.getLong("wishlist_imported_at", 0L)))
+        })
+        var selectedWishlistId by mutableStateOf(prefs.getString("wishlist_selected_profile", null)
+            ?: wishlistProfiles.firstOrNull()?.steamId64)
+        var wishlistGames by mutableStateOf(wishlistProfiles.firstOrNull { it.steamId64 == selectedWishlistId }?.games
+            ?: SteamWishlist.decode(prefs.getString("wishlist_games", null)))
+        var wishlistBusy by mutableStateOf(false)
+        var wishlistMessage by mutableStateOf("")
+        var wishlistImportedAt by mutableLongStateOf(prefs.getLong("wishlist_imported_at", 0L))
+        var wishlistVisibleLimit by mutableIntStateOf(50)
+        var wishlistSearchingKeys by mutableStateOf<Set<String>>(emptySet())
+        var wishlistSearchStatuses by mutableStateOf<Map<String, String>>(emptyMap())
+        var priceCache by mutableStateOf(OfferPriceCacheStore.readAll(context))
+        var priceBatch by mutableStateOf(PriceCheckBatch())
+        var selectedLeaderIds by mutableStateOf<Set<Int>>(emptySet())
+        var selectedWishlistIds by mutableStateOf<Set<Int>>(emptySet())
+    }
+
+    @Composable
+    private fun NavigationHeader(activeTab: Int, settingsOpen: Boolean,
+                                 onSettings: () -> Unit, onTab: (Int) -> Unit) {
+        Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Игролов 1.2.7", style = MaterialTheme.typography.headlineSmall)
+            IconButton(onClick = onSettings) {
+                Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
+                    color = MaterialTheme.colorScheme.onSurface)
+            }
+        }
+        TabRow(selectedTabIndex = activeTab) {
+            listOf("Поиск", "Товары", "Мониторинг", "Желания", "Лидеры").forEachIndexed { index, title ->
+                Tab(selected = activeTab == index, onClick = { onTab(index) },
+                    text = { Text(title, maxLines = 1, fontSize = 10.sp) })
+            }
+        }
+    }
+
     @Composable
     private fun Screen() {
         val savedFilters = remember {ManualSearchSettings.read(this@MainActivity)}
@@ -825,47 +869,18 @@ class MainActivity : ComponentActivity() {
         }
         var watches by remember { mutableStateOf("[]") }
         var alertLog by remember { mutableStateOf("[]") }
-        var wishlistProfile by remember {
-            mutableStateOf(if (prefs.getString("wishlist_profiles", null).isNullOrBlank())
-                prefs.getString("wishlist_profile", "") ?: "" else "")
-        }
-        var wishlistProfiles by remember {
-            mutableStateOf(SteamWishlist.decodeProfiles(prefs.getString("wishlist_profiles", null)).ifEmpty {
-                val legacyId = SteamWishlist.profileId(prefs.getString("wishlist_profile", "") ?: "")
-                if (legacyId == null) emptyList() else listOf(WishlistProfile(
-                    legacyId, "Steam " + legacyId, prefs.getString("wishlist_profile", legacyId) ?: legacyId,
-                    SteamWishlist.decode(prefs.getString("wishlist_games", null)), prefs.getLong("wishlist_imported_at", 0L)
-                ))
-            })
-        }
-        var selectedWishlistId by remember {
-            mutableStateOf(prefs.getString("wishlist_selected_profile", null) ?: wishlistProfiles.firstOrNull()?.steamId64)
-        }
-        var wishlistGames by remember {
-            mutableStateOf(wishlistProfiles.firstOrNull { it.steamId64 == selectedWishlistId }?.games
-                ?: SteamWishlist.decode(prefs.getString("wishlist_games", null)))
-        }
-        var wishlistBusy by remember { mutableStateOf(false) }
-        var wishlistMessage by remember { mutableStateOf("") }
-        var wishlistImportedAt by remember { mutableLongStateOf(prefs.getLong("wishlist_imported_at", 0L)) }
-        var wishlistVisibleLimit by remember { mutableIntStateOf(50) }
-        var wishlistSearchingKeys by remember { mutableStateOf<Set<String>>(emptySet()) }
-        var wishlistSearchStatuses by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
-        var priceCache by remember { mutableStateOf(OfferPriceCacheStore.readAll(this@MainActivity)) }
-        var priceBatch by remember { mutableStateOf(PriceCheckBatch()) }
-        var selectedLeaderIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
-        var selectedWishlistIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
+        val catalogueUi = remember { CatalogueUiState(prefs, this@MainActivity) }
         var showAlertLog by remember { mutableStateOf(true) }
         var watchMessage by remember { mutableStateOf("Укажите название игры и цену в рублях") }
         fun persistWishlistProfiles(profiles: List<WishlistProfile>) {
-            wishlistProfiles = profiles.distinctBy { it.steamId64 }.take(20)
-            prefs.edit().putString("wishlist_profiles", SteamWishlist.encodeProfiles(wishlistProfiles)).apply()
+            catalogueUi.wishlistProfiles = profiles.distinctBy { it.steamId64 }.take(20)
+            prefs.edit().putString("wishlist_profiles", SteamWishlist.encodeProfiles(catalogueUi.wishlistProfiles)).apply()
         }
         fun reloadWatches() {
             ioExecutor.execute {
                 val latestWatches=WatchStore.read(this@MainActivity).toString()
                 val latestAlerts=AlertJournal.read(this@MainActivity).toString()
-                runOnUiThread { watches=latestWatches; alertLog=latestAlerts; priceCache=OfferPriceCacheStore.readAll(this@MainActivity) }
+                runOnUiThread { watches=latestWatches; alertLog=latestAlerts; catalogueUi.priceCache=OfferPriceCacheStore.readAll(this@MainActivity) }
             }
         }
         LaunchedEffect(Unit) {
@@ -1054,22 +1069,22 @@ class MainActivity : ComponentActivity() {
             }
         }
         fun importWishlist() {
-            if (wishlistBusy) return
-            val profile = wishlistProfile.trim().ifBlank {
-                wishlistProfiles.firstOrNull { it.steamId64 == selectedWishlistId }?.input.orEmpty()
+            if (catalogueUi.wishlistBusy) return
+            val profile = catalogueUi.wishlistProfile.trim().ifBlank {
+                catalogueUi.wishlistProfiles.firstOrNull { it.steamId64 == catalogueUi.selectedWishlistId }?.input.orEmpty()
             }
             if (profile.isBlank()) {
-                wishlistMessage = "Вставьте SteamID64 или ссылку на открытый профиль Steam."
+                catalogueUi.wishlistMessage = "Вставьте SteamID64 или ссылку на открытый профиль Steam."
                 return
             }
-            wishlistBusy = true
-            wishlistMessage = "Загружаем профиль, список и цены Steam RU…"
+            catalogueUi.wishlistBusy = true
+            catalogueUi.wishlistMessage = "Загружаем профиль, список и цены Steam RU…"
             wishlistExecutor.execute {
                 try {
                     val snapshot = SteamWishlist.fetchSnapshot(profile)
                     val timestamp = System.currentTimeMillis()
                     runOnUiThread {
-                        val previous = wishlistProfiles.firstOrNull { it.steamId64 == snapshot.steamId64 }
+                        val previous = catalogueUi.wishlistProfiles.firstOrNull { it.steamId64 == snapshot.steamId64 }
                         val games = snapshot.games.map { game ->
                             val previousGame = previous?.games?.firstOrNull { it.appId == game.appId }
                         game.copy(
@@ -1078,24 +1093,24 @@ class MainActivity : ComponentActivity() {
                         )
                         }
                         val savedProfile = WishlistProfile(snapshot.steamId64, snapshot.displayName, profile, games, timestamp)
-                        persistWishlistProfiles(listOf(savedProfile) + wishlistProfiles.filterNot { it.steamId64 == snapshot.steamId64 })
-                        selectedWishlistId = snapshot.steamId64
-                        wishlistProfile = ""
+                        persistWishlistProfiles(listOf(savedProfile) + catalogueUi.wishlistProfiles.filterNot { it.steamId64 == snapshot.steamId64 })
+                        catalogueUi.selectedWishlistId = snapshot.steamId64
+                        catalogueUi.wishlistProfile = ""
                         prefs.edit().putString("wishlist_profile", profile)
                             .putString("wishlist_games", SteamWishlist.encode(games))
                             .putString("wishlist_selected_profile", snapshot.steamId64)
                             .putLong("wishlist_imported_at", timestamp).apply()
-                        wishlistGames = games
-                        wishlistVisibleLimit = 50
-                        wishlistImportedAt = timestamp
-                        wishlistBusy = false
-                        wishlistMessage = if (games.isEmpty()) "В открытом списке пока нет игр."
+                        catalogueUi.wishlistGames = games
+                        catalogueUi.wishlistVisibleLimit = 50
+                        catalogueUi.wishlistImportedAt = timestamp
+                        catalogueUi.wishlistBusy = false
+                        catalogueUi.wishlistMessage = if (games.isEmpty()) "В открытом списке пока нет игр."
                             else "Сохранён профиль «${snapshot.displayName}». Игр: ${games.size}. Цены Steam RU обновлены. Нажмите на название игры для общего поиска или «Искать» для проверки цены в этом списке."
                     }
                 } catch (e: Exception) {
                     runOnUiThread {
-                        wishlistBusy = false
-                        wishlistMessage = "Не удалось обновить список: ${e.message ?: "ошибка Steam"}. Сохранённая копия оставлена."
+                        catalogueUi.wishlistBusy = false
+                        catalogueUi.wishlistMessage = "Не удалось обновить список: ${e.message ?: "ошибка Steam"}. Сохранённая копия оставлена."
                     }
                 }
             }
@@ -1106,19 +1121,19 @@ class MainActivity : ComponentActivity() {
         fun recordComparison(key: String, minima: Map<String, Double>, failed: Set<String>,
                              started: Long, finished: Long, reason: String): CachedGamePrices {
             val saved = runCatching { OfferPriceCacheStore.update(this@MainActivity, key, minima, failed, started, finished, reason) }
-                .getOrElse { OfferPriceCache.merge(priceCache[key], minima, failed, started, finished, reason) }
-            priceCache = priceCache + (key to saved)
+                .getOrElse { OfferPriceCache.merge(catalogueUi.priceCache[key], minima, failed, started, finished, reason) }
+            catalogueUi.priceCache = catalogueUi.priceCache + (key to saved)
             return saved
         }
         fun stopPriceBatch() {
-            if (!priceBatch.running) return
-            val current = priceBatch.current
-            priceBatch = priceBatch.cancel()
+            if (!catalogueUi.priceBatch.running) return
+            val current = catalogueUi.priceBatch.current
+            catalogueUi.priceBatch = catalogueUi.priceBatch.cancel()
             searchGeneration++
             activeCatalogGeneration.set(searchGeneration)
             searching = false
-            wishlistSearchingKeys.forEach { wishlistSearchStatuses = wishlistSearchStatuses + (it to "Проверка остановлена") }
-            wishlistSearchingKeys = emptySet()
+            catalogueUi.wishlistSearchingKeys.forEach { catalogueUi.wishlistSearchStatuses = catalogueUi.wishlistSearchStatuses + (it to "Проверка остановлена") }
+            catalogueUi.wishlistSearchingKeys = emptySet()
             current?.let { target ->
                 leaderOfferPrices[target.appId]?.let {
                     leaderOfferPrices = leaderOfferPrices + (target.appId to it.copy(checking = false, message = "Проверка остановлена"))
@@ -1134,14 +1149,14 @@ class MainActivity : ComponentActivity() {
             filtersOverride: ManualSearchFilters? = null,
             pagesOverride: Int? = null
         ) {
-            if (priceBatch.running && onFinished == null) return
+            if (catalogueUi.priceBatch.running && onFinished == null) return
             if (searching && candidateOverride == null) return
             val requestedFilters = filtersOverride ?: manualFilters
             val requestedPages = pagesOverride ?: searchTotalPages
             if (!requestedFilters.valid) {
                 val key = if (wishlistProfileId != null && candidateOverride != null)
                     "$wishlistProfileId:${candidateOverride.appId}" else null
-                if (key != null) wishlistSearchStatuses = wishlistSearchStatuses + (key to "Проверьте ценовой фильтр")
+                if (key != null) catalogueUi.wishlistSearchStatuses = catalogueUi.wishlistSearchStatuses + (key to "Проверьте ценовой фильтр")
                 else if (leaderboardAppId != null) leaderOfferPrices = leaderOfferPrices +
                     (leaderboardAppId to (leaderOfferPrices[leaderboardAppId] ?: LeaderOfferPrices()).copy(message = "Проверьте ценовой фильтр"))
                 else searchMessage = "Проверьте ценовой фильтр"
@@ -1172,12 +1187,12 @@ class MainActivity : ComponentActivity() {
                 leaderOfferPrices = leaderOfferPrices + (leaderboardAppId to previous.copy(checking = true, message = "Проверяем Plati и GGSEL…", scopeKey = primaryCacheKey.orEmpty()))
             }
 
-            wishlistSearchingKeys.forEach { key -> wishlistSearchStatuses = wishlistSearchStatuses + (key to "Поиск остановлен") }
-            wishlistSearchingKeys = emptySet()
+            catalogueUi.wishlistSearchingKeys.forEach { key -> catalogueUi.wishlistSearchStatuses = catalogueUi.wishlistSearchStatuses + (key to "Поиск остановлен") }
+            catalogueUi.wishlistSearchingKeys = emptySet()
             val wishlistKey = wishlistProfileId?.let { "$it:${identity?.appId ?: candidateOverride?.appId}" }
             if (hiddenWishlistSearch && wishlistKey != null) {
-                wishlistSearchingKeys = setOf(wishlistKey)
-                wishlistSearchStatuses = wishlistSearchStatuses + (wishlistKey to "Ищем минимальную цену…")
+                catalogueUi.wishlistSearchingKeys = setOf(wishlistKey)
+                catalogueUi.wishlistSearchStatuses = catalogueUi.wishlistSearchStatuses + (wishlistKey to "Ищем минимальную цену…")
             }
 
             searchGeneration++
@@ -1221,8 +1236,8 @@ class MainActivity : ComponentActivity() {
                         ))
                         }
                         if (wishlistKey != null) {
-                            wishlistSearchingKeys = wishlistSearchingKeys - wishlistKey
-                            wishlistSearchStatuses = wishlistSearchStatuses + (wishlistKey to "Нужно уточнить название")
+                            catalogueUi.wishlistSearchingKeys = catalogueUi.wishlistSearchingKeys - wishlistKey
+                            catalogueUi.wishlistSearchStatuses = catalogueUi.wishlistSearchStatuses + (wishlistKey to "Нужно уточнить название")
                         }
                         searching = false
                         onFinished?.invoke()
@@ -1234,8 +1249,8 @@ class MainActivity : ComponentActivity() {
                     pendingAliasProfileId = wishlistProfileId
                     pendingAliasHiddenWishlist = hiddenWishlistSearch
                     if (wishlistKey != null) {
-                        wishlistSearchingKeys = wishlistSearchingKeys - wishlistKey
-                        wishlistSearchStatuses = wishlistSearchStatuses + (wishlistKey to "Найдено другое название · требуется подтверждение")
+                        catalogueUi.wishlistSearchingKeys = catalogueUi.wishlistSearchingKeys - wishlistKey
+                        catalogueUi.wishlistSearchStatuses = catalogueUi.wishlistSearchStatuses + (wishlistKey to "Найдено другое название · требуется подтверждение")
                     }
                     if (!hiddenWishlistSearch) {
                         offers = emptyList()
@@ -1276,7 +1291,7 @@ class MainActivity : ComponentActivity() {
                     ))
                 }
                 if (wishlistSearch && wishlistProfileId != null && identity != null && cached != null) {
-                    val updatedProfiles = wishlistProfiles.map { profile ->
+                    val updatedProfiles = catalogueUi.wishlistProfiles.map { profile ->
                         if (profile.steamId64 != wishlistProfileId) profile else profile.copy(games = profile.games.map { game ->
                             if (game.appId == identity.appId) game.copy(
                                 lowestPlatiPrice = cached.plati.price ?: game.lowestPlatiPrice.takeIf { "Plati" in failedSources },
@@ -1285,13 +1300,13 @@ class MainActivity : ComponentActivity() {
                         })
                     }
                     persistWishlistProfiles(updatedProfiles)
-                    if (selectedWishlistId == wishlistProfileId) {
-                        wishlistGames = updatedProfiles.firstOrNull { it.steamId64 == wishlistProfileId }?.games.orEmpty()
-                        prefs.edit().putString("wishlist_games", SteamWishlist.encode(wishlistGames)).apply()
+                    if (catalogueUi.selectedWishlistId == wishlistProfileId) {
+                        catalogueUi.wishlistGames = updatedProfiles.firstOrNull { it.steamId64 == wishlistProfileId }?.games.orEmpty()
+                        prefs.edit().putString("wishlist_games", SteamWishlist.encode(catalogueUi.wishlistGames)).apply()
                     }
                     val key = "$wishlistProfileId:${identity.appId}"
-                    wishlistSearchingKeys = wishlistSearchingKeys - key
-                    wishlistSearchStatuses = wishlistSearchStatuses + (key to when {
+                    catalogueUi.wishlistSearchingKeys = catalogueUi.wishlistSearchingKeys - key
+                    catalogueUi.wishlistSearchStatuses = catalogueUi.wishlistSearchStatuses + (key to when {
                         failedSources.isNotEmpty() -> "Есть ошибки обновления"
                         hasWishlistMinimum -> "Минимум обновлён"
                         else -> "Подтверждённая цена не найдена"
@@ -1315,14 +1330,14 @@ class MainActivity : ComponentActivity() {
                 onFinished?.invoke()
             }
         }
-        LaunchedEffect(priceBatch.current, priceBatch.completed, searching) {
-            val target = priceBatch.current
-            if (priceBatch.running && !searching && target != null) {
+        LaunchedEffect(catalogueUi.priceBatch.current, catalogueUi.priceBatch.completed, searching) {
+            val target = catalogueUi.priceBatch.current
+            if (catalogueUi.priceBatch.running && !searching && target != null) {
                 startCatalogSearch(GameSearchResolver.Candidate(target.appId, target.title),
                     wishlistProfileId = target.profileId, hiddenWishlistSearch = target.profileId != null,
                     leaderboardAppId = target.appId.takeIf { target.profileId == null },
-                    onFinished = { priceBatch = priceBatch.advance(target) },
-                    filtersOverride = priceBatch.filters, pagesOverride = priceBatch.pages)
+                    onFinished = { catalogueUi.priceBatch = catalogueUi.priceBatch.advance(target) },
+                    filtersOverride = catalogueUi.priceBatch.filters, pagesOverride = catalogueUi.priceBatch.pages)
             }
         }
         fun dismissAliasPrompt() {
@@ -1330,7 +1345,7 @@ class MainActivity : ComponentActivity() {
             val profileId = pendingAliasProfileId
             if (pendingAliasHiddenWishlist && appId != null && profileId != null) {
                 val key = "$profileId:$appId"
-                wishlistSearchStatuses = wishlistSearchStatuses + (key to "Подтверждённая цена не найдена")
+                catalogueUi.wishlistSearchStatuses = catalogueUi.wishlistSearchStatuses + (key to "Подтверждённая цена не найдена")
             }
             pendingAliasGame = null
             pendingAliasSuggestions = emptyList()
@@ -1371,20 +1386,10 @@ class MainActivity : ComponentActivity() {
                 GameMonitoringDialog(game, onDismiss = { pendingWatchGame = null },
                     onSaved = { saved -> watches = saved; pendingWatchGame = null })
             }
-            Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
-                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Игролов 1.2.7", style = MaterialTheme.typography.headlineSmall)
-                IconButton(onClick = { settingsOpen = !settingsOpen; showDirectory = false }) {
-                    Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
-                        color = MaterialTheme.colorScheme.onSurface)
-                }
-            }
-            TabRow(selectedTabIndex = activeTab) {
-                listOf("Поиск", "Товары", "Мониторинг", "Желания", "Лидеры").forEachIndexed { index, title ->
-                    Tab(selected = activeTab == index, onClick = { activeTab = index; settingsOpen = false; showDirectory = false }, text = { Text(title, maxLines = 1, fontSize = 10.sp) })
-                }
-            }
-            PriceBatchStatus(priceBatch, onStop = { stopPriceBatch() })
+            NavigationHeader(activeTab, settingsOpen,
+                onSettings = { settingsOpen = !settingsOpen; showDirectory = false },
+                onTab = { activeTab = it; settingsOpen = false; showDirectory = false })
+            PriceBatchStatus(catalogueUi.priceBatch, onStop = { stopPriceBatch() })
             Column(Modifier.fillMaxSize().verticalScroll(if (settingsOpen) directoryScroll else when(activeTab) { 0 -> searchScroll; 1 -> productsScroll; 2 -> watchScroll; else -> directoryScroll }).padding(16.dp)) {
             ScreenSection {
             if (activeTab == 0 && !settingsOpen) {
@@ -1869,41 +1874,41 @@ class MainActivity : ComponentActivity() {
             }
             ScreenSection {
             if (activeTab == 3 && !settingsOpen) {
-                val wishlistCacheKeys = remember(wishlistGames.map { it.appId to it.title }, manualFilters, rulesRevision,
+                val wishlistCacheKeys = remember(catalogueUi.wishlistGames.map { it.appId to it.title }, manualFilters, rulesRevision,
                     ignoredIds, searchTotalPages, comparisonSavedAliases) {
-                    wishlistGames.associate { it.appId to comparisonKey(it.appId, it.title, false) }
+                    catalogueUi.wishlistGames.associate { it.appId to comparisonKey(it.appId, it.title, false) }
                 }
                 WishlistPanel(
-                    profiles = wishlistProfiles, selectedId = selectedWishlistId, games = wishlistGames,
-                    input = wishlistProfile, busy = wishlistBusy, message = wishlistMessage,
-                    importedAt = wishlistImportedAt, visibleLimit = wishlistVisibleLimit,
-                    searchingKeys = wishlistSearchingKeys, searchStatuses = wishlistSearchStatuses,
-                    searchEnabled = manualFilters.valid && !priceBatch.running,
-                    onInput = { wishlistProfile = it }, onImport = { importWishlist() },
+                    profiles = catalogueUi.wishlistProfiles, selectedId = catalogueUi.selectedWishlistId, games = catalogueUi.wishlistGames,
+                    input = catalogueUi.wishlistProfile, busy = catalogueUi.wishlistBusy, message = catalogueUi.wishlistMessage,
+                    importedAt = catalogueUi.wishlistImportedAt, visibleLimit = catalogueUi.wishlistVisibleLimit,
+                    searchingKeys = catalogueUi.wishlistSearchingKeys, searchStatuses = catalogueUi.wishlistSearchStatuses,
+                    searchEnabled = manualFilters.valid && !catalogueUi.priceBatch.running,
+                    onInput = { catalogueUi.wishlistProfile = it }, onImport = { importWishlist() },
                     onSelect = { profile ->
-                        selectedWishlistIds = emptySet()
-                        selectedWishlistId = profile.steamId64
-                        wishlistProfile = ""
-                        wishlistGames = profile.games
-                        wishlistImportedAt = profile.importedAt
-                        wishlistVisibleLimit = 50
-                        wishlistMessage = "Выбран профиль «${profile.displayName}»."
+                        catalogueUi.selectedWishlistIds = emptySet()
+                        catalogueUi.selectedWishlistId = profile.steamId64
+                        catalogueUi.wishlistProfile = ""
+                        catalogueUi.wishlistGames = profile.games
+                        catalogueUi.wishlistImportedAt = profile.importedAt
+                        catalogueUi.wishlistVisibleLimit = 50
+                        catalogueUi.wishlistMessage = "Выбран профиль «${profile.displayName}»."
                         prefs.edit().putString("wishlist_selected_profile", profile.steamId64)
                             .putString("wishlist_profile", profile.input)
                             .putString("wishlist_games", SteamWishlist.encode(profile.games))
                             .putLong("wishlist_imported_at", profile.importedAt).apply()
                     },
                     onDelete = {
-                        selectedWishlistIds = emptySet()
-                        val active = wishlistProfiles.firstOrNull { it.steamId64 == selectedWishlistId }
+                        catalogueUi.selectedWishlistIds = emptySet()
+                        val active = catalogueUi.wishlistProfiles.firstOrNull { it.steamId64 == catalogueUi.selectedWishlistId }
                         if (active != null) {
-                            val remaining = wishlistProfiles.filterNot { it.steamId64 == active.steamId64 }
+                            val remaining = catalogueUi.wishlistProfiles.filterNot { it.steamId64 == active.steamId64 }
                             persistWishlistProfiles(remaining)
                             val next = remaining.firstOrNull()
-                            selectedWishlistId = next?.steamId64
-                            wishlistProfile = ""
-                            wishlistGames = next?.games.orEmpty()
-                            wishlistImportedAt = next?.importedAt ?: 0L
+                            catalogueUi.selectedWishlistId = next?.steamId64
+                            catalogueUi.wishlistProfile = ""
+                            catalogueUi.wishlistGames = next?.games.orEmpty()
+                            catalogueUi.wishlistImportedAt = next?.importedAt ?: 0L
                             prefs.edit().putString("wishlist_selected_profile", next?.steamId64)
                                 .putString("wishlist_profile", next?.input.orEmpty())
                                 .putString("wishlist_games", SteamWishlist.encode(next?.games.orEmpty()))
@@ -1913,11 +1918,11 @@ class MainActivity : ComponentActivity() {
                     onOpenSearch = { game ->
                         startCatalogSearch(
                             candidateOverride = GameSearchResolver.Candidate(game.appId, game.title),
-                            wishlistProfileId = selectedWishlistId
+                            wishlistProfileId = catalogueUi.selectedWishlistId
                         )
                     },
                     onSearchPrice = { game ->
-                        val profileId = selectedWishlistId
+                        val profileId = catalogueUi.selectedWishlistId
                         if (profileId != null) startCatalogSearch(
                             candidateOverride = GameSearchResolver.Candidate(game.appId, game.title),
                             wishlistProfileId = profileId,
@@ -1926,19 +1931,19 @@ class MainActivity : ComponentActivity() {
                     },
                     isMonitored = { game -> isGameWatched(game.appId, game.title) },
                     onMonitor = { game -> openGameMonitoring(game.appId, game.title) },
-                    selectedIds = selectedWishlistIds,
-                    selectionEnabled = !priceBatch.running && !searching,
+                    selectedIds = catalogueUi.selectedWishlistIds,
+                    selectionEnabled = !catalogueUi.priceBatch.running && !searching,
                     onToggleSelection = { game ->
-                        selectedWishlistIds = if (game.appId in selectedWishlistIds) selectedWishlistIds - game.appId
-                            else if (selectedWishlistIds.size < 10) selectedWishlistIds + game.appId else selectedWishlistIds
+                        catalogueUi.selectedWishlistIds = if (game.appId in catalogueUi.selectedWishlistIds) catalogueUi.selectedWishlistIds - game.appId
+                            else if (catalogueUi.selectedWishlistIds.size < 10) catalogueUi.selectedWishlistIds + game.appId else catalogueUi.selectedWishlistIds
                     },
-                    onSelectFive = { selectedWishlistIds = wishlistGames.take(5).map { it.appId }.toSet() },
+                    onSelectFive = { catalogueUi.selectedWishlistIds = catalogueUi.wishlistGames.take(5).map { it.appId }.toSet() },
                     onCheckSelected = {
-                        priceBatch = PriceCheckBatch.start(wishlistGames.filter { it.appId in selectedWishlistIds }
-                            .map { PriceCheckTarget(it.appId, it.title, selectedWishlistId) }, manualFilters, searchTotalPages)
+                        catalogueUi.priceBatch = PriceCheckBatch.start(catalogueUi.wishlistGames.filter { it.appId in catalogueUi.selectedWishlistIds }
+                            .map { PriceCheckTarget(it.appId, it.title, catalogueUi.selectedWishlistId) }, manualFilters, searchTotalPages)
                     },
-                    cachedPrices = { game -> wishlistCacheKeys[game.appId]?.let { priceCache[it] } },
-                    onShowMore = { wishlistVisibleLimit += 50 }
+                    cachedPrices = { game -> wishlistCacheKeys[game.appId]?.let { catalogueUi.priceCache[it] } },
+                    onShowMore = { catalogueUi.wishlistVisibleLimit += 50 }
                 )
             }
             }
@@ -1976,7 +1981,7 @@ class MainActivity : ComponentActivity() {
                                 FilterChip(
                                     selected = leaderSection == section,
                                     onClick = {
-                                        selectedLeaderIds = emptySet()
+                                        catalogueUi.selectedLeaderIds = emptySet()
                                         leaderSection = section
                                         topError = ""
                                     },
@@ -1992,7 +1997,7 @@ class MainActivity : ComponentActivity() {
                             row.forEach { filter ->
                                 FilterChip(
                                     selected = topAvailabilityFilter == filter,
-                                    onClick = { selectedLeaderIds = emptySet(); topAvailabilityFilter = filter },
+                                    onClick = { catalogueUi.selectedLeaderIds = emptySet(); topAvailabilityFilter = filter },
                                     label = { Text(filter, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
                                     modifier = Modifier.weight(1f)
                                 )
@@ -2028,22 +2033,22 @@ class MainActivity : ComponentActivity() {
                     SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedHasMore
                     SteamLeaderSection.TOP_SELLERS -> false
                 }
-                BatchSelectionControls(visibleTopGames.count { it.appId in selectedLeaderIds },
-                    enabled = !searching && !priceBatch.running && manualFilters.valid,
-                    onSelectFive = { selectedLeaderIds = visibleTopGames.take(5).map { it.appId }.toSet() },
-                    onStart = { priceBatch = PriceCheckBatch.start(visibleTopGames.filter { it.appId in selectedLeaderIds }
+                BatchSelectionControls(visibleTopGames.count { it.appId in catalogueUi.selectedLeaderIds },
+                    enabled = !searching && !catalogueUi.priceBatch.running && manualFilters.valid,
+                    onSelectFive = { catalogueUi.selectedLeaderIds = visibleTopGames.take(5).map { it.appId }.toSet() },
+                    onStart = { catalogueUi.priceBatch = PriceCheckBatch.start(visibleTopGames.filter { it.appId in catalogueUi.selectedLeaderIds }
                         .map { PriceCheckTarget(it.appId, it.title) }, manualFilters, searchTotalPages) })
                 visibleTopGames.forEachIndexed { index, game ->
                     val cacheKey = remember(game.appId, game.title, manualFilters, rulesRevision, ignoredIds,
                         searchTotalPages, comparisonSavedAliases[game.appId]) { comparisonKey(game.appId, game.title, true) }
                     SteamLeaderCard(index, game, leaderOfferPrices[game.appId]?.takeIf { it.scopeKey == cacheKey },
-                        monitored = isGameWatched(game.appId, game.title), searchEnabled = !searching && !priceBatch.running && manualFilters.valid,
-                        cachedPrices = priceCache[cacheKey], selected = game.appId in selectedLeaderIds,
-                        selectionEnabled = !priceBatch.running,
-                        onToggle = { selectedLeaderIds = if (game.appId in selectedLeaderIds) selectedLeaderIds - game.appId
-                            else if (selectedLeaderIds.size < 10) selectedLeaderIds + game.appId else selectedLeaderIds },
+                        monitored = isGameWatched(game.appId, game.title), searchEnabled = !searching && !catalogueUi.priceBatch.running && manualFilters.valid,
+                        cachedPrices = catalogueUi.priceCache[cacheKey], selected = game.appId in catalogueUi.selectedLeaderIds,
+                        selectionEnabled = !catalogueUi.priceBatch.running,
+                        onToggle = { catalogueUi.selectedLeaderIds = if (game.appId in catalogueUi.selectedLeaderIds) catalogueUi.selectedLeaderIds - game.appId
+                            else if (catalogueUi.selectedLeaderIds.size < 10) catalogueUi.selectedLeaderIds + game.appId else catalogueUi.selectedLeaderIds },
                         onOpenSearch = {
-                                    if (!priceBatch.running) {
+                                    if (!catalogueUi.priceBatch.running) {
                                         searchGeneration++
                                         activeCatalogGeneration.set(searchGeneration)
                                         searching = false
