@@ -20,6 +20,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkInfo
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -39,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.input.KeyboardType
 import org.json.JSONObject
 import org.json.JSONArray
 import java.net.HttpURLConnection
@@ -1003,6 +1005,7 @@ class MainActivity : ComponentActivity() {
         var topBusy by remember { mutableStateOf(false) }
         var topError by remember { mutableStateOf("") }
         var topAvailabilityFilter by remember { mutableStateOf("Все игры") }
+        var leaderFilterInput by remember { mutableStateOf(SteamLeaderFilterInput()) }
         var leaderOfferPrices by remember { mutableStateOf<Map<Int, LeaderOfferPrices>>(emptyMap()) }
         fun refreshTop() {
             if (topBusy || loadMoreBusy) return
@@ -2025,18 +2028,20 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+                SteamLeaderFiltersPanel(leaderFilterInput, { leaderFilterInput = it })
                 val sectionGames = when (leaderSection) {
                     SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseGames
                     SteamLeaderSection.TOP_SELLERS -> topGames
                     SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> topGames + discountedExtraGames
                 }
-                val visibleTopGames = leaderSection.filter(sectionGames).filter { game ->
+                val availabilityFilteredGames = leaderSection.filter(sectionGames).filter { game ->
                     game.isGame && when (topAvailabilityFilter) {
                         "Доступны в Steam RU" -> game.availability == SteamRuAvailability.AVAILABLE
                         "Недоступны в Steam RU" -> game.availability == SteamRuAvailability.UNAVAILABLE
                         else -> true
                     }
                 }
+                val visibleTopGames = SteamLeaderFilter.apply(availabilityFilteredGames, leaderFilterInput.toFilters())
                 Text("Показано: ${visibleTopGames.size}", style = MaterialTheme.typography.labelMedium)
                 if (!topBusy && topError.isBlank() && visibleTopGames.isEmpty()) {
                     Text(
@@ -2285,6 +2290,71 @@ class MainActivity : ComponentActivity() {
             } // прокручиваемое содержимое
         } // экран с вкладками
     }
+    @Composable
+    private fun SteamLeaderFiltersPanel(
+        input: SteamLeaderFilterInput,
+        onInput: (SteamLeaderFilterInput) -> Unit
+    ) {
+        OutlinedCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Фильтры Steam RU", modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleSmall)
+                    TextButton(onClick = { onInput(input.copy(expanded = !input.expanded)) },
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)) {
+                        Text(if (input.expanded) "Скрыть" else
+                            if (input.activeFilterCount > 0) "Настроить · ${input.activeFilterCount}" else "Настроить")
+                    }
+                }
+                if (input.expanded) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = input.maxPriceText,
+                            onValueChange = { onInput(input.copy(maxPriceText = it)) },
+                            label = { Text("Цена до, ₽", maxLines = 1) },
+                            singleLine = true,
+                            isError = input.maxPriceText.isNotBlank() &&
+                                input.maxPriceText.trim().replace(',', '.').toDoubleOrNull()?.let { it > 0.0 } != true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = input.minimumDiscountText,
+                            onValueChange = { onInput(input.copy(minimumDiscountText = it)) },
+                            label = { Text("Скидка от, %", maxLines = 1) },
+                            singleLine = true,
+                            isError = input.minimumDiscountText.isNotBlank() &&
+                                input.minimumDiscountText.toIntOrNull()?.let { it in 0..100 } != true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    OutlinedTextField(
+                        value = input.minimumReviewText,
+                        onValueChange = { onInput(input.copy(minimumReviewText = it)) },
+                        label = { Text("Отзывы от, %") },
+                        singleLine = true,
+                        isError = input.minimumReviewText.isNotBlank() &&
+                            input.minimumReviewText.toIntOrNull()?.let { it in 0..100 } != true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (input.hasInvalidInput) {
+                        Text("Цена должна быть больше 0 ₽, проценты — от 0 до 100.",
+                            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        TextButton(onClick = { onInput(input.copy(maxPriceText = "", minimumDiscountText = "", minimumReviewText = "")) },
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)) {
+                            Text("Сбросить фильтры")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     @Composable
     private fun WishlistPanel(
         profiles: List<WishlistProfile>,
