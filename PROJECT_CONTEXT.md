@@ -59,14 +59,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T21:07:21.728Z
+- Обновлено (UTC): 2026-10-22T21:13:17.218Z
 - Ветка: `main`.
-- HEAD: [`072946945b8c`](https://github.com/Magral/Igrolov/commit/072946945b8c260afa61e4637dbfa31682b8dcfa).
+- HEAD: [`9746205bf3d6`](https://github.com/Magral/Igrolov/commit/9746205bf3d625e84cbd8c0e61dd251b5dc10d3b).
 - Последний опубликованный стабильный GitHub Release: [v1.3.0](https://github.com/Magral/Igrolov/releases/tag/v1.3.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [9746205](https://github.com/Magral/Igrolov/commit/9746205bf3d625e84cbd8c0e61dd251b5dc10d3b) — release: prepare Игролов 1.3.1 after UI test fix
 - [0729469](https://github.com/Magral/Igrolov/commit/072946945b8c260afa61e4637dbfa31682b8dcfa) — release: prepare Игролов 1.3.1
 - [b19da3a](https://github.com/Magral/Igrolov/commit/b19da3adfbdc4d9af4ee53015c27a121539deeb7) — docs: record published Игролов 1.3.0
 - [55a4504](https://github.com/Magral/Igrolov/commit/55a45048240a341bf4d11d2a6bf9a426cdf657c2) — release: prepare Игролов 1.3.0
-- [14c696b](https://github.com/Magral/Igrolov/commit/14c696bf843d65899c541f1c8a772238e4d91012) — test: verify monitor list controls without altering seeded state
 <!-- AUTO_CONTEXT_END -->
