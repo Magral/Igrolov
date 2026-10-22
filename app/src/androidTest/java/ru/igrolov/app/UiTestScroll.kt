@@ -6,7 +6,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
 import androidx.test.runner.lifecycle.Stage
 import androidx.test.uiautomator.By
-import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.UiDevice
 
 /** Scroll the containing list, never the scrollable editor inside that list. */
@@ -23,19 +22,33 @@ object UiTestScroll {
         }
         device.waitForIdle()
         val selector = if (contains) By.textContains(text) else By.text(text)
-        if (device.hasObject(selector)) return
         fun container() = device.findObjects(By.scrollable(true))
             .filter { it.className != "android.widget.EditText" }
             .maxByOrNull { it.visibleBounds.height().toLong() * it.visibleBounds.width() }
-        for (attempt in 0 until 8) {
-            val scroll = container() ?: break
-            if (!scroll.scroll(Direction.UP, 1f)) break
+        fun visible(): Boolean {
+            val bounds = device.findObject(selector)?.visibleBounds ?: return false
+            val list = container()?.visibleBounds ?: return false
+            return bounds.width() > 0 && bounds.height() > 20 &&
+                bounds.centerY() > list.top + 30 && bounds.centerY() < list.bottom - 60
         }
+        // The outer gutter belongs to the list and never intersects an editor.
+        // Centered gestures can focus a TextField and continue over the IME.
+        fun swipe(down: Boolean) {
+            val list = container()?.visibleBounds ?: throw AssertionError("Нет списка для прокрутки к: $text")
+            val x = list.left + 12
+            val top = list.top + 100
+            val bottom = list.bottom - 100
+            val middle = top + (bottom - top) / 3
+            if (down) device.swipe(x, bottom, x, middle, 35)
+            else device.swipe(x, top, x, bottom, 35)
+            device.waitForIdle()
+        }
+        if (visible()) return
+        repeat(5) { swipe(false) }
         repeat(20) {
-            if (device.hasObject(selector)) return
-            val scroll = container() ?: throw AssertionError("Нет списка для прокрутки к: $text")
-            scroll.scroll(Direction.DOWN, 0.7f)
+            if (visible()) return
+            swipe(true)
         }
-        if (!device.hasObject(selector)) throw AssertionError("Не найден элемент: $text")
+        if (!visible()) throw AssertionError("Не найден видимый элемент: $text")
     }
 }
