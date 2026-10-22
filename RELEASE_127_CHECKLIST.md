@@ -7,5 +7,5 @@
 - [x] Выбор до 10 игр в «Лидерах» и желаемом, последовательная очередь, прогресс, остановка.
 - [x] Unit-тесты кэша и очереди, UI-тесты пакетной проверки и перезапуска.
 - [x] versionName 1.2.7 / versionCode 132.
-- [x] Actions: unit-тесты, оба APK, live smoke и UI-сценарии API 26/29 (workflow 39797950467).
-- [ ] GitHub Release v1.2.7 с APK.
+- [x] Actions: unit-тесты, оба APK, live smoke и UI-сценарии API 26/29 (release workflow 39799699702).
+- [x] [GitHub Release v1.2.7 с APK](https://github.com/Magral/Igrolov/releases/tag/v1.2.7).
