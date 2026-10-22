@@ -4,12 +4,12 @@
 
 ## Проверенный опубликованный статус
 
-- Стабильный релиз: [v1.2.9](https://github.com/Magral/Igrolov/releases/tag/v1.2.9).
-- APK: [Igrolov-1.2.9.apk](https://github.com/Magral/Igrolov/releases/download/v1.2.9/Igrolov-1.2.9.apk).
-- versionName 1.2.9, versionCode 134.
-- Release commit: `37002112bb64fe4c47fab305810f35101b3fffe4`.
-- Actions [39830742947](https://github.com/Magral/Igrolov/actions/runs/39830742947): unit-тесты, Debug APK, instrumentation APK, live smoke, UI на API 26 и 29, публикация release — успешно.
-- Чек-лист: `RELEASE_129_CHECKLIST.md`. SHA-256 APK: `9e7bea54749fa4ed29a95d0d65e61897906542e5f7f9c8593a8b21fcc4e009c1`.
+- Стабильный релиз: [v1.3.0](https://github.com/Magral/Igrolov/releases/tag/v1.3.0).
+- APK: [Igrolov-1.3.0.apk](https://github.com/Magral/Igrolov/releases/download/v1.3.0/Igrolov-1.3.0.apk).
+- versionName 1.3.0, versionCode 135.
+- Release commit: `55a45048240a341bf4d11d2a6bf9a426cdf657c2`.
+- Actions [39850871875](https://github.com/Magral/Igrolov/actions/runs/39850871875): unit-тесты, Debug APK, instrumentation APK, live smoke, UI на API 26 и 29, публикация release — успешно.
+- Чек-лист: `RELEASE_130_CHECKLIST.md`. SHA-256 APK: `7d39fa27c3d83d8671e8bdccd2d29b4d8099f44c9c314e83c3066438b715efc4`.
 
 ## Реализовано
 
@@ -46,7 +46,7 @@
 
 ## Дальнейший план
 
-- Этап 1.3.0: фильтры «Все», «Ниже цели», «С ошибкой», сортировка по проблемам, цене или названию и счётчик видимых игр реализованы. Actions run [39849465972](https://github.com/Magral/Igrolov/actions/runs/39849465972) прошёл полностью: unit, Debug APK, instrumentation APK, live smoke GGSEL/Steam, UI API 26/29. Запущена публикация стабильного релиза v1.3.0 с APK.
+- Этап 1.3.0 завершён и опубликован: фильтры мониторинга «Все», «Ниже цели», «С ошибкой», сортировка по проблемам, цене или названию, счётчик видимых игр. Полный CI и публикация подтверждены Actions run [39850871875](https://github.com/Magral/Igrolov/actions/runs/39850871875).
 - После 1.3.0 продолжать улучшать мониторинг параллельно с поиском на основе пользовательского опыта и ошибок источников. Возможные следующие темы: отдельное сравнение минимумов Plati/GGSEL и правила уведомлений по порогу цены.
 ## Начало нового чата
 
@@ -61,7 +61,7 @@
 - Обновлено (UTC): 2026-10-22T20:40:27.922Z
 - Ветка: `main`.
 - HEAD: [`55a45048240a`](https://github.com/Magral/Igrolov/commit/55a45048240a341bf4d11d2a6bf9a426cdf657c2).
-- Последний опубликованный стабильный GitHub Release: [v1.2.9](https://github.com/Magral/Igrolov/releases/tag/v1.2.9); APK-файлы: есть вложение APK.
+- Последний опубликованный стабильный GitHub Release: [v1.3.0](https://github.com/Magral/Igrolov/releases/tag/v1.3.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
 - [55a4504](https://github.com/Magral/Igrolov/commit/55a45048240a341bf4d11d2a6bf9a426cdf657c2) — release: prepare Игролов 1.3.0
