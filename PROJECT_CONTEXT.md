@@ -47,14 +47,14 @@ Android-приложение для отслеживания игр, предл�
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T08:17:16.860Z
+- Обновлено (UTC): 2026-10-22T08:24:42.900Z
 - Ветка: `main`.
-- HEAD: [`e0cd9e0b7a2a`](https://github.com/Magral/Igrolov/commit/e0cd9e0b7a2aa08cba7ef8d8c3441503c0dafc35).
+- HEAD: [`0bf9fe1a3671`](https://github.com/Magral/Igrolov/commit/0bf9fe1a3671771696270f90d706e216398e4749).
 - Последний опубликованный стабильный GitHub Release: [v1.2.5](https://github.com/Magral/Igrolov/releases/tag/v1.2.5); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [0bf9fe1](https://github.com/Magral/Igrolov/commit/0bf9fe1a3671771696270f90d706e216398e4749) — release: Игролов 1.2.6 — await monitor dialog and retain UI evidence
 - [e0cd9e0](https://github.com/Magral/Igrolov/commit/e0cd9e0b7a2aa08cba7ef8d8c3441503c0dafc35) — release: Игролов 1.2.6 — verify duplicate prevention through card behavior
 - [3c011de](https://github.com/Magral/Igrolov/commit/3c011ded300df3089a9459cd6f79595ac3f5bd77) — release: Игролов 1.2.6 — verify visible card actions and await monitor persistence
 - [c33f296](https://github.com/Magral/Igrolov/commit/c33f296e6b38f366e8d260b6d72e3c3466003dd9) — release: Игролов 1.2.6 — isolate tab composition to fix invalid DEX registers
-- [d07e0cf](https://github.com/Magral/Igrolov/commit/d07e0cfe4b5246fdb0815c184ff4de2ff06d7558) — release: Игролов 1.2.6 — split Compose components to fix Android VerifyError
 <!-- AUTO_CONTEXT_END -->
