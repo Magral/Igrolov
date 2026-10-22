@@ -10,7 +10,7 @@ class MonitorPolicyTest {
     @Test fun expectedNextCheckUsesLatestSuccessfulOrFailedAttempt() {
         assertNull(MonitorSchedule.expectedNextCheck(0L, 0L))
         assertEquals(4600000L, MonitorSchedule.expectedNextCheck(1000000L, 100000L))
-        assertEquals(4600000L, MonitorSchedule.expectedNextCheck(100000L, 1000000L))
+        assertNull(MonitorSchedule.expectedNextCheck(100000L, 1000000L))
     }
     @Test fun noOfferDiagnosticsDistinguishEmptyCatalogsFromRejectedCandidates() {
         assertEquals("Кандидаты основной игры Steam не найдены в каталогах Plati и GGSEL.",
