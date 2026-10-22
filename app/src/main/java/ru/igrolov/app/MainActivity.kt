@@ -1638,7 +1638,10 @@ class MainActivity : ComponentActivity() {
                                 style = MaterialTheme.typography.bodySmall)
                         }
                         val expectedCheck = MonitorSchedule.expectedNextCheck(checkedAt, failedAt)
-                        if (expectedCheck != null) {
+                        if (failedAt > checkedAt) {
+                            Text("Проверка будет повторена автоматически; точное время задаёт Android.",
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        } else if (expectedCheck != null) {
                             val expectedStamp = monitorDate.format(java.util.Date(expectedCheck))
                             val expectation = if (expectedCheck <= System.currentTimeMillis())
                                 "Следующая проверка ожидается; расчётное время $expectedStamp уже прошло"
