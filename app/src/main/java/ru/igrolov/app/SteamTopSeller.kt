@@ -4,6 +4,15 @@ import org.json.JSONObject
 
 enum class SteamRuAvailability { AVAILABLE, UNAVAILABLE, UNKNOWN }
 
+enum class SteamLeaderSection(val label: String) {
+    TOP_SELLERS("Топ продаж"),
+    POPULAR_NEW_RELEASES("Популярные новинки"),
+    DISCOUNTED_TOP_SELLERS("Топ со скидками");
+
+    fun filter(games: List<SteamTopSeller>): List<SteamTopSeller> =
+        if (this == DISCOUNTED_TOP_SELLERS) games.filter { it.discountPercent > 0 } else games
+}
+
 data class SteamTopSeller(
     val appId: Int,
     val title: String,
@@ -55,6 +64,25 @@ object SteamTopSellerParser {
                 .replace("&quot;", "\"").replace("&#39;", "'").replace("&lt;", "<").replace("&gt;", ">")
                 .replace(Regex("\\s+"), " ").trim()
             if (name.isNotBlank()) result.putIfAbsent(id, SteamTopSeller(id, name))
+        }
+        return result.values.toList()
+    }
+
+    /** Steam's featured "new releases" shelf, localized to the requested market. */
+    fun parseFeaturedCategory(json: String, categoryKey: String = "new_releases"): List<SteamTopSeller> {
+        val root = runCatching { JSONObject(json) }.getOrNull() ?: return emptyList()
+        val category = root.opt(categoryKey)
+        val items = when (category) {
+            is JSONObject -> category.optJSONArray("items")
+            is org.json.JSONArray -> category
+            else -> null
+        } ?: return emptyList()
+        val result = linkedMapOf<Int, SteamTopSeller>()
+        for (index in 0 until items.length()) {
+            val item = items.optJSONObject(index) ?: continue
+            val id = item.optInt("id", item.optInt("appid", 0)).takeIf { it > 0 } ?: continue
+            val name = item.optString("name").trim().takeIf { it.isNotBlank() } ?: continue
+            result.putIfAbsent(id, SteamTopSeller(id, name))
         }
         return result.values.toList()
     }

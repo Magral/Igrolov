@@ -6,6 +6,30 @@ import org.junit.Test
 import org.json.JSONObject
 
 class SteamTopSellerTest {
+    @Test fun featuredNewReleasesKeepExactAppIdsAndIgnoreDuplicates() {
+        val games = SteamTopSellerParser.parseFeaturedCategory("""{
+            "new_releases":{"items":[
+                {"id":730,"name":"Counter-Strike 2"},
+                {"id":281990,"name":"Stellaris"},
+                {"id":730,"name":"Duplicate"},
+                {"id":0,"name":"Invalid"},
+                {"id":440,"name":""}
+            ]}
+        }""")
+        assertEquals(listOf(730, 281990), games.map { it.appId })
+        assertEquals("Counter-Strike 2", games.first().title)
+    }
+
+    @Test fun discountedLeaderSectionKeepsOnlyGamesWithRegionalDiscounts() {
+        val games = listOf(
+            SteamTopSeller(1, "Discounted", discountPercent = 25),
+            SteamTopSeller(2, "Full price"),
+            SteamTopSeller(3, "Free", discountPercent = 0)
+        )
+        assertEquals(listOf(1), SteamLeaderSection.DISCOUNTED_TOP_SELLERS.filter(games).map { it.appId })
+        assertEquals(games, SteamLeaderSection.TOP_SELLERS.filter(games))
+    }
+
     @Test fun rankingRowsKeepSteamAppIdsAndTitles() {
         val rows = SteamTopSellerParser.parseRankingHtml("""
             <a class="search_result_row" data-ds-appid="281990"><span class="title">Stellaris</span></a>

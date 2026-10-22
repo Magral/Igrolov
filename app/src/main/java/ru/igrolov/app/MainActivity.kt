@@ -365,6 +365,28 @@ class MainActivity : ComponentActivity() {
         }.start()
     }
 
+    // Steam's popular new releases shelf is localized to RU before exact AppID price/status checks.
+    private fun loadPopularNewReleases(callback: (List<SteamTopSeller>, String) -> Unit) {
+        Thread {
+            var error = ""
+            val games = try {
+                SteamTopSellerParser.parseFeaturedCategory(
+                    steamGet("https://store.steampowered.com/api/featuredcategories/?cc=ru&l=russian")
+                )
+            } catch (e: Exception) {
+                error = e.message ?: "Ошибка загрузки новинок Steam"
+                emptyList()
+            }
+            if (games.isEmpty() && error.isBlank()) error = "Steam пока не вернул популярные новинки. Попробуйте обновить позже."
+            val pool = Executors.newFixedThreadPool(4)
+            val checked = try {
+                pool.invokeAll(games.map { game -> java.util.concurrent.Callable { checkTopSellerRu(game) } })
+                    .mapNotNull { runCatching { it.get() }.getOrNull() }
+            } finally { pool.shutdownNow() }
+            runOnUiThread { callback(checked, error) }
+        }.start()
+    }
+
     @Composable
     private fun Screen() {
         val savedFilters = remember {ManualSearchSettings.read(this@MainActivity)}
@@ -601,6 +623,8 @@ class MainActivity : ComponentActivity() {
         var activeTab by remember { mutableStateOf(0) }
         var settingsOpen by remember { mutableStateOf(false) }
         var topGames by remember { mutableStateOf<List<SteamTopSeller>>(emptyList()) }
+        var newReleaseGames by remember { mutableStateOf<List<SteamTopSeller>>(emptyList()) }
+        var leaderSection by remember { mutableStateOf(SteamLeaderSection.TOP_SELLERS) }
         var topBusy by remember { mutableStateOf(false) }
         var topError by remember { mutableStateOf("") }
         var topAvailabilityFilter by remember { mutableStateOf("Все игры") }
@@ -608,14 +632,29 @@ class MainActivity : ComponentActivity() {
         fun refreshTop() {
             if (topBusy) return
             topBusy = true
-            loadPaidTopSellers { games, error ->
-                topGames = games
-                topError = error
-                topBusy = false
+            topError = ""
+            when (leaderSection) {
+                SteamLeaderSection.POPULAR_NEW_RELEASES -> loadPopularNewReleases { games, error ->
+                    newReleaseGames = games
+                    topError = error
+                    topBusy = false
+                }
+                SteamLeaderSection.TOP_SELLERS, SteamLeaderSection.DISCOUNTED_TOP_SELLERS ->
+                    loadPaidTopSellers { games, error ->
+                        topGames = games
+                        topError = error
+                        topBusy = false
+                    }
             }
         }
-        LaunchedEffect(activeTab, settingsOpen) {
-            if (activeTab == 4 && !settingsOpen && topGames.isEmpty() && !topBusy) refreshTop()
+        LaunchedEffect(activeTab, settingsOpen, leaderSection, topBusy) {
+            if (activeTab == 4 && !settingsOpen && !topBusy) {
+                val needsLoad = when (leaderSection) {
+                    SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseGames.isEmpty()
+                    SteamLeaderSection.TOP_SELLERS, SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> topGames.isEmpty()
+                }
+                if (needsLoad) refreshTop()
+            }
         }
         fun importWishlist() {
             if (wishlistBusy) return
@@ -894,7 +933,7 @@ class MainActivity : ComponentActivity() {
             }
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Игролов 1.2.2", style = MaterialTheme.typography.headlineSmall)
+                Text("Игролов 1.2.3", style = MaterialTheme.typography.headlineSmall)
                 IconButton(onClick = { settingsOpen = !settingsOpen; showDirectory = false }) {
                     Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                         color = MaterialTheme.colorScheme.onSurface)
@@ -1426,15 +1465,43 @@ class MainActivity : ComponentActivity() {
             }
             if (activeTab == 4 && !settingsOpen) {
                 Text("Лидеры продаж Steam", style = MaterialTheme.typography.titleLarge)
-                Text("Популярные платные игры Steam. Цена и скидка загружаются для региона RU. Неопределённый статус не считается недоступностью.",
-                    style = MaterialTheme.typography.bodySmall)
+                Text(
+                    when (leaderSection) {
+                        SteamLeaderSection.TOP_SELLERS -> "Топ 100 популярных платных игр Steam. Цена и скидка проверяются для региона RU."
+                        SteamLeaderSection.POPULAR_NEW_RELEASES -> "Популярные новинки Steam для региона RU. Статус покупки и цена проверяются отдельно."
+                        SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> "Игры из топа продаж со скидкой Steam RU."
+                    },
+                    style = MaterialTheme.typography.bodySmall
+                )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Загружено: ${topGames.size} из 100", modifier = Modifier.weight(1f))
+                    val sectionGames = if (leaderSection == SteamLeaderSection.POPULAR_NEW_RELEASES) newReleaseGames else topGames
+                    val countLabel = when (leaderSection) {
+                        SteamLeaderSection.TOP_SELLERS -> "Загружено: ${sectionGames.size} из 100"
+                        SteamLeaderSection.POPULAR_NEW_RELEASES -> "Новинок: ${sectionGames.size}"
+                        SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> "Со скидкой: ${SteamLeaderSection.DISCOUNTED_TOP_SELLERS.filter(sectionGames).size}"
+                    }
+                    Text(countLabel, modifier = Modifier.weight(1f))
                     TextButton(onClick = { refreshTop() }, enabled = !topBusy) { Text("Обновить") }
                 }
                 if (topBusy) LinearProgressIndicator(Modifier.fillMaxWidth())
                 if (topError.isNotBlank()) Text(topError, color = MaterialTheme.colorScheme.error)
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    SteamLeaderSection.values().toList().chunked(2).forEach { row ->
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            row.forEach { section ->
+                                FilterChip(
+                                    selected = leaderSection == section,
+                                    onClick = {
+                                        leaderSection = section
+                                        topError = ""
+                                    },
+                                    label = { Text(section.label, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            if (row.size == 1) Spacer(Modifier.weight(1f))
+                        }
+                    }
                     listOf("Все игры", "Доступны в Steam RU", "Недоступны в Steam RU").chunked(2).forEach { row ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             row.forEach { filter ->
@@ -1449,7 +1516,11 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-                val visibleTopGames = topGames.filter { game ->
+                val sectionGames = when (leaderSection) {
+                    SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseGames
+                    SteamLeaderSection.TOP_SELLERS, SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> topGames
+                }
+                val visibleTopGames = leaderSection.filter(sectionGames).filter { game ->
                     game.isGame && when (topAvailabilityFilter) {
                         "Доступны в Steam RU" -> game.availability == SteamRuAvailability.AVAILABLE
                         "Недоступны в Steam RU" -> game.availability == SteamRuAvailability.UNAVAILABLE
@@ -1457,6 +1528,15 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 Text("Показано: ${visibleTopGames.size}", style = MaterialTheme.typography.labelMedium)
+                if (!topBusy && topError.isBlank() && visibleTopGames.isEmpty()) {
+                    Text(
+                        if (leaderSection == SteamLeaderSection.DISCOUNTED_TOP_SELLERS)
+                            "В загруженном топе нет игр с подтверждённой скидкой Steam RU."
+                        else "Подходящих игр пока нет.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 visibleTopGames.forEachIndexed { index, game ->
                     ElevatedCard(Modifier.fillMaxWidth()) {
                         Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
