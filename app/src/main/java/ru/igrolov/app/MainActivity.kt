@@ -1645,7 +1645,7 @@ class MainActivity : ComponentActivity() {
                             val expectedStamp = monitorDate.format(java.util.Date(expectedCheck))
                             val expectation = if (expectedCheck <= System.currentTimeMillis())
                                 "Следующая проверка ожидается; расчётное время $expectedStamp уже прошло"
-                            else "Ожидаемая следующая проверка: $expectedStamp"
+                            else "Следующая проверка: $expectedStamp"
                             Text("$expectation · ориентировочно, Android может задержать",
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         } else {
