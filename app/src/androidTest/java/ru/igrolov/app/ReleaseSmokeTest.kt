@@ -106,10 +106,10 @@ class ReleaseSmokeTest {
             assertTrue(device.wait(Until.hasObject(By.textContains("Namtar")),5000))
         }
         val scroll=UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(20)
-        assertTrue(scroll.scrollTextIntoView("Stellaris"))
+        UiTestScroll.reveal(device,"Stellaris")
         assertTrue(device.hasObject(By.text("Stellaris")))
         if (!device.hasObject(By.textContains("Plati от 750 ₽"))) {
-            assertTrue(scroll.scrollIntoView(UiSelector().textContains("Plati от 750 ₽")))
+            UiTestScroll.reveal(device,"Plati от 750 ₽",contains=true)
         }
         assertTrue(device.hasObject(By.text("900 руб.")))
         assertTrue(device.hasObject(By.text("−50% · Steam RU")))

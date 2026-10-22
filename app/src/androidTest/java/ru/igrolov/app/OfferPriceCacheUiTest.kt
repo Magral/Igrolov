@@ -26,9 +26,10 @@ class OfferPriceCacheUiTest {
     private val games=listOf(WishlistGame(281990,"Stellaris","900 руб."),WishlistGame(381210,"Dead by Daylight",""))
     @After fun capture() {
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"offer-cache-last.png"))
+        device.dumpWindowHierarchy(java.io.File(context.getExternalFilesDir(null),"offer-cache-last.xml"))
     }
     private fun reveal(text:String) {
-        if(!device.hasObject(By.text(text))) assertTrue(UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(20).scrollTextIntoView(text))
+        UiTestScroll.reveal(device,text)
     }
     private fun launchWishlist() {
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
@@ -109,7 +110,7 @@ class OfferPriceCacheUiTest {
         launchWishlist()
         reveal("Stellaris")
         if(!device.hasObject(By.textContains("Plati от 500 ₽"))) {
-            UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(20).scrollIntoView(UiSelector().textContains("Plati от 500 ₽"))
+            UiTestScroll.reveal(device,"Plati от 500 ₽",contains=true)
         }
         assertTrue(device.wait(Until.hasObject(By.textContains("Plati от 500 ₽")),5000))
         assertTrue(device.hasObject(By.textContains("ошибка обновления")))
