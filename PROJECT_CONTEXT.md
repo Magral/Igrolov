@@ -57,12 +57,13 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T17:32:52.456Z
+- Обновлено (UTC): 2026-10-22T17:39:03.622Z
 - Ветка: `main`.
-- HEAD: [`8dba56314bae`](https://github.com/Magral/Igrolov/commit/8dba56314baed8bcebfd8217da8f85520526630e).
+- HEAD: [`12c8981c5275`](https://github.com/Magral/Igrolov/commit/12c8981c52756718a167f50c75f9d161f9c33974).
 - Последний опубликованный стабильный GitHub Release: [v1.2.7](https://github.com/Magral/Igrolov/releases/tag/v1.2.7); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [12c8981](https://github.com/Magral/Igrolov/commit/12c8981c52756718a167f50c75f9d161f9c33974) — test: update UI smoke version for 1.2.8
 - [8dba563](https://github.com/Magral/Igrolov/commit/8dba56314baed8bcebfd8217da8f85520526630e) — test: align smoke test with 1.2.8
 - [a926a51](https://github.com/Magral/Igrolov/commit/a926a51f4357af6bc33120b47ce986e88fe8b390) — release: prepare Игролов 1.2.8
 - [f94ee96](https://github.com/Magral/Igrolov/commit/f94ee96e7cfbfcd905dda4ec9608fd1399b9ab20) — test: avoid flaky history gap text lookup
