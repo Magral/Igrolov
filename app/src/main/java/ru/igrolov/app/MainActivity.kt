@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -756,7 +757,7 @@ class MainActivity : ComponentActivity() {
                                  onSettings: () -> Unit, onTab: (Int) -> Unit) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Игролов 1.2.9", style = MaterialTheme.typography.headlineSmall)
+            Text("Игролов 1.3.0", style = MaterialTheme.typography.headlineSmall)
             IconButton(onClick = onSettings) {
                 Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                     color = MaterialTheme.colorScheme.onSurface)
@@ -871,6 +872,8 @@ class MainActivity : ComponentActivity() {
         }
         var watches by remember { mutableStateOf("[]") }
         var alertLog by remember { mutableStateOf("[]") }
+        var watchListFilter by remember { mutableStateOf(WatchListPresentation.Filter.ALL) }
+        var watchListSort by remember { mutableStateOf(WatchListPresentation.Sort.ATTENTION) }
         val catalogueUi = remember { CatalogueUiState(prefs, this@MainActivity) }
         var showAlertLog by remember { mutableStateOf(true) }
         var watchMessage by remember { mutableStateOf("Укажите название игры и цену в рублях") }
@@ -995,6 +998,13 @@ class MainActivity : ComponentActivity() {
         val watchEntries = remember(watches) {
             val array = runCatching { JSONArray(watches) }.getOrDefault(JSONArray())
             (0 until array.length()).mapNotNull { array.optJSONObject(it) }
+        }
+        val visibleWatchEntries = remember(watchEntries, watchListFilter, watchListSort) {
+            WatchListPresentation.arrange(
+                watchEntries.mapIndexed { index, game -> WatchListPresentation.Entry(index, game) },
+                watchListFilter,
+                watchListSort
+            )
         }
         fun isGameWatched(appId: Int, name: String) = watchEntries.any { WatchGameIdentity.matches(it, appId, name) }
         fun openGameMonitoring(appId: Int, name: String) {
@@ -1622,9 +1632,22 @@ class MainActivity : ComponentActivity() {
             }
             Text("Цены проверяются на Plati и GGSEL. В уведомления попадают только активные предложения с подтверждённой ценой и регионом РФ.",style=MaterialTheme.typography.bodySmall)
             Text(watchMessage, style = MaterialTheme.typography.bodySmall)
-            val watchArray = remember(watches) { JSONArray(watches) }
-            for (wi in 0 until watchArray.length()) {
-                val w = watchArray.optJSONObject(wi) ?: continue
+            if (watchEntries.isNotEmpty()) {
+                WatchListControls(
+                    filter = watchListFilter,
+                    sort = watchListSort,
+                    visibleCount = visibleWatchEntries.size,
+                    totalCount = watchEntries.size,
+                    onFilter = { watchListFilter = it },
+                    onSort = { watchListSort = it }
+                )
+                if (visibleWatchEntries.isEmpty()) {
+                    Text("По этому фильтру игр нет.", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            for (watchEntry in visibleWatchEntries) {
+                val wi = watchEntry.originalIndex
+                val w = watchEntry.game
                 ElevatedCard(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(10.dp)) {
                         Text(w.optString("name"), style = MaterialTheme.typography.titleMedium)
@@ -2534,6 +2557,58 @@ class MainActivity : ComponentActivity() {
                 previous?.let {drawLine(Color(0xFF1976D2),it,position,strokeWidth=2.dp.toPx())}
                 drawCircle(Color(0xFF1976D2),radius=3.dp.toPx(),center=position)
                 previous=position
+            }
+        }
+    }
+}
+
+@Composable
+private fun WatchListControls(
+    filter: WatchListPresentation.Filter,
+    sort: WatchListPresentation.Sort,
+    visibleCount: Int,
+    totalCount: Int,
+    onFilter: (WatchListPresentation.Filter) -> Unit,
+    onSort: (WatchListPresentation.Sort) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        listOf(
+            WatchListPresentation.Filter.ALL to "Все",
+            WatchListPresentation.Filter.BELOW_TARGET to "Ниже цели",
+            WatchListPresentation.Filter.ERRORS to "С ошибкой"
+        ).forEach { (value, label) ->
+            FilterChip(selected = filter == value, onClick = { onFilter(value) }, label = { Text(label) })
+        }
+    }
+    var sortMenuOpen by remember { mutableStateOf(false) }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("Показано $visibleCount из $totalCount", style = MaterialTheme.typography.bodySmall)
+        Box {
+            OutlinedButton(onClick = { sortMenuOpen = true }) {
+                Text("Сортировка: ${when (sort) {
+                    WatchListPresentation.Sort.ATTENTION -> "внимание"
+                    WatchListPresentation.Sort.LOWEST_PRICE -> "цена"
+                    WatchListPresentation.Sort.NAME -> "название"
+                }}")
+            }
+            DropdownMenu(expanded = sortMenuOpen, onDismissRequest = { sortMenuOpen = false }) {
+                listOf(
+                    WatchListPresentation.Sort.ATTENTION to "Сначала проблемы",
+                    WatchListPresentation.Sort.LOWEST_PRICE to "Сначала низкая цена",
+                    WatchListPresentation.Sort.NAME to "По названию"
+                ).forEach { (value, label) ->
+                    DropdownMenuItem(
+                        text = { Text(label) },
+                        onClick = { onSort(value); sortMenuOpen = false }
+                    )
+                }
             }
         }
     }
