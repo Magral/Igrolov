@@ -6,9 +6,9 @@ Android-приложение для поиска предложений Steam-и
 
 В 1.2.9 минимумы Plati/GGSEL сохраняются с отдельным временем проверки каждого источника. Кэш используется поиском, «Лидерами», желаемым и фоновым мониторингом. В «Лидерах» и желаемом можно выбрать до 10 игр и запустить последовательную проверку с прогрессом и остановкой. Ошибка источника сохраняет прежнюю цену с прежней датой.
 
-Стабильный релиз: [Игролов 1.3.0](https://github.com/Magral/Igrolov/releases/tag/v1.3.0).
+Стабильный релиз: [Игролов 1.3.1](https://github.com/Magral/Igrolov/releases/tag/v1.3.1).
 - Сборка: versionCode 136, versionName 1.3.1.
-- Чек-лист: [RELEASE_130_CHECKLIST.md](RELEASE_130_CHECKLIST.md), изменения: [CHANGELOG_131.md](CHANGELOG_131.md), заметки: [RELEASE_NOTES_131.md](RELEASE_NOTES_131.md).
+- Чек-лист: [RELEASE_131_CHECKLIST.md](RELEASE_131_CHECKLIST.md), изменения: [CHANGELOG_131.md](CHANGELOG_131.md), заметки: [RELEASE_NOTES_131.md](RELEASE_NOTES_131.md).
 
 ## Поиск
 
