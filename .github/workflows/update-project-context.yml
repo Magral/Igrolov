@@ -1,0 +1,71 @@
+name: Update project context
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - PROJECT_CONTEXT.md
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: project-context-main
+  cancel-in-progress: false
+
+jobs:
+  update-context:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update verified GitHub activity
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const path = 'PROJECT_CONTEXT.md';
+            const branch = 'main';
+            const markerStart = '<!-- AUTO_CONTEXT_START -->';
+            const markerEnd = '<!-- AUTO_CONTEXT_END -->';
+            const file = await github.rest.repos.getContent({owner, repo, path, ref: branch});
+            if (Array.isArray(file.data) || !file.data.content) throw new Error('Context file not found');
+            const original = Buffer.from(file.data.content, 'base64').toString('utf8');
+            if (!original.includes(markerStart) || !original.includes(markerEnd)) {
+              throw new Error('Missing auto-context markers; refusing to overwrite manual context');
+            }
+            const commits = await github.rest.repos.listCommits({owner, repo, sha: branch, per_page: 8});
+            const latest = commits.data[0];
+            const entries = commits.data
+              .filter(c => !c.commit.message.startsWith('docs: auto-update project context'))
+              .slice(0, 5)
+              .map(c => '- [' + c.sha.slice(0, 7) + '](' + c.html_url + ') — ' + c.commit.message.split('\n')[0].replace(/[\r\n]/g, ' '));
+            const releases = await github.rest.repos.listReleases({owner, repo, per_page: 10});
+            const published = releases.data.find(r => !r.draft && !r.prerelease);
+            const releaseLine = published
+              ? '- Последний опубликованный стабильный GitHub Release: [' + published.tag_name + '](' + published.html_url + '); APK-файлы: ' + (published.assets.some(a => a.name.toLowerCase().endsWith('.apk')) ? 'есть вложение APK' : 'APK во вложениях не найден') + '.'
+              : '- Опубликованный стабильный GitHub Release не найден.';
+            const generated = [
+              markerStart,
+              '### Автоматически проверенные данные GitHub',
+              '- Обновлено (UTC): ' + new Date().toISOString(),
+              '- Ветка: `main`.',
+              '- HEAD: [`' + latest.sha.slice(0, 12) + '`](' + latest.html_url + ').',
+              releaseLine,
+              '',
+              'Последние коммиты (сообщения коммитов, не подтверждение тестирования):',
+              ...entries,
+              markerEnd
+            ].join('\n');
+            const before = original.slice(0, original.indexOf(markerStart));
+            const after = original.slice(original.indexOf(markerEnd) + markerEnd.length);
+            const updated = before + generated + after;
+            if (updated === original) return;
+            await github.rest.repos.createOrUpdateFileContents({
+              owner, repo, path, branch, sha: file.data.sha,
+              message: 'docs: auto-update project context',
+              content: Buffer.from(updated, 'utf8').toString('base64')
+            });
