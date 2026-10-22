@@ -52,14 +52,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T14:25:11.057Z
+- Обновлено (UTC): 2026-10-22T14:42:10.301Z
 - Ветка: `main`.
-- HEAD: [`2ac9df3b3218`](https://github.com/Magral/Igrolov/commit/2ac9df3b3218eb1be4623959269205fb51e577cc).
+- HEAD: [`293d0ddcdd4a`](https://github.com/Magral/Igrolov/commit/293d0ddcdd4abee261bc99c3c0c348ce848116df).
 - Последний опубликованный стабильный GitHub Release: [v1.2.6](https://github.com/Magral/Igrolov/releases/tag/v1.2.6); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [293d0dd](https://github.com/Magral/Igrolov/commit/293d0ddcdd4abee261bc99c3c0c348ce848116df) — fix: import Compose semantics assertion extension
 - [2ac9df3](https://github.com/Magral/Igrolov/commit/2ac9df3b3218eb1be4623959269205fb51e577cc) — test: assert persisted price field semantics precisely
 - [c4b1ca9](https://github.com/Magral/Igrolov/commit/c4b1ca93b217162a396ec8bda812c51b0f37e028) — fix: select price field by Compose semantics index
 - [504bfa3](https://github.com/Magral/Igrolov/commit/504bfa30f55c349e2c86ee31cfaeb99619504399) — fix: remove invalid Compose test import
-- [96a2cfb](https://github.com/Magral/Igrolov/commit/96a2cfb68caef3b41273fc3ffd180259a3d5ee8a) — test: use Compose semantics for filter persistence on API 26
 <!-- AUTO_CONTEXT_END -->
