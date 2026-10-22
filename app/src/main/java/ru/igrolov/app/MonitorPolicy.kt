@@ -36,8 +36,9 @@ object MonitorSchedule {
 
     /** WorkManager runs approximately hourly; this is an estimate from the latest attempt. */
     fun expectedNextCheck(checkedAt: Long, failedAt: Long): Long? {
-        val latestAttempt = maxOf(checkedAt, failedAt)
-        return latestAttempt.takeIf { it > 0L }?.plus(CHECK_INTERVAL_MILLIS)
+        // WorkManager retries failures with backoff, so an hourly timestamp would be misleading.
+        if (failedAt > checkedAt) return null
+        return checkedAt.takeIf { it > 0L }?.plus(CHECK_INTERVAL_MILLIS)
     }
 }
 
