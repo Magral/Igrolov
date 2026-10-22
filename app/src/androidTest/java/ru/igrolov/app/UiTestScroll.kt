@@ -31,23 +31,31 @@ object UiTestScroll {
             return bounds.width() > 0 && bounds.height() > 20 &&
                 bounds.centerY() > list.top + 30 && bounds.centerY() < list.bottom - 60
         }
-        // The outer gutter belongs to the list and never intersects an editor.
-        // Centered gestures can focus a TextField and continue over the IME.
-        fun swipe(down: Boolean) {
-            val list = container()?.visibleBounds ?: throw AssertionError("Нет списка для прокрутки к: $text")
-            val x = list.left + 12
-            val top = list.top + 100
-            val bottom = list.bottom - 100
-            val middle = top + (bottom - top) / 3
-            if (down) device.swipe(x, bottom, x, middle, 35)
-            else device.swipe(x, top, x, bottom, 35)
+        // Accessibility scrolling dispatches to Compose's list semantics.
+        // It never generates touch events in an editor or keyboard.
+        fun scroll(forward: Boolean) {
+            val root = InstrumentationRegistry.getInstrumentation().uiAutomation.rootInActiveWindow
+                ?: throw AssertionError("Нет окна приложения")
+            val nodes = mutableListOf<android.view.accessibility.AccessibilityNodeInfo>()
+            fun collect(node: android.view.accessibility.AccessibilityNodeInfo) {
+                if (node.isScrollable && node.className?.toString() != "android.widget.EditText") nodes.add(node)
+                for (i in 0 until node.childCount) node.getChild(i)?.let { collect(it) }
+            }
+            collect(root)
+            val list = nodes.maxByOrNull { node ->
+                val bounds = android.graphics.Rect()
+                node.getBoundsInScreen(bounds)
+                bounds.width().toLong() * bounds.height()
+            } ?: throw AssertionError("Нет списка для прокрутки к: $text")
+            list.performAction(if (forward) android.view.accessibility.AccessibilityNodeInfo.ACTION_SCROLL_FORWARD
+                else android.view.accessibility.AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)
             device.waitForIdle()
         }
         if (visible()) return
-        repeat(5) { swipe(false) }
+        repeat(5) { scroll(false) }
         repeat(20) {
             if (visible()) return
-            swipe(true)
+            scroll(true)
         }
         if (!visible()) throw AssertionError("Не найден видимый элемент: $text")
     }
