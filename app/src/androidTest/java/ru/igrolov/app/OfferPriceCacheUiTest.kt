@@ -39,7 +39,7 @@ class OfferPriceCacheUiTest {
     private fun launchWishlist() {
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.2.7")),15000))
-        device.findObject(By.text("Желания")).click()
+        compose.onNodeWithText("Желания").performClick()
         assertTrue(device.wait(Until.hasObject(By.textContains("Price cache test")),5000))
     }
     @Test fun batchRetainsSuccessfulTimesOnSourceFailures() {
