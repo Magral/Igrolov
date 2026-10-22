@@ -52,14 +52,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T11:03:25.096Z
+- Обновлено (UTC): 2026-10-22T11:06:00.113Z
 - Ветка: `main`.
-- HEAD: [`e6180d51da64`](https://github.com/Magral/Igrolov/commit/e6180d51da64ab736dc4a1c9ae30b97adcf52f0c).
+- HEAD: [`122b1580ec7a`](https://github.com/Magral/Igrolov/commit/122b1580ec7a18c27d43acf113746b88e8d10362).
 - Последний опубликованный стабильный GitHub Release: [v1.2.6](https://github.com/Magral/Igrolov/releases/tag/v1.2.6); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [122b158](https://github.com/Magral/Igrolov/commit/122b1580ec7a18c27d43acf113746b88e8d10362) — release: Игролов 1.2.7 — qualify catalogue state Context type
 - [e6180d5](https://github.com/Magral/Igrolov/commit/e6180d51da64ab736dc4a1c9ae30b97adcf52f0c) — release: Игролов 1.2.7 — isolate catalogue state and navigation composition
 - [9a3328e](https://github.com/Magral/Igrolov/commit/9a3328e6094abe05480e40e47508bfc7f2dc4198) — release: Игролов 1.2.7 — reveal the search action in navigation smoke
 - [b02c39f](https://github.com/Magral/Igrolov/commit/b02c39f1b0311868262eb2a348f76856e3dae86a) — release: Игролов 1.2.7 — advance Compose frames during UI waits
-- [3245790](https://github.com/Magral/Igrolov/commit/32457901df4b5d4452fd66da411af484843577ed) — release: Игролов 1.2.7 — dispatch semantic actions in cache UI verification
 <!-- AUTO_CONTEXT_END -->
