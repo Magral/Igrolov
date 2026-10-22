@@ -4,12 +4,12 @@
 
 ## Проверенный опубликованный статус
 
-- Стабильный релиз: [v1.2.7](https://github.com/Magral/Igrolov/releases/tag/v1.2.6).
-- APK: [Igrolov-1.2.7.apk](https://github.com/Magral/Igrolov/releases/download/v1.2.6/Igrolov-1.2.6.apk).
-- versionName 1.2.7, versionCode 132.
-- Release commit: `e9ac09a57050a8933dd38b7e618f99b4b9da0235`.
-- Actions [39799699702](https://github.com/Magral/Igrolov/actions/runs/39747510367): unit-тесты, Debug APK, instrumentation APK, живые проверки GGSEL и Steam reviews, UI на API 26 и 29, release — успешно.
-- Чек-лист: `RELEASE_126_CHECKLIST.md`. SHA-256 APK: `03a81af39756e2fe0d73cb8fac62d28b6379586d1d5f2ffa17f21097a943d108`.
+- Стабильный релиз: [v1.2.8](https://github.com/Magral/Igrolov/releases/tag/v1.2.8).
+- APK: [Igrolov-1.2.8.apk](https://github.com/Magral/Igrolov/releases/download/v1.2.8/Igrolov-1.2.8.apk).
+- versionName 1.2.8, versionCode 133.
+- Release commit: `3330ba791c70da88cd9bb5b62c76815bfbfe94c8`.
+- Actions [39825768617](https://github.com/Magral/Igrolov/actions/runs/39825768617): unit-тесты, Debug APK, instrumentation APK, live smoke, UI на API 26 и 29, публикация release — успешно.
+- Чек-лист: `RELEASE_128_CHECKLIST.md`. SHA-256 APK: `24368119cae346914662abde0000aaf1f4766c4e158092a9d55489cfbbe828e7`.
 
 ## Реализовано
 
