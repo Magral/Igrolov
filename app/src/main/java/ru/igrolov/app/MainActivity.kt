@@ -757,7 +757,7 @@ class MainActivity : ComponentActivity() {
                                  onSettings: () -> Unit, onTab: (Int) -> Unit) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Игролов 1.3.0", style = MaterialTheme.typography.headlineSmall)
+            Text("Игролов 1.3.1", style = MaterialTheme.typography.headlineSmall)
             IconButton(onClick = onSettings) {
                 Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                     color = MaterialTheme.colorScheme.onSurface)
@@ -2476,27 +2476,33 @@ class MainActivity : ComponentActivity() {
         games.take(visibleLimit).forEach { game ->
             ElevatedCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SteamArtwork(
-                            "https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/header.jpg",
-                            Modifier.size(88.dp, 50.dp)
+                    TextButton(
+                        onClick = { onOpenSearch(game) },
+                        enabled = game.title.isNotBlank() && searchEnabled,
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(horizontal = 0.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            game.title.ifBlank { "Название игры не получено" },
+                            modifier = Modifier.fillMaxWidth(),
+                            style = MaterialTheme.typography.titleSmall,
+                            maxLines = 2
                         )
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            TextButton(onClick = { onOpenSearch(game) }, enabled = game.title.isNotBlank() && searchEnabled,
-                                contentPadding = PaddingValues(horizontal = 2.dp, vertical = 2.dp)) {
-                                Text(game.title.ifBlank { "Название игры не получено" }, style = MaterialTheme.typography.titleSmall,
-                                    maxLines = 2)
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("AppID ${game.appId}", style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
-                                TextButton(onClick = { onDetails(game) },
-                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
-                                    Text("Подробнее", style = MaterialTheme.typography.labelSmall)
-                                }
+                    }
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(Modifier.width(116.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            SteamArtwork(
+                                "https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/header.jpg",
+                                Modifier.size(112.dp, 63.dp)
+                            )
+                            TextButton(
+                                onClick = { onDetails(game) },
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                            ) {
+                                Text("Подробнее", style = MaterialTheme.typography.labelMedium)
                             }
                         }
-                        Column(Modifier.widthIn(max = 168.dp), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(1.dp)) {
                             Text(game.steamPrice.ifBlank { "Нет цены RU" }, style = MaterialTheme.typography.titleSmall)
                             if (game.discountPercent > 0) {
                                 if (game.steamInitialPrice.isNotBlank()) Text(game.steamInitialPrice,
