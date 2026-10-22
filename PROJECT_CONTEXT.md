@@ -59,14 +59,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T21:28:20.548Z
+- Обновлено (UTC): 2026-10-22T22:13:34.639Z
 - Ветка: `main`.
-- HEAD: [`b1a1210997a2`](https://github.com/Magral/Igrolov/commit/b1a1210997a2935160fd09c08c36c8669eac7eac).
+- HEAD: [`da89edfb1dbc`](https://github.com/Magral/Igrolov/commit/da89edfb1dbc1572a3135df30979fbf0a8fef66e).
 - Последний опубликованный стабильный GitHub Release: [v1.3.1](https://github.com/Magral/Igrolov/releases/tag/v1.3.1); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [da89edf](https://github.com/Magral/Igrolov/commit/da89edfb1dbc1572a3135df30979fbf0a8fef66e) — release: prepare Игролов 1.3.2
 - [b1a1210](https://github.com/Magral/Igrolov/commit/b1a1210997a2935160fd09c08c36c8669eac7eac) — docs: record published Игролов 1.3.1
 - [dd58922](https://github.com/Magral/Igrolov/commit/dd58922f1219b8dc0f23fef12878cebfd80275a1) — release: fix UI assertion for Игролов 1.3.1
 - [63d9132](https://github.com/Magral/Igrolov/commit/63d91326dd861c9f8e2599c58ca88f2330026dc6) — release: finalize Игролов 1.3.1 UI regression
-- [9746205](https://github.com/Magral/Igrolov/commit/9746205bf3d625e84cbd8c0e61dd251b5dc10d3b) — release: prepare Игролов 1.3.1 after UI test fix
 <!-- AUTO_CONTEXT_END -->
