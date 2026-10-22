@@ -4,6 +4,7 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.semantics.SemanticsActions
 import org.junit.Rule
+import org.junit.After
 import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
@@ -25,6 +26,11 @@ import java.net.URLStreamHandler
 @RunWith(AndroidJUnit4::class)
 class StellarisUiRegressionTest {
     @get:Rule val compose = createEmptyComposeRule()
+    @After fun capture() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).takeScreenshot(
+            File(context.getExternalFilesDir(null), "offer-cache-last.png"))
+    }
     @Test fun searchScreenShowsOnlyAvailableBaseGameAtFreshPrice() {
         URL.setURLStreamHandlerFactory { protocol -> if(protocol!="https") null else object:URLStreamHandler() {
             override fun openConnection(url:URL):URLConnection=object:HttpURLConnection(url) {
@@ -73,12 +79,12 @@ class StellarisUiRegressionTest {
         UiTestScroll.reveal(compose,"Предложения по цене ↑ · 1")
         compose.onAllNodesWithText("Stellaris Steam Key РФ").assertCountEquals(1)
         compose.onNodeWithText("Stellaris Utopia Steam Key РФ").assertDoesNotExist()
-        val priceVisible = { device.hasObject(By.textContains("1 000,00 ₽")) || device.hasObject(By.textContains("1000,00 ₽")) || device.hasObject(By.textContains("1 000,00 ₽")) }
-        compose.onAllNodes(hasText("1 000,00 ₽", substring=true) or
+        val price = compose.onAllNodes(hasText("1 000,00 ₽", substring=true) or
             hasText("1000,00 ₽", substring=true) or hasText("1 000,00 ₽", substring=true))
-            .onFirst().performScrollTo()
+            .onFirst()
+        price.performScrollTo()
         compose.waitForIdle()
-        assertTrue(priceVisible())
+        price.assertIsDisplayed()
         device.takeScreenshot(File(context.getExternalFilesDir(null),"stellaris-result.png"))
     }
 }
