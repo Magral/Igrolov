@@ -52,14 +52,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T14:53:38.164Z
+- Обновлено (UTC): 2026-10-22T15:01:36.491Z
 - Ветка: `main`.
-- HEAD: [`e9ac09a57050`](https://github.com/Magral/Igrolov/commit/e9ac09a57050a8933dd38b7e618f99b4b9da0235).
-- Последний опубликованный стабильный GitHub Release: [v1.2.6](https://github.com/Magral/Igrolov/releases/tag/v1.2.6); APK-файлы: есть вложение APK.
+- HEAD: [`0679ba0ae06b`](https://github.com/Magral/Igrolov/commit/0679ba0ae06bc0ae4228860e9bad519825ff36bb).
+- Последний опубликованный стабильный GitHub Release: [v1.2.7](https://github.com/Magral/Igrolov/releases/tag/v1.2.7); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [0679ba0](https://github.com/Magral/Igrolov/commit/0679ba0ae06bc0ae4228860e9bad519825ff36bb) — docs: close v1.2.7 release checklist
 - [e9ac09a](https://github.com/Magral/Igrolov/commit/e9ac09a57050a8933dd38b7e618f99b4b9da0235) — release: prepare Игролов 1.2.7
 - [293d0dd](https://github.com/Magral/Igrolov/commit/293d0ddcdd4abee261bc99c3c0c348ce848116df) — fix: import Compose semantics assertion extension
 - [2ac9df3](https://github.com/Magral/Igrolov/commit/2ac9df3b3218eb1be4623959269205fb51e577cc) — test: assert persisted price field semantics precisely
-- [c4b1ca9](https://github.com/Magral/Igrolov/commit/c4b1ca93b217162a396ec8bda812c51b0f37e028) — fix: select price field by Compose semantics index
 <!-- AUTO_CONTEXT_END -->
