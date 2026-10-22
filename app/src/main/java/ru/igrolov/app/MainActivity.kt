@@ -299,40 +299,69 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // Steam store search, ordered by top sellers; free-to-play is excluded by Steam's filter.
+    private fun steamGet(url: String): String {
+        val connection = URL(url).openConnection() as HttpURLConnection
+        connection.connectTimeout = 12000
+        connection.readTimeout = 20000
+        connection.setRequestProperty("Accept", "application/json")
+        connection.setRequestProperty("User-Agent", "Igrolov Android")
+        try {
+            if (connection.responseCode !in 200..299) throw java.io.IOException("Steam HTTP ${connection.responseCode}")
+            return connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+        } finally { connection.disconnect() }
+    }
+
+    private fun checkTopSellerRu(game: SteamTopSeller): SteamTopSeller {
+        return try {
+            val details = steamGet("https://store.steampowered.com/api/appdetails?appids=${game.appId}&cc=ru&l=russian")
+            val entry = JSONObject(details).optJSONObject(game.appId.toString())
+            if (entry?.optBoolean("success") == true) SteamTopSellerParser.applyRuDetails(game, details, null)
+            else {
+                // Steam sometimes omits appdetails in RU; corroborate a negative result with a separate regional search.
+                val term = URLEncoder.encode(game.title, "UTF-8")
+                val search = JSONObject(steamGet("https://store.steampowered.com/api/storesearch/?term=$term&l=russian&cc=ru"))
+                val items = search.optJSONArray("items") ?: return game
+                val found = (0 until items.length()).any { index ->
+                    val item = items.optJSONObject(index) ?: return@any false
+                    item.optInt("id", item.optInt("appid", 0)) == game.appId
+                }
+                SteamTopSellerParser.applyRuDetails(game, details, found)
+            }
+        } catch (_: Exception) { game }
+    }
+
+    // Steam's paid top-seller ranking, enriched with exact AppIDs and regional RU price evidence.
     // This is a store ranking, not the separate Steam Charts revenue chart.
-    private fun loadPaidTopSellers(callback: (List<String>, String) -> Unit) {
+    private fun loadPaidTopSellers(callback: (List<SteamTopSeller>, String) -> Unit) {
         Thread {
-            val names = linkedSetOf<String>()
+            val games = linkedMapOf<Int, SteamTopSeller>()
             var error = ""
             try {
                 for (start in listOf(0, 50, 100, 150)) {
-                    if (names.size >= 100) break
+                    if (games.size >= 100) break
                     val url = "https://store.steampowered.com/search/results/?" +
                         "query&start=$start&count=50&dynamic_data=&sort_by=TopSellers" +
                         "&category1=998&hidef2p=1&infinite=1&json=1&cc=us&l=english"
                     val connection = URL(url).openConnection() as HttpURLConnection
                     connection.connectTimeout = 12000
                     connection.readTimeout = 20000
-                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Igrolov/1.0.8)")
+                    connection.setRequestProperty("User-Agent", "Igrolov Android")
                     try {
                         if (connection.responseCode !in 200..299) error("Steam HTTP ${connection.responseCode}")
                         val root = JSONObject(connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
                         val html = root.optString("results_html", "")
                         if (html.isBlank()) break
-                        val anchors = Regex("""(?s)<a\b[^>]*class=\"[^\"]*search_result_row[^\"]*\"[^>]*>.*?</a>""")
-                        val title = Regex("""(?s)<span\b[^>]*class=\"title\"[^>]*>(.*?)</span>""")
-                        for (match in anchors.findAll(html)) {
-                            val nameHtml = title.find(match.value)?.groupValues?.get(1) ?: continue
-                            val plain = Html.fromHtml(nameHtml, Html.FROM_HTML_MODE_LEGACY).toString().trim()
-                            if (plain.isNotBlank()) names.add(plain)
-                            if (names.size >= 100) break
-                        }
+                        SteamTopSellerParser.parseRankingHtml(html).forEach { games.putIfAbsent(it.appId, it) }
                     } finally { connection.disconnect() }
                 }
-                if (names.isEmpty()) error = "Steam не вернул список. Попробуйте обновить позже."
+                if (games.isEmpty()) error = "Steam не вернул список. Попробуйте обновить позже."
             } catch (e: Exception) { error = e.message ?: "Ошибка загрузки Steam" }
-            runOnUiThread { callback(names.take(100), error) }
+            val pool = Executors.newFixedThreadPool(4)
+            val checked = try {
+                pool.invokeAll(games.values.take(100).map { game -> java.util.concurrent.Callable { checkTopSellerRu(game) } })
+                    .mapNotNull { runCatching { it.get() }.getOrNull() }
+            } finally { pool.shutdownNow() }
+            runOnUiThread { callback(checked, error) }
         }.start()
     }
 
@@ -571,9 +600,10 @@ class MainActivity : ComponentActivity() {
         }
         var activeTab by remember { mutableStateOf(0) }
         var settingsOpen by remember { mutableStateOf(false) }
-        var topGames by remember { mutableStateOf<List<String>>(emptyList()) }
+        var topGames by remember { mutableStateOf<List<SteamTopSeller>>(emptyList()) }
         var topBusy by remember { mutableStateOf(false) }
         var topError by remember { mutableStateOf("") }
+        var topAvailabilityFilter by remember { mutableStateOf("Все игры") }
         fun refreshTop() {
             if (topBusy) return
             topBusy = true
@@ -1355,7 +1385,7 @@ class MainActivity : ComponentActivity() {
             }
             if (activeTab == 4 && !settingsOpen) {
                 Text("Лидеры продаж Steam", style = MaterialTheme.typography.titleLarge)
-                Text("Популярные платные игры по сортировке магазина Steam. Бесплатные игры скрыты. Это не отдельный рейтинг выручки Steam Charts.",
+                Text("Популярные платные игры Steam. Цена и скидка загружаются для региона RU. Неопределённый статус не считается недоступностью.",
                     style = MaterialTheme.typography.bodySmall)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Загружено: ${topGames.size} из 100", modifier = Modifier.weight(1f))
@@ -1363,21 +1393,78 @@ class MainActivity : ComponentActivity() {
                 }
                 if (topBusy) LinearProgressIndicator(Modifier.fillMaxWidth())
                 if (topError.isNotBlank()) Text(topError, color = MaterialTheme.colorScheme.error)
-                topGames.forEachIndexed { index, game ->
-                    TextButton(onClick = {
-                        searchGeneration++
-                        activeCatalogGeneration.set(searchGeneration)
-                        searching = false
-                        steamGame = null
-                        selectedGame=null
-                        query = game
-                        offers = emptyList()
-                        searchMessage = "Игра выбрана из лидеров продаж. Нажмите «Искать»."
-                        activeTab = 0
-                    }, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 6.dp)) {
-                        Text("${index + 1}. $game", modifier = Modifier.fillMaxWidth())
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    listOf("Все игры", "Доступны в Steam RU", "Недоступны в Steam RU").chunked(2).forEach { row ->
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            row.forEach { filter ->
+                                FilterChip(
+                                    selected = topAvailabilityFilter == filter,
+                                    onClick = { topAvailabilityFilter = filter },
+                                    label = { Text(filter, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            if (row.size == 1) Spacer(Modifier.weight(1f))
+                        }
                     }
-                    HorizontalDivider()
+                }
+                val visibleTopGames = topGames.filter { game ->
+                    game.isGame && when (topAvailabilityFilter) {
+                        "Доступны в Steam RU" -> game.availability == SteamRuAvailability.AVAILABLE
+                        "Недоступны в Steam RU" -> game.availability == SteamRuAvailability.UNAVAILABLE
+                        else -> true
+                    }
+                }
+                Text("Показано: ${visibleTopGames.size}", style = MaterialTheme.typography.labelMedium)
+                visibleTopGames.forEachIndexed { index, game ->
+                    ElevatedCard(Modifier.fillMaxWidth()) {
+                        Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
+                            TextButton(onClick = {
+                                searchGeneration++
+                                activeCatalogGeneration.set(searchGeneration)
+                                searching = false
+                                steamGame = null
+                                selectedGame = GameSearchResolver.Candidate(game.appId, game.title)
+                                query = game.title
+                                offers = emptyList()
+                                searchMessage = "Игра выбрана из лидеров продаж. Найдены будут только проверенные предложения Steam Gift/Key для RU. Нажмите «Искать»."
+                                activeTab = 0
+                            }, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 4.dp)) {
+                                Text("${index + 1}. ${game.title}", modifier = Modifier.fillMaxWidth(), maxLines = 2)
+                            }
+                            val availabilityLabel = when (game.availability) {
+                                SteamRuAvailability.AVAILABLE -> "Доступна в Steam RU"
+                                SteamRuAvailability.UNAVAILABLE -> "Не продаётся в Steam RU"
+                                SteamRuAvailability.UNKNOWN -> "Статус Steam RU не удалось определить"
+                            }
+                            Text("Steam RU: ${game.steamPrice.ifBlank { "цена не указана" }}" +
+                                if (game.discountPercent > 0) " · −${game.discountPercent}%" else "",
+                                style = MaterialTheme.typography.bodyMedium)
+                            if (game.discountPercent > 0 && game.steamInitialPrice.isNotBlank()) {
+                                Text("Было ${game.steamInitialPrice}", style = MaterialTheme.typography.bodySmall.copy(
+                                    textDecoration = TextDecoration.LineThrough), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Text(availabilityLabel, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall,
+                                    color = when (game.availability) {
+                                        SteamRuAvailability.AVAILABLE -> MaterialTheme.colorScheme.primary
+                                        SteamRuAvailability.UNAVAILABLE -> MaterialTheme.colorScheme.error
+                                        SteamRuAvailability.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant
+                                    })
+                                TextButton(onClick = {
+                                    searchGeneration++
+                                    activeCatalogGeneration.set(searchGeneration)
+                                    searching = false
+                                    steamGame = null
+                                    selectedGame = GameSearchResolver.Candidate(game.appId, game.title)
+                                    query = game.title
+                                    offers = emptyList()
+                                    searchMessage = "Для ${game.title}: проверяемые предложения Plati и GGSEL, совместимые с Steam RU. Нажмите «Искать»."
+                                    activeTab = 0
+                                }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) { Text("Plati / GGSEL") }
+                            }
+                        }
+                    }
                 }
             }
             if (settingsOpen && !showDirectory) {
