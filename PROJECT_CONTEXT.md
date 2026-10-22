@@ -52,14 +52,15 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T16:07:44.476Z
+- Обновлено (UTC): 2026-10-22T16:18:14.696Z
 - Ветка: `main`.
-- HEAD: [`4fd16d9c8442`](https://github.com/Magral/Igrolov/commit/4fd16d9c844246672394eb784f33d7bce5edba96).
+- HEAD: [`a3639ba5d98c`](https://github.com/Magral/Igrolov/commit/a3639ba5d98c925082260d3932d6971873d87c93).
 - Опубликованный стабильный GitHub Release не найден.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [a3639ba](https://github.com/Magral/Igrolov/commit/a3639ba5d98c925082260d3932d6971873d87c93) — feat: show expected checks and monitor exclusion reasons
+- [1eaa2be](https://github.com/Magral/Igrolov/commit/1eaa2be7e95dab683c3b5ce0e6626979159f6f9a) — feat: align monitoring interval with displayed estimate
+- [6a3277f](https://github.com/Magral/Igrolov/commit/6a3277f366b369937dd297261f2a8a357dac9c75) — test: cover monitoring schedule and diagnostics
+- [cc63758](https://github.com/Magral/Igrolov/commit/cc6375855c10265b06138ef325597be4466e551b) — feat: add monitor schedule and no-offer diagnostics
 - [4fd16d9](https://github.com/Magral/Igrolov/commit/4fd16d9c844246672394eb784f33d7bce5edba96) — fix: ignore currency punctuation in Steam price parsing
-- [336210b](https://github.com/Magral/Igrolov/commit/336210b2c2001f082aac54d61252134f827147f8) — feat: add price discount and review filters to Leaders
-- [7c97016](https://github.com/Magral/Igrolov/commit/7c9701691c18a04b5b091fe73b2417aed2da6fe9) — feat: add input state for Steam leaders filters
-- [2e91505](https://github.com/Magral/Igrolov/commit/2e91505d88a34b3dbbca8916a14604e19bb0fbaa) — test: cover Steam leaders filters
 <!-- AUTO_CONTEXT_END -->
