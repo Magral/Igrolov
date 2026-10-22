@@ -196,16 +196,17 @@ class MainActivity : ComponentActivity() {
         throw last ?: java.io.IOException("Нет соединения")
     }
 
-    private fun searchCatalog(query: String, pageCount: Int, generation: Int, selectedAppId: Int?, additionalAliases: List<String>, progress: (Int, Int, Int) -> Unit, callback: (List<Offer>, String, List<String>) -> Unit) {
+    private fun searchCatalog(query: String, pageCount: Int, generation: Int, selectedAppId: Int?, additionalAliases: List<String>, progress: (Int, Int, Int) -> Unit, callback: (List<Offer>, String, List<String>, Set<String>) -> Unit) {
         catalogExecutor.execute {
             val found = mutableListOf<Offer>()
             val seenIds = mutableSetOf<String>()
             val sellerIds = mutableMapOf<String, String>()
             var failure = ""
+            val failedSources = mutableSetOf<String>()
             val reference = ManualGameReference.lookup(query,selectedAppId,additionalAliases)
             if (generation != activeCatalogGeneration.get()) return@execute
             if(selectedAppId != null && reference.appId != selectedAppId) {
-                runOnUiThread { if(generation == activeCatalogGeneration.get()) callback(emptyList(),"Steam не подтвердил выбранную основную игру. Повторите запрос или выберите другую игру.",emptyList()) }
+                runOnUiThread { if(generation == activeCatalogGeneration.get()) callback(emptyList(),"Steam не подтвердил выбранную основную игру. Повторите запрос или выберите другую игру.",emptyList(),setOf("Plati","GGSEL")) }
                 return@execute
             }
             val marketQuery=ManualGameReference.catalogQuery(query,reference.aliases)
@@ -263,15 +264,33 @@ class MainActivity : ComponentActivity() {
                 val totalPages = root.optJSONObject("result")?.optInt("total_pages", pageCount) ?: pageCount
                 if (page >= totalPages) break
                 }
-            } catch (e: Exception) { failure = e.message ?: "Не удалось подключиться к каталогу" }
+            } catch (e: Exception) { failure = e.message ?: "Не удалось подключиться к каталогу"; failedSources.add("Plati") }
             val sorted = found.distinctBy { it.id }.sortedBy { it.price }
-            val enriched = ManualCatalogEnricher().enrich(sorted, sellerIds, reference = reference,
+            val detailFailures = java.util.concurrent.atomic.AtomicInteger(0)
+            val enriched = runCatching { ManualCatalogEnricher { path ->
+                try {
+                    val result = CatalogApi.get(path, true)
+                    if (!path.startsWith("/api/categories") && (result == null ||
+                        (path.startsWith("/api/products/") && result.optInt("retval", -1) != 0))) detailFailures.incrementAndGet()
+                    result
+                } catch (_: Exception) {
+                    if (!path.startsWith("/api/categories")) detailFailures.incrementAndGet()
+                    null
+                }
+            }.enrich(sorted, sellerIds, reference = reference,
                 active = { generation == activeCatalogGeneration.get() && !Thread.currentThread().isInterrupted },
                 progress = { checked, total ->
                     if (generation == activeCatalogGeneration.get()) runOnUiThread {
                         if (generation == activeCatalogGeneration.get()) progress(pageCount, pageCount, checked)
                     }
-                })
+                }) }.getOrElse {
+                    detailFailures.incrementAndGet()
+                    emptyList()
+                }
+            if (detailFailures.get() > 0) {
+                failedSources.add("Plati")
+                failure = listOf(failure, "Не все карточки Plati удалось проверить").filter { it.isNotBlank() }.joinToString(" · ")
+            }
             var ggselFailure = ""
             if (generation == activeCatalogGeneration.get() && !Thread.currentThread().isInterrupted) {
                 try {
@@ -281,6 +300,7 @@ class MainActivity : ComponentActivity() {
                         if (generation == activeCatalogGeneration.get()) progress(pageCount, pageCount, found.size)
                     }
                 } catch (e: Exception) {
+                    failedSources.add("GGSEL")
                     ggselFailure = "GGSEL: ${e.message ?: "каталог временно недоступен"}"
                 }
             }
@@ -306,7 +326,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             if (generation == activeCatalogGeneration.get()) runOnUiThread {
-                if (generation == activeCatalogGeneration.get()) callback(finalOffers, failure, aliasSuggestions)
+                if (generation == activeCatalogGeneration.get()) callback(finalOffers, failure, aliasSuggestions, failedSources.toSet())
             }
         }
     }
@@ -514,12 +534,64 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun comparisonAliases(appId: Int, supplied: List<String> = emptyList()): List<String> =
+        (supplied + ManualSearchSettings.games(this).firstOrNull { it.appId == appId }?.aliases.orEmpty()).distinct()
+
+    @Composable
+    private fun CachedPriceLines(cached: CachedGamePrices?, legacyPlati: Double? = null, legacyGgsel: Double? = null) {
+        val date = remember { java.text.SimpleDateFormat("dd.MM HH:mm", Locale("ru", "RU")) }
+        listOf(Triple("Plati", cached?.plati, legacyPlati), Triple("GGSEL", cached?.ggsel, legacyGgsel)).forEach { (name, check, legacy) ->
+            val source = check ?: SourcePriceCheck()
+            val price = source.price ?: legacy.takeIf { source.checkedAt == 0L }
+            if (source.hasData || price != null) {
+                val value = price?.let { "$name от " + String.format(Locale("ru", "RU"), "%.0f ₽", it) }
+                    ?: if (source.checkedAt > 0) "$name: предложений нет" else "$name: нет подтверждённой цены"
+                val time = if (source.checkedAt > 0) "проверено " + date.format(java.util.Date(source.checkedAt))
+                    else if (price != null) "сохранено ранее · время неизвестно" else "проверка не завершена"
+                Text("$value · $time" + if (source.failedAt > 0) " · ошибка обновления" else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (source.failedAt > 0) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.tertiary)
+            }
+        }
+    }
+
+    @Composable
+    private fun BatchSelectionControls(count: Int, enabled: Boolean, onSelectFive: () -> Unit, onStart: () -> Unit) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            TextButton(onClick = onSelectFive, enabled = enabled, contentPadding = PaddingValues(horizontal = 4.dp)) {
+                Text("Выбрать первые 5", style = MaterialTheme.typography.labelSmall)
+            }
+            OutlinedButton(onClick = onStart, enabled = enabled && count > 0,
+                contentPadding = PaddingValues(horizontal = 6.dp)) {
+                Text("Проверить выбранные ($count)", style = MaterialTheme.typography.labelSmall)
+            }
+        }
+        Text("До 10 игр за один запуск", style = MaterialTheme.typography.labelSmall)
+    }
+
+    @Composable
+    private fun PriceBatchStatus(batch: PriceCheckBatch, onStop: () -> Unit) {
+        if (batch.total == 0) return
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(when {
+                batch.running -> "Проверено ${batch.completed} / ${batch.total} · ${batch.current?.title}"
+                batch.cancelled -> "Остановлено: ${batch.completed} / ${batch.total}"
+                else -> "Готово ${batch.completed} / ${batch.total}"
+            }, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+            if (batch.running) TextButton(onClick = onStop) { Text("Остановить") }
+        }
+        if (batch.running) LinearProgressIndicator(progress = { batch.completed.toFloat() / batch.total },
+            modifier = Modifier.fillMaxWidth())
+    }
+
     @Composable
     private fun SteamLeaderCard(
         index: Int, game: SteamTopSeller, marketplacePrices: LeaderOfferPrices?,
         monitored: Boolean, searchEnabled: Boolean,
         onOpenSearch: () -> Unit, onDetails: () -> Unit,
-        onSearchPrice: () -> Unit, onMonitor: () -> Unit
+        onSearchPrice: () -> Unit, onMonitor: () -> Unit,
+        cachedPrices: CachedGamePrices?, selected: Boolean, selectionEnabled: Boolean, onToggle: () -> Unit
     ) {
         ElevatedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
@@ -549,18 +621,9 @@ class MainActivity : ComponentActivity() {
                     Text("Было ${game.steamInitialPrice}", style = MaterialTheme.typography.bodySmall.copy(
                         textDecoration = TextDecoration.LineThrough), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                if (marketplacePrices?.checkedAt != null) {
-                    val pricesLabel = listOfNotNull(
-                        marketplacePrices.platiMinimum?.let { "Plati от ${String.format(Locale("ru", "RU"), "%.0f ₽", it)}" },
-                        marketplacePrices.ggselMinimum?.let { "GGSEL от ${String.format(Locale("ru", "RU"), "%.0f ₽", it)}" }
-                    ).joinToString(" · ")
-                    if (pricesLabel.isNotBlank()) Text(pricesLabel, style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.tertiary)
-                    Text(marketplacePrices.message, style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                } else if (!marketplacePrices?.message.isNullOrBlank()) {
-                    Text(marketplacePrices?.message.orEmpty(), style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error)
+                CachedPriceLines(cachedPrices)
+                if (marketplacePrices?.checking == true || (cachedPrices == null && !marketplacePrices?.message.isNullOrBlank())) {
+                    Text(marketplacePrices?.message.orEmpty(), style = MaterialTheme.typography.labelSmall)
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(availabilityLabel, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall,
@@ -574,16 +637,19 @@ class MainActivity : ComponentActivity() {
                         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
                         Text(when {
                             marketplacePrices?.checking == true -> "Проверяем…"
-                            marketplacePrices?.checkedAt != null -> "Обновить Plati/GGSEL"
+                            cachedPrices != null -> "Обновить Plati/GGSEL"
                             else -> "Проверить Plati/GGSEL"
                         })
                     }
                 }
-                OutlinedButton(onClick = onMonitor,
-                    enabled = !monitored,
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
-                    Text(if (monitored) "В мониторинге" else "В мониторинг",
-                        style = MaterialTheme.typography.labelSmall)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(selected, { onToggle() }, enabled = selectionEnabled, modifier = Modifier.size(32.dp))
+                    Text("Выбрать", style = MaterialTheme.typography.labelSmall)
+                    Spacer(Modifier.weight(1f))
+                    OutlinedButton(onClick = onMonitor, enabled = !monitored,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
+                        Text(if (monitored) "В мониторинге" else "В мониторинг", style = MaterialTheme.typography.labelSmall)
+                    }
                 }
             }
         }
@@ -702,6 +768,7 @@ class MainActivity : ComponentActivity() {
         val rfOnly = true
         var editionFilter by remember { mutableStateOf(savedFilters.edition) }
         val manualFilters=ManualSearchFilters(selectedType,editionFilter,maxPrice,confirmedRf)
+        val comparisonSavedAliases=ManualSearchSettings.games(this@MainActivity).associate { it.appId to it.aliases }
         LaunchedEffect(selectedType,editionFilter,maxPrice,confirmedRf) {ManualSearchSettings.save(this@MainActivity,manualFilters)}
         LaunchedEffect(query) {
             val requested=query.trim()
@@ -784,6 +851,10 @@ class MainActivity : ComponentActivity() {
         var wishlistVisibleLimit by remember { mutableIntStateOf(50) }
         var wishlistSearchingKeys by remember { mutableStateOf<Set<String>>(emptySet()) }
         var wishlistSearchStatuses by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+        var priceCache by remember { mutableStateOf(OfferPriceCacheStore.readAll(this@MainActivity)) }
+        var priceBatch by remember { mutableStateOf(PriceCheckBatch()) }
+        var selectedLeaderIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
+        var selectedWishlistIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
         var showAlertLog by remember { mutableStateOf(true) }
         var watchMessage by remember { mutableStateOf("Укажите название игры и цену в рублях") }
         fun persistWishlistProfiles(profiles: List<WishlistProfile>) {
@@ -794,7 +865,7 @@ class MainActivity : ComponentActivity() {
             ioExecutor.execute {
                 val latestWatches=WatchStore.read(this@MainActivity).toString()
                 val latestAlerts=AlertJournal.read(this@MainActivity).toString()
-                runOnUiThread { watches=latestWatches; alertLog=latestAlerts }
+                runOnUiThread { watches=latestWatches; alertLog=latestAlerts; priceCache=OfferPriceCacheStore.readAll(this@MainActivity) }
             }
         }
         LaunchedEffect(Unit) {
@@ -1029,20 +1100,52 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+        fun comparisonKey(appId: Int, title: String, leader: Boolean): String = OfferPriceCache.key(appId,
+            if (leader) OfferPriceCache.leaderFilters(manualFilters) else manualFilters,
+            GameRuleStore.read(this@MainActivity, title), ignoredIds, searchTotalPages, comparisonSavedAliases[appId].orEmpty())
+        fun recordComparison(key: String, minima: Map<String, Double>, failed: Set<String>,
+                             started: Long, finished: Long, reason: String): CachedGamePrices {
+            val saved = runCatching { OfferPriceCacheStore.update(this@MainActivity, key, minima, failed, started, finished, reason) }
+                .getOrElse { OfferPriceCache.merge(priceCache[key], minima, failed, started, finished, reason) }
+            priceCache = priceCache + (key to saved)
+            return saved
+        }
+        fun stopPriceBatch() {
+            if (!priceBatch.running) return
+            val current = priceBatch.current
+            priceBatch = priceBatch.cancel()
+            searchGeneration++
+            activeCatalogGeneration.set(searchGeneration)
+            searching = false
+            wishlistSearchingKeys.forEach { wishlistSearchStatuses = wishlistSearchStatuses + (it to "Проверка остановлена") }
+            wishlistSearchingKeys = emptySet()
+            current?.let { target ->
+                leaderOfferPrices[target.appId]?.let {
+                    leaderOfferPrices = leaderOfferPrices + (target.appId to it.copy(checking = false, message = "Проверка остановлена"))
+                }
+            }
+        }
         fun startCatalogSearch(
             candidateOverride: GameSearchResolver.Candidate? = null,
             wishlistProfileId: String? = null,
             hiddenWishlistSearch: Boolean = false,
-            leaderboardAppId: Int? = null
+            leaderboardAppId: Int? = null,
+            onFinished: (() -> Unit)? = null,
+            filtersOverride: ManualSearchFilters? = null,
+            pagesOverride: Int? = null
         ) {
+            if (priceBatch.running && onFinished == null) return
             if (searching && candidateOverride == null) return
-            if (!manualFilters.valid) {
+            val requestedFilters = filtersOverride ?: manualFilters
+            val requestedPages = pagesOverride ?: searchTotalPages
+            if (!requestedFilters.valid) {
                 val key = if (wishlistProfileId != null && candidateOverride != null)
                     "$wishlistProfileId:${candidateOverride.appId}" else null
                 if (key != null) wishlistSearchStatuses = wishlistSearchStatuses + (key to "Проверьте ценовой фильтр")
                 else if (leaderboardAppId != null) leaderOfferPrices = leaderOfferPrices +
                     (leaderboardAppId to (leaderOfferPrices[leaderboardAppId] ?: LeaderOfferPrices()).copy(message = "Проверьте ценовой фильтр"))
                 else searchMessage = "Проверьте ценовой фильтр"
+                onFinished?.invoke()
                 return
             }
             val selectedIdentity = candidateOverride ?: selectedGame ?: GameSearchResolver.exact(query, gameSuggestions)
@@ -1054,13 +1157,19 @@ class MainActivity : ComponentActivity() {
                 return
             }
             val requestedGame = identity?.name?.replace(Regex("[™®©]"), "") ?: query.trim()
-            if (requestedGame.isBlank()) return
+            if (requestedGame.isBlank()) { onFinished?.invoke(); return }
+            val requestedAt = System.currentTimeMillis()
+            val requestRules = JSONObject(GameRuleStore.read(this@MainActivity, requestedGame).toString())
+            val requestIgnored = ignoredIds.toSet()
+            val requestFilters = if (leaderboardAppId != null) OfferPriceCache.leaderFilters(requestedFilters) else requestedFilters
+            val primaryCacheKey = identity?.let { OfferPriceCache.key(it.appId, requestFilters, requestRules, requestIgnored, requestedPages, comparisonAliases(it.appId, it.aliases)) }
+            val leaderCacheKey = identity?.let { OfferPriceCache.key(it.appId, OfferPriceCache.leaderFilters(requestedFilters), requestRules, requestIgnored, requestedPages, comparisonAliases(it.appId, it.aliases)) }
 
             val backgroundLeaderboardSearch = leaderboardAppId != null
             val backgroundSearch = hiddenWishlistSearch || backgroundLeaderboardSearch
             if (leaderboardAppId != null) {
                 val previous = leaderOfferPrices[leaderboardAppId] ?: LeaderOfferPrices()
-                leaderOfferPrices = leaderOfferPrices + (leaderboardAppId to previous.copy(checking = true, message = "Проверяем Plati и GGSEL…"))
+                leaderOfferPrices = leaderOfferPrices + (leaderboardAppId to previous.copy(checking = true, message = "Проверяем Plati и GGSEL…", scopeKey = primaryCacheKey.orEmpty()))
             }
 
             wishlistSearchingKeys.forEach { key -> wishlistSearchStatuses = wishlistSearchStatuses + (key to "Поиск остановлен") }
@@ -1093,21 +1202,30 @@ class MainActivity : ComponentActivity() {
             if (identity != null) ManualSearchSettings.rememberGame(this@MainActivity, identity)
             if (!backgroundSearch) steamGame = null
 
-            searchCatalog(requestedGame, searchTotalPages, generation, identity?.appId, identity?.aliases.orEmpty(), { page, _, count ->
+            searchCatalog(requestedGame, requestedPages, generation, identity?.appId, identity?.aliases.orEmpty(), { page, _, count ->
                 if (generation == searchGeneration) {
                     searchPage = page
                     searchFound = count
                 }
-            }) { found, failure, aliasSuggestions ->
+            }) { found, failure, aliasSuggestions, failedSources ->
                 if (generation != searchGeneration) return@searchCatalog
                 if (aliasSuggestions.isNotEmpty() && identity != null) {
-                    if (leaderboardAppId != null) {
+                    if (leaderboardAppId != null || onFinished != null) {
+                        if (primaryCacheKey != null) recordComparison(primaryCacheKey, emptyMap(), setOf("Plati", "GGSEL"),
+                            requestedAt, System.currentTimeMillis(), "Требуется подтверждение названия")
+                        if (leaderboardAppId != null) {
                         val previous = leaderOfferPrices[leaderboardAppId] ?: LeaderOfferPrices()
                         leaderOfferPrices = leaderOfferPrices + (leaderboardAppId to previous.copy(
                             checking = false,
                             message = if (failure.isNotBlank()) "Не удалось подтвердить предложения: $failure" else "Нужен поиск по названию площадки"
                         ))
+                        }
+                        if (wishlistKey != null) {
+                            wishlistSearchingKeys = wishlistSearchingKeys - wishlistKey
+                            wishlistSearchStatuses = wishlistSearchStatuses + (wishlistKey to "Нужно уточнить название")
+                        }
                         searching = false
+                        onFinished?.invoke()
                         return@searchCatalog
                     }
                     searching = false
@@ -1137,64 +1255,45 @@ class MainActivity : ComponentActivity() {
                 val unavailable = results.count { it.available != true }
                 val uncertainPrice = results.count { it.available == true && !it.priceVerified }
                 val wishlistSearch = wishlistProfileId != null && identity?.appId != null
-                val wishlistRules = if (wishlistSearch) GameRuleStore.read(this@MainActivity, requestedGame) else null
-                val leaderboardRules = if (leaderboardAppId != null) GameRuleStore.read(this@MainActivity, requestedGame) else null
-                val minimaByMarketplace = when {
-                    leaderboardAppId != null -> LeaderOfferSelector.minimumConfirmedByMarketplace(
-                        results, manualFilters, leaderboardRules!!, ignoredIds
-                    )
-                    wishlistSearch -> results.asSequence()
-                        .filter {
-                            ManualSearchFilter.rejection(it, manualFilters, wishlistRules!!, ignoredIds) == null &&
-                                it.available == true && it.priceVerified && it.price > 0.0
-                        }
-                        .groupBy { it.marketplace }
-                        .mapValues { (_, marketOffers) -> marketOffers.minOf { it.price } }
-                    else -> emptyMap()
-                }
+                val minimaByMarketplace = OfferPriceCache.minima(results, requestFilters, requestRules, requestIgnored)
                 val platiMinimum = minimaByMarketplace["Plati"]
                 val ggselMinimum = minimaByMarketplace["GGSEL"]
                 val hasWishlistMinimum = platiMinimum != null || ggselMinimum != null
+                val finishedAt = System.currentTimeMillis()
+                val cached = primaryCacheKey?.let {
+                    recordComparison(it, minimaByMarketplace, failedSources, requestedAt, finishedAt, failure)
+                }
+                if (leaderCacheKey != null && leaderCacheKey != primaryCacheKey) {
+                    val leaderMinima = LeaderOfferSelector.minimumConfirmedByMarketplace(results, requestedFilters, requestRules, requestIgnored)
+                    recordComparison(leaderCacheKey, leaderMinima, failedSources, requestedAt, finishedAt, failure)
+                }
                 if (leaderboardAppId != null) {
-                    val previousPrices = leaderOfferPrices[leaderboardAppId] ?: LeaderOfferPrices()
-                    val partialFailure = failure.isNotBlank()
-                    val hasFreshPrice = platiMinimum != null || ggselMinimum != null
                     leaderOfferPrices = leaderOfferPrices + (leaderboardAppId to LeaderOfferPrices(
-                        checking = false,
-                        platiMinimum = platiMinimum ?: if (partialFailure) previousPrices.platiMinimum else null,
-                        ggselMinimum = ggselMinimum ?: if (partialFailure) previousPrices.ggselMinimum else null,
-                        checkedAt = if (partialFailure && !hasFreshPrice) previousPrices.checkedAt else System.currentTimeMillis(),
-                        message = if (partialFailure && hasFreshPrice) "Часть источников недоступна; сохранены последние подтверждённые цены"
-                            else if (partialFailure && !hasFreshPrice) "Ошибка поиска; сохранены последние подтверждённые цены: $failure"
-                            else if (hasWishlistMinimum) "Проверенные предложения для Steam RU"
-                            else "Подтверждённых Gift/Key предложений для RU не найдено"
+                        checking = false, platiMinimum = cached?.plati?.price, ggselMinimum = cached?.ggsel?.price,
+                        checkedAt = cached?.let { maxOf(it.plati.checkedAt, it.ggsel.checkedAt).takeIf { time -> time > 0 } },
+                        message = if (failedSources.isNotEmpty()) "Часть источников не обновилась" else "",
+                        scopeKey = primaryCacheKey.orEmpty()
                     ))
                 }
-                if (wishlistSearch && wishlistProfileId != null && identity != null) {
+                if (wishlistSearch && wishlistProfileId != null && identity != null && cached != null) {
                     val updatedProfiles = wishlistProfiles.map { profile ->
-                        if (profile.steamId64 != wishlistProfileId || !hasWishlistMinimum) profile else profile.copy(games = profile.games.map { game ->
+                        if (profile.steamId64 != wishlistProfileId) profile else profile.copy(games = profile.games.map { game ->
                             if (game.appId == identity.appId) game.copy(
-                                lowestPlatiPrice = platiMinimum ?: game.lowestPlatiPrice,
-                                lowestGgselPrice = ggselMinimum ?: game.lowestGgselPrice
+                                lowestPlatiPrice = cached.plati.price ?: game.lowestPlatiPrice.takeIf { "Plati" in failedSources },
+                                lowestGgselPrice = cached.ggsel.price ?: game.lowestGgselPrice.takeIf { "GGSEL" in failedSources }
                             ) else game
                         })
                     }
-                    if (hasWishlistMinimum) {
-                        persistWishlistProfiles(updatedProfiles)
-                        if (selectedWishlistId == wishlistProfileId) {
-                            wishlistGames = updatedProfiles.firstOrNull { it.steamId64 == wishlistProfileId }?.games.orEmpty()
-                            prefs.edit().putString("wishlist_games", SteamWishlist.encode(wishlistGames)).apply()
-                        }
+                    persistWishlistProfiles(updatedProfiles)
+                    if (selectedWishlistId == wishlistProfileId) {
+                        wishlistGames = updatedProfiles.firstOrNull { it.steamId64 == wishlistProfileId }?.games.orEmpty()
+                        prefs.edit().putString("wishlist_games", SteamWishlist.encode(wishlistGames)).apply()
                     }
-                    val updatedSources = listOfNotNull(
-                        platiMinimum?.let { "Plati" },
-                        ggselMinimum?.let { "GGSEL" }
-                    )
                     val key = "$wishlistProfileId:${identity.appId}"
                     wishlistSearchingKeys = wishlistSearchingKeys - key
                     wishlistSearchStatuses = wishlistSearchStatuses + (key to when {
-                        hasWishlistMinimum -> "Минимум обновлён: ${updatedSources.joinToString(" · ")}"
-                        failure.isNotBlank() -> "Ошибка поиска цен"
+                        failedSources.isNotEmpty() -> "Есть ошибки обновления"
+                        hasWishlistMinimum -> "Минимум обновлён"
                         else -> "Подтверждённая цена не найдена"
                     })
                 }
@@ -1213,6 +1312,17 @@ class MainActivity : ComponentActivity() {
                             } else ""
                     searchMessage = if (candidateOverride != null) "Автопоиск цен · $summary" else summary
                 }
+                onFinished?.invoke()
+            }
+        }
+        LaunchedEffect(priceBatch.current, priceBatch.completed, searching) {
+            val target = priceBatch.current
+            if (priceBatch.running && !searching && target != null) {
+                startCatalogSearch(GameSearchResolver.Candidate(target.appId, target.title),
+                    wishlistProfileId = target.profileId, hiddenWishlistSearch = target.profileId != null,
+                    leaderboardAppId = target.appId.takeIf { target.profileId == null },
+                    onFinished = { priceBatch = priceBatch.advance(target) },
+                    filtersOverride = priceBatch.filters, pagesOverride = priceBatch.pages)
             }
         }
         fun dismissAliasPrompt() {
@@ -1263,7 +1373,7 @@ class MainActivity : ComponentActivity() {
             }
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Игролов 1.2.6", style = MaterialTheme.typography.headlineSmall)
+                Text("Игролов 1.2.7", style = MaterialTheme.typography.headlineSmall)
                 IconButton(onClick = { settingsOpen = !settingsOpen; showDirectory = false }) {
                     Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                         color = MaterialTheme.colorScheme.onSurface)
@@ -1274,6 +1384,7 @@ class MainActivity : ComponentActivity() {
                     Tab(selected = activeTab == index, onClick = { activeTab = index; settingsOpen = false; showDirectory = false }, text = { Text(title, maxLines = 1, fontSize = 10.sp) })
                 }
             }
+            PriceBatchStatus(priceBatch, onStop = { stopPriceBatch() })
             Column(Modifier.fillMaxSize().verticalScroll(if (settingsOpen) directoryScroll else when(activeTab) { 0 -> searchScroll; 1 -> productsScroll; 2 -> watchScroll; else -> directoryScroll }).padding(16.dp)) {
             ScreenSection {
             if (activeTab == 0 && !settingsOpen) {
@@ -1758,14 +1869,19 @@ class MainActivity : ComponentActivity() {
             }
             ScreenSection {
             if (activeTab == 3 && !settingsOpen) {
+                val wishlistCacheKeys = remember(wishlistGames.map { it.appId to it.title }, manualFilters, rulesRevision,
+                    ignoredIds, searchTotalPages, comparisonSavedAliases) {
+                    wishlistGames.associate { it.appId to comparisonKey(it.appId, it.title, false) }
+                }
                 WishlistPanel(
                     profiles = wishlistProfiles, selectedId = selectedWishlistId, games = wishlistGames,
                     input = wishlistProfile, busy = wishlistBusy, message = wishlistMessage,
                     importedAt = wishlistImportedAt, visibleLimit = wishlistVisibleLimit,
                     searchingKeys = wishlistSearchingKeys, searchStatuses = wishlistSearchStatuses,
-                    searchEnabled = manualFilters.valid,
+                    searchEnabled = manualFilters.valid && !priceBatch.running,
                     onInput = { wishlistProfile = it }, onImport = { importWishlist() },
                     onSelect = { profile ->
+                        selectedWishlistIds = emptySet()
                         selectedWishlistId = profile.steamId64
                         wishlistProfile = ""
                         wishlistGames = profile.games
@@ -1778,6 +1894,7 @@ class MainActivity : ComponentActivity() {
                             .putLong("wishlist_imported_at", profile.importedAt).apply()
                     },
                     onDelete = {
+                        selectedWishlistIds = emptySet()
                         val active = wishlistProfiles.firstOrNull { it.steamId64 == selectedWishlistId }
                         if (active != null) {
                             val remaining = wishlistProfiles.filterNot { it.steamId64 == active.steamId64 }
@@ -1809,6 +1926,18 @@ class MainActivity : ComponentActivity() {
                     },
                     isMonitored = { game -> isGameWatched(game.appId, game.title) },
                     onMonitor = { game -> openGameMonitoring(game.appId, game.title) },
+                    selectedIds = selectedWishlistIds,
+                    selectionEnabled = !priceBatch.running && !searching,
+                    onToggleSelection = { game ->
+                        selectedWishlistIds = if (game.appId in selectedWishlistIds) selectedWishlistIds - game.appId
+                            else if (selectedWishlistIds.size < 10) selectedWishlistIds + game.appId else selectedWishlistIds
+                    },
+                    onSelectFive = { selectedWishlistIds = wishlistGames.take(5).map { it.appId }.toSet() },
+                    onCheckSelected = {
+                        priceBatch = PriceCheckBatch.start(wishlistGames.filter { it.appId in selectedWishlistIds }
+                            .map { PriceCheckTarget(it.appId, it.title, selectedWishlistId) }, manualFilters, searchTotalPages)
+                    },
+                    cachedPrices = { game -> wishlistCacheKeys[game.appId]?.let { priceCache[it] } },
                     onShowMore = { wishlistVisibleLimit += 50 }
                 )
             }
@@ -1847,6 +1976,7 @@ class MainActivity : ComponentActivity() {
                                 FilterChip(
                                     selected = leaderSection == section,
                                     onClick = {
+                                        selectedLeaderIds = emptySet()
                                         leaderSection = section
                                         topError = ""
                                     },
@@ -1862,7 +1992,7 @@ class MainActivity : ComponentActivity() {
                             row.forEach { filter ->
                                 FilterChip(
                                     selected = topAvailabilityFilter == filter,
-                                    onClick = { topAvailabilityFilter = filter },
+                                    onClick = { selectedLeaderIds = emptySet(); topAvailabilityFilter = filter },
                                     label = { Text(filter, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
                                     modifier = Modifier.weight(1f)
                                 )
@@ -1898,13 +2028,26 @@ class MainActivity : ComponentActivity() {
                     SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedHasMore
                     SteamLeaderSection.TOP_SELLERS -> false
                 }
+                BatchSelectionControls(visibleTopGames.count { it.appId in selectedLeaderIds },
+                    enabled = !searching && !priceBatch.running && manualFilters.valid,
+                    onSelectFive = { selectedLeaderIds = visibleTopGames.take(5).map { it.appId }.toSet() },
+                    onStart = { priceBatch = PriceCheckBatch.start(visibleTopGames.filter { it.appId in selectedLeaderIds }
+                        .map { PriceCheckTarget(it.appId, it.title) }, manualFilters, searchTotalPages) })
                 visibleTopGames.forEachIndexed { index, game ->
-                    SteamLeaderCard(index, game, leaderOfferPrices[game.appId],
-                        monitored = isGameWatched(game.appId, game.title), searchEnabled = !searching,
+                    val cacheKey = remember(game.appId, game.title, manualFilters, rulesRevision, ignoredIds,
+                        searchTotalPages, comparisonSavedAliases[game.appId]) { comparisonKey(game.appId, game.title, true) }
+                    SteamLeaderCard(index, game, leaderOfferPrices[game.appId]?.takeIf { it.scopeKey == cacheKey },
+                        monitored = isGameWatched(game.appId, game.title), searchEnabled = !searching && !priceBatch.running && manualFilters.valid,
+                        cachedPrices = priceCache[cacheKey], selected = game.appId in selectedLeaderIds,
+                        selectionEnabled = !priceBatch.running,
+                        onToggle = { selectedLeaderIds = if (game.appId in selectedLeaderIds) selectedLeaderIds - game.appId
+                            else if (selectedLeaderIds.size < 10) selectedLeaderIds + game.appId else selectedLeaderIds },
                         onOpenSearch = {
-                                    searchGeneration++
-                                    activeCatalogGeneration.set(searchGeneration)
-                                    searching = false
+                                    if (!priceBatch.running) {
+                                        searchGeneration++
+                                        activeCatalogGeneration.set(searchGeneration)
+                                        searching = false
+                                    }
                                     steamGame = null
                                     selectedGame = GameSearchResolver.Candidate(game.appId, game.title)
                                     query = game.title
@@ -2135,7 +2278,10 @@ class MainActivity : ComponentActivity() {
         onSearchPrice: (WishlistGame) -> Unit,
         onShowMore: () -> Unit,
         isMonitored: (WishlistGame) -> Boolean,
-        onMonitor: (WishlistGame) -> Unit
+        onMonitor: (WishlistGame) -> Unit,
+        selectedIds: Set<Int>, selectionEnabled: Boolean,
+        onToggleSelection: (WishlistGame) -> Unit, onSelectFive: () -> Unit, onCheckSelected: () -> Unit,
+        cachedPrices: (WishlistGame) -> CachedGamePrices?
     ) {
         ElevatedCard(Modifier.fillMaxWidth(), colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -2179,19 +2325,20 @@ class MainActivity : ComponentActivity() {
         if (games.isEmpty() && importedAt == 0L) {
             Text("Вставьте открытый профиль Steam и загрузите его, чтобы закрепить в списке профилей.", style = MaterialTheme.typography.bodyMedium)
         }
+        BatchSelectionControls(games.count { it.appId in selectedIds }, selectionEnabled && searchEnabled, onSelectFive, onCheckSelected)
         games.take(visibleLimit).forEach { game ->
             ElevatedCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            TextButton(onClick = { onOpenSearch(game) }, enabled = game.title.isNotBlank(),
+                            TextButton(onClick = { onOpenSearch(game) }, enabled = game.title.isNotBlank() && searchEnabled,
                                 contentPadding = PaddingValues(0.dp)) {
                                 Text(game.title.ifBlank { "Название игры не получено" }, style = MaterialTheme.typography.titleSmall,
                                     maxLines = 2)
                             }
                             Text("Steam AppID ${game.appId}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                        Column(Modifier.widthIn(max = 168.dp), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(1.dp)) {
                             Text(game.steamPrice.ifBlank { "Нет цены RU" }, style = MaterialTheme.typography.titleSmall)
                             if (game.discountPercent > 0) {
                                 if (game.steamInitialPrice.isNotBlank()) Text(game.steamInitialPrice,
@@ -2200,14 +2347,6 @@ class MainActivity : ComponentActivity() {
                                 Text("−${game.discountPercent}% · Steam RU", style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.primary)
                             } else Text("Steam RU", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            game.lowestPlatiPrice?.let { price ->
-                                Text("Plati от ${String.format(Locale("ru", "RU"), "%.0f", price)} ₽",
-                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
-                            }
-                            game.lowestGgselPrice?.let { price ->
-                                Text("GGSEL от ${String.format(Locale("ru", "RU"), "%.0f", price)} ₽",
-                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
-                            }
                             val searchKey = selectedId?.let { "$it:${game.appId}" }
                             searchKey?.let { searchStatuses[it] }?.let { status ->
                                 Text(status, style = MaterialTheme.typography.labelSmall,
@@ -2225,6 +2364,12 @@ class MainActivity : ComponentActivity() {
                                     style = MaterialTheme.typography.labelSmall)
                             }
                         }
+                    }
+                    CachedPriceLines(cachedPrices(game), game.lowestPlatiPrice, game.lowestGgselPrice)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(game.appId in selectedIds, { onToggleSelection(game) },
+                            enabled = selectionEnabled, modifier = Modifier.size(32.dp))
+                        Text("Выбрать", style = MaterialTheme.typography.labelSmall)
                     }
                 }
             }

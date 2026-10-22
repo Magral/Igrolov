@@ -35,12 +35,12 @@ class ReleaseSmokeTest {
         assertEquals("2500",ManualSearchSettings.read(context).maxPrice)
         WatchStore.write(context,org.json.JSONArray())
         ManualSearchSettings.save(context,ManualSearchFilters())
-        assertEquals(131,PackageInfoCompat.getLongVersionCode(context.packageManager.getPackageInfo(context.packageName,0)))
+        assertEquals(132,PackageInfoCompat.getLongVersionCode(context.packageManager.getPackageInfo(context.packageName,0)))
     }
     @Test fun launchAndNavigateFiltersSettingsAndMonitoring() {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.2.6")),15000))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.2.7")),15000))
         device.findObject(By.text("Лидеры")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Лидеры продаж Steam")),5000))
         assertTrue(device.hasObject(By.text("Топ продаж")))
@@ -71,7 +71,7 @@ class ReleaseSmokeTest {
     @Test fun wishlistImportIsSeparateFromOfferSearch() {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.2.6")),15000))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.2.7")),15000))
         device.findObject(By.text("Желания")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Загрузить и закрепить профиль")),5000))
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"wishlist.png"))
@@ -94,23 +94,26 @@ class ReleaseSmokeTest {
             .putString("wishlist_selected_profile",steamId).putString("wishlist_profile",profile.input)
             .putString("wishlist_games",SteamWishlist.encode(profile.games)).putLong("wishlist_imported_at",profile.importedAt).commit()
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.2.6")),15000))
+        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.2.7")),15000))
         device.findObject(By.text("Желания")).click()
         assertTrue(device.wait(Until.hasObject(By.textContains("Namtar")),5000))
         assertTrue(device.hasObject(By.textContains("Friend")))
         device.pressBack()
         if (!device.wait(Until.hasObject(By.textContains("Namtar")),1500)) {
             context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-            assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.2.6")),15000))
+            assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.2.7")),15000))
             device.findObject(By.text("Желания")).click()
             assertTrue(device.wait(Until.hasObject(By.textContains("Namtar")),5000))
         }
         val scroll=UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(20)
         assertTrue(scroll.scrollTextIntoView("Stellaris"))
         assertTrue(device.hasObject(By.text("Stellaris")))
+        if (!device.hasObject(By.textContains("Plati от 750 ₽"))) {
+            assertTrue(scroll.scrollIntoView(UiSelector().textContains("Plati от 750 ₽")))
+        }
         assertTrue(device.hasObject(By.text("900 руб.")))
         assertTrue(device.hasObject(By.text("−50% · Steam RU")))
-        assertTrue(device.hasObject(By.text("Plati от 750 ₽")))
+        assertTrue(device.hasObject(By.textContains("Plati от 750 ₽")))
         assertTrue(device.hasObject(By.text("Искать")))
         assertFalse(device.hasObject(By.text("Искать Plati")))
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"wishlist.png"))

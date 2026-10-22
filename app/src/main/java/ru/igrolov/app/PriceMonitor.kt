@@ -557,9 +557,11 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 val kind = watch.optString("kind", "Все")
                 val selectedId=watch.optInt("steamAppId").takeIf {it>0}
                     ?: GameSearchResolver.exact(name,ManualSearchSettings.games(applicationContext)+GameSearchResolver.seeds)?.appId
-                val reference=ManualGameReference.lookup(name,selectedId)
+                val savedAliases=ManualSearchSettings.games(applicationContext).firstOrNull {it.appId==selectedId}?.aliases.orEmpty()
+                val reference=ManualGameReference.lookup(name,selectedId,savedAliases)
                 if(reference.appId<=0) error("Steam не подтвердил основную игру; предыдущий результат сохранён")
-                val catalog=CatalogCheck.find(name,CatalogPageSettings.pages(applicationContext),reference)
+                val catalogPages=CatalogPageSettings.pages(applicationContext)
+                val catalog=CatalogCheck.find(name,catalogPages,reference)
                 val rules=GameRuleStore.read(applicationContext,name)
                 val result=VerifiedMonitorCheck.run(catalog,reference,kind,rules,ignored,{!isStopped})
                 // GGSEL catalog rows already carry a confirmed active one-copy RUB price.
@@ -576,6 +578,12 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 current.put("steamAppId",reference.appId)
                 val cheapest = reliableOffers.minByOrNull { it.price }
                 val checkedAt = System.currentTimeMillis()
+                if (latestRules.toString()==rules.toString() && latestIgnored==ignored) {
+                    val cacheFilters=ManualSearchFilters(type=kind,edition="Игра",confirmedRf=true)
+                    val cacheKey=OfferPriceCache.key(reference.appId,cacheFilters,rules,ignored,catalogPages,savedAliases)
+                    val minima=verified.groupBy {it.marketplace}.mapValues {(_,offers)->offers.minOf {it.price}}
+                    runCatching { OfferPriceCacheStore.update(applicationContext,cacheKey,minima,emptySet(),checkStarted,checkedAt,"") }
+                }
                 current.put("last", cheapest?.price ?: -1.0)
                 current.put("checked", checkedAt)
                 current.put("totalCount", catalog.offers.size+ggselOffers.size)
@@ -620,6 +628,17 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                     if(current.optLong("checked",0L)<=checkStarted) {
                         current.put("error", e.message ?: "Ошибка сети")
                         current.put("failedAt", System.currentTimeMillis())
+                    }
+                }
+                if (retained) {
+                    val appId=watch.optInt("steamAppId",0)
+                    if(appId>0) {
+                        val cacheFilters=ManualSearchFilters(type=watch.optString("kind","Все"),edition="Игра",confirmedRf=true)
+                        val aliases=ManualSearchSettings.games(applicationContext).firstOrNull {it.appId==appId}?.aliases.orEmpty()
+                        val key=OfferPriceCache.key(appId,cacheFilters,GameRuleStore.read(applicationContext,name),
+                            IgnoredStore.ids(applicationContext),CatalogPageSettings.pages(applicationContext),aliases)
+                        runCatching { OfferPriceCacheStore.update(applicationContext,key,emptyMap(),setOf("Plati","GGSEL"),
+                            checkStarted,System.currentTimeMillis(),e.message ?: "Ошибка проверки") }
                     }
                 }
                 failed=failed || retained

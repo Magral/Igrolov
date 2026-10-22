@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 mkdir -p device-results
-trap 'adb logcat -d > device-results/logcat.txt; adb shell screencap -p /sdcard/igrolov.png; adb pull /sdcard/igrolov.png device-results/screen.png || true; adb pull /sdcard/Android/data/ru.igrolov.app/files/wishlist.png device-results/wishlist.png || true; adb pull /sdcard/Android/data/ru.igrolov.app/files/game-card-last.png device-results/game-card-last.png || true' EXIT
+trap 'adb logcat -d > device-results/logcat.txt; adb shell screencap -p /sdcard/igrolov.png; adb pull /sdcard/igrolov.png device-results/screen.png || true; adb pull /sdcard/Android/data/ru.igrolov.app/files/wishlist.png device-results/wishlist.png || true; adb pull /sdcard/Android/data/ru.igrolov.app/files/game-card-last.png device-results/game-card-last.png || true; adb pull /sdcard/Android/data/ru.igrolov.app/files/offer-cache-last.png device-results/offer-cache-last.png || true' EXIT
 baseline_apk=$(find baseline -type f -name '*.apk' -print -quit)
 current_apk=$(find current -type f -name '*.apk' -print -quit)
 test_apk=$(find tests -type f -name '*.apk' -print -quit)
@@ -16,6 +16,15 @@ run_test() {
 run_test seedUpgradeData
 adb install -r "$current_apk"
 run_test verifyUpgradeData
+
+adb shell am force-stop ru.igrolov.app
+adb shell am instrument -w -r -e class 'ru.igrolov.app.OfferPriceCacheUiTest#batchRetainsSuccessfulTimesOnSourceFailures' ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/offer-cache-batch.txt
+grep -E 'OK \(1 test\)' device-results/offer-cache-batch.txt
+adb pull /sdcard/Android/data/ru.igrolov.app/files/offer-cache-batch.png device-results/offer-cache-batch.png
+adb shell am force-stop ru.igrolov.app
+adb shell am instrument -w -r -e class 'ru.igrolov.app.OfferPriceCacheUiTest#restartRestoresCachedPricesAndOriginalSuccessfulTime' ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/offer-cache-restored.txt
+grep -E 'OK \(1 test\)' device-results/offer-cache-restored.txt
+adb pull /sdcard/Android/data/ru.igrolov.app/files/offer-cache-restored.png device-results/offer-cache-restored.png
 
 adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class ru.igrolov.app.GameCardMonitoringTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/game-card-monitoring.txt

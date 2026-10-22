@@ -43,7 +43,8 @@ data class LeaderOfferPrices(
     val platiMinimum: Double? = null,
     val ggselMinimum: Double? = null,
     val checkedAt: Long? = null,
-    val message: String = ""
+    val message: String = "",
+    val scopeKey: String = ""
 )
 
 object LeaderOfferSelector {
