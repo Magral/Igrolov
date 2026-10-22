@@ -52,14 +52,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T13:56:07.291Z
+- Обновлено (UTC): 2026-10-22T14:05:57.208Z
 - Ветка: `main`.
-- HEAD: [`8aafa0917654`](https://github.com/Magral/Igrolov/commit/8aafa09176549d78cf3c63f5e6ea116dabada2dc).
+- HEAD: [`96a2cfb68cae`](https://github.com/Magral/Igrolov/commit/96a2cfb68caef3b41273fc3ffd180259a3d5ee8a).
 - Последний опубликованный стабильный GitHub Release: [v1.2.6](https://github.com/Magral/Igrolov/releases/tag/v1.2.6); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [96a2cfb](https://github.com/Magral/Igrolov/commit/96a2cfb68caef3b41273fc3ffd180259a3d5ee8a) — test: use Compose semantics for filter persistence on API 26
 - [8aafa09](https://github.com/Magral/Igrolov/commit/8aafa09176549d78cf3c63f5e6ea116dabada2dc) — release: Игролов 1.2.7 — exclude editors from legacy UI scrolling
 - [e8ceae2](https://github.com/Magral/Igrolov/commit/e8ceae2dabf9f8acc4949867438842948b55f0cc) — release: Игролов 1.2.7 — assert displayed price through Compose semantics
 - [117708c](https://github.com/Magral/Igrolov/commit/117708ca7121686bf983cd53acd5c129dee9cbae) — release: Игролов 1.2.7 — await offscreen search state before revealing offers
-- [b2f0ed6](https://github.com/Magral/Igrolov/commit/b2f0ed6ba57ef4ac865f33108f8bc7fc37ae5545) — release: Игролов 1.2.7 — scroll Stellaris regression through Compose semantics
 <!-- AUTO_CONTEXT_END -->
