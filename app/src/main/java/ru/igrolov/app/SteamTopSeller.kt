@@ -38,6 +38,50 @@ data class SteamRankingPage(
     val hasMore: Boolean get() = nextStart < totalCount
 }
 
+data class SteamLeaderFilters(
+    val maxPriceRub: Double? = null,
+    val minimumDiscountPercent: Int? = null,
+    val minimumReviewPercent: Int? = null
+)
+
+/** Applies optional Steam RU price, discount, and review filters to a loaded Leaders list. */
+object SteamLeaderFilter {
+    fun apply(games: List<SteamTopSeller>, filters: SteamLeaderFilters): List<SteamTopSeller> {
+        val maximumPrice = filters.maxPriceRub?.takeIf { it > 0.0 }
+        val minimumDiscount = filters.minimumDiscountPercent?.takeIf { it > 0 }?.coerceIn(1, 100)
+        val minimumReview = filters.minimumReviewPercent?.takeIf { it > 0 }?.coerceIn(1, 100)
+        return games.filter { game ->
+            val priceMatches = maximumPrice == null || parsePriceRub(game.steamPrice)?.let { it <= maximumPrice } == true
+            val discountMatches = minimumDiscount == null || game.discountPercent >= minimumDiscount
+            val reviewMatches = minimumReview == null || (game.reviewSummary?.percent ?: -1) >= minimumReview
+            priceMatches && discountMatches && reviewMatches
+        }
+    }
+
+    fun parsePriceRub(value: String): Double? {
+        val compact = value.replace(Regex("\\s+"), "")
+        val numeric = compact.replace(Regex("[^0-9,.]"), "")
+        if (numeric.isBlank()) return null
+        val comma = numeric.lastIndexOf(',')
+        val dot = numeric.lastIndexOf('.')
+        val normalized = when {
+            comma >= 0 && dot >= 0 -> {
+                val decimal = if (comma > dot) ',' else '.'
+                val grouping = if (decimal == ',') '.' else ','
+                numeric.replace(grouping.toString(), "").replace(decimal, '.')
+            }
+            comma >= 0 || dot >= 0 -> {
+                val separator = if (comma >= 0) ',' else '.'
+                val digitsAfter = numeric.length - numeric.lastIndexOf(separator) - 1
+                if (digitsAfter in 1..2) numeric.replace(separator, '.')
+                else numeric.replace(separator.toString(), "")
+            }
+            else -> numeric
+        }
+        return normalized.toDoubleOrNull()?.takeIf { it > 0.0 }
+    }
+}
+
 data class LeaderOfferPrices(
     val checking: Boolean = false,
     val platiMinimum: Double? = null,
