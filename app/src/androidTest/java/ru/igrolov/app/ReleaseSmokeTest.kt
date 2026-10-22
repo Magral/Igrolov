@@ -1,5 +1,9 @@
 package ru.igrolov.app
 
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import org.junit.Rule
 import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
@@ -17,6 +21,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class ReleaseSmokeTest {
+    @get:Rule val compose = createEmptyComposeRule()
     private val context get() = ApplicationProvider.getApplicationContext<Context>()
     @Test fun seedUpgradeData() {
         assertTrue(context.getSharedPreferences("game_watches",0).edit().putString("watches","""[{"name":"Cyberpunk 2077","kind":"Key","limit":1000,"rf":true,"notified":["10005"],"history":[{"at":1792468800000,"price":500,"count":1}]}]""").commit())
@@ -106,10 +111,10 @@ class ReleaseSmokeTest {
             assertTrue(device.wait(Until.hasObject(By.textContains("Namtar")),5000))
         }
         val scroll=UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(20)
-        UiTestScroll.reveal(device,"Stellaris")
+        UiTestScroll.reveal(compose,"Stellaris")
         assertTrue(device.hasObject(By.text("Stellaris")))
         if (!device.hasObject(By.textContains("Plati от 750 ₽"))) {
-            UiTestScroll.reveal(device,"Plati от 750 ₽",contains=true)
+            UiTestScroll.reveal(compose,"Plati от 750 ₽",contains=true)
         }
         assertTrue(device.hasObject(By.text("900 руб.")))
         assertTrue(device.hasObject(By.text("−50% · Steam RU")))

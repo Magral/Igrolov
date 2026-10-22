@@ -1,5 +1,9 @@
 package ru.igrolov.app
 
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import org.junit.Rule
 import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
@@ -21,6 +25,7 @@ import java.net.URLStreamHandler
 
 @RunWith(AndroidJUnit4::class)
 class GameCardMonitoringTest {
+    @get:Rule val compose = createEmptyComposeRule()
     @After fun captureCardScreen() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).takeScreenshot(
@@ -71,10 +76,10 @@ class GameCardMonitoringTest {
         device.findObject(By.text("Лидеры")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Загружено: 1 из 100")), 15000))
         val scroll = UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(20)
-        UiTestScroll.reveal(device,"92%")
+        UiTestScroll.reveal(compose,"92%")
         assertTrue(device.wait(Until.hasObject(By.text("92%")), 5000))
         assertTrue(device.hasObject(By.desc("Положительные отзывы")))
-        UiTestScroll.reveal(device,"В мониторинг")
+        UiTestScroll.reveal(compose,"В мониторинг")
         device.findObject(By.text("В мониторинг")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Желаемая цена, ₽")), 5000))
         assertTrue(device.wait(Until.hasObject(By.clazz("android.widget.EditText")), 5000))
@@ -96,8 +101,8 @@ class GameCardMonitoringTest {
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null), "leader-review-monitor.png"))
 
         device.findObject(By.text("Желания")).click()
-        UiTestScroll.reveal(device,"Dead by Daylight")
-        UiTestScroll.reveal(device,"В мониторинг")
+        UiTestScroll.reveal(compose,"Dead by Daylight")
+        UiTestScroll.reveal(compose,"В мониторинг")
         device.findObject(By.text("В мониторинг")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Желаемая цена, ₽")), 5000))
         assertTrue(device.wait(Until.hasObject(By.clazz("android.widget.EditText")), 5000))

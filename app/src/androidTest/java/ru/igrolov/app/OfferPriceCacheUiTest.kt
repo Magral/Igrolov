@@ -1,5 +1,9 @@
 package ru.igrolov.app
 
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import org.junit.Rule
 import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
@@ -21,6 +25,7 @@ import java.net.URLStreamHandler
 
 @RunWith(AndroidJUnit4::class)
 class OfferPriceCacheUiTest {
+    @get:Rule val compose = createEmptyComposeRule()
     private val context get()=ApplicationProvider.getApplicationContext<Context>()
     private val device get()=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
     private val games=listOf(WishlistGame(281990,"Stellaris","900 руб."),WishlistGame(381210,"Dead by Daylight",""))
@@ -29,7 +34,7 @@ class OfferPriceCacheUiTest {
         device.dumpWindowHierarchy(java.io.File(context.getExternalFilesDir(null),"offer-cache-last.xml"))
     }
     private fun reveal(text:String) {
-        UiTestScroll.reveal(device,text)
+        UiTestScroll.reveal(compose,text)
     }
     private fun launchWishlist() {
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
@@ -77,9 +82,9 @@ class OfferPriceCacheUiTest {
             .putString("wishlist_selected_profile",profile.steamId64).commit()
         launchWishlist()
         reveal("Выбрать первые 5")
-        device.findObject(By.text("Выбрать первые 5")).click()
+        compose.onNodeWithText("Выбрать первые 5").performClick()
         assertTrue(device.wait(Until.hasObject(By.text("Проверить выбранные (2)")),5000))
-        device.findObject(By.text("Проверить выбранные (2)")).click()
+        compose.onNodeWithText("Проверить выбранные (2)").performClick()
         assertTrue(device.wait(Until.hasObject(By.text("Готово 2 / 2")),90000))
         val cached=OfferPriceCacheStore.readAll(context)
         for(i in 0 until keys.length()) {
@@ -110,7 +115,7 @@ class OfferPriceCacheUiTest {
         launchWishlist()
         reveal("Stellaris")
         if(!device.hasObject(By.textContains("Plati от 500 ₽"))) {
-            UiTestScroll.reveal(device,"Plati от 500 ₽",contains=true)
+            UiTestScroll.reveal(compose,"Plati от 500 ₽",contains=true)
         }
         assertTrue(device.wait(Until.hasObject(By.textContains("Plati от 500 ₽")),5000))
         assertTrue(device.hasObject(By.textContains("ошибка обновления")))
