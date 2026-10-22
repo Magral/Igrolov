@@ -52,15 +52,15 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T16:18:22.772Z
+- Обновлено (UTC): 2026-10-22T16:18:31.234Z
 - Ветка: `main`.
-- HEAD: [`e43bdae5f1db`](https://github.com/Magral/Igrolov/commit/e43bdae5f1db8cd29d03f6725d533d6ab4f42c7a).
+- HEAD: [`f851cc7c47f8`](https://github.com/Magral/Igrolov/commit/f851cc7c47f8e8305def332c0b5990730a0f850a).
 - Опубликованный стабильный GitHub Release не найден.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [64744d5](https://github.com/Magral/Igrolov/commit/64744d5f8af61e708033f8dbc02e9e99c37fde67) — test: expect no schedule without a monitor attempt
 - [a3639ba](https://github.com/Magral/Igrolov/commit/a3639ba5d98c925082260d3932d6971873d87c93) — feat: show expected checks and monitor exclusion reasons
 - [1eaa2be](https://github.com/Magral/Igrolov/commit/1eaa2be7e95dab683c3b5ce0e6626979159f6f9a) — feat: align monitoring interval with displayed estimate
 - [6a3277f](https://github.com/Magral/Igrolov/commit/6a3277f366b369937dd297261f2a8a357dac9c75) — test: cover monitoring schedule and diagnostics
 - [cc63758](https://github.com/Magral/Igrolov/commit/cc6375855c10265b06138ef325597be4466e551b) — feat: add monitor schedule and no-offer diagnostics
-- [4fd16d9](https://github.com/Magral/Igrolov/commit/4fd16d9c844246672394eb784f33d7bce5edba96) — fix: ignore currency punctuation in Steam price parsing
 <!-- AUTO_CONTEXT_END -->
