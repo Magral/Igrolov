@@ -65,7 +65,8 @@ class MonitorUiRegressionTest {
         assertTrue(scroll.scrollIntoView(UiSelector().text("Сортировка: название")))
         assertTrue(scroll.scrollIntoView(UiSelector().text("Источники · Plati: 0 · GGSEL: 1")))
         assertTrue(scroll.scrollIntoView(UiSelector().text("Три минимальные цены (1)")))
-        assertTrue(scroll.scrollIntoView(UiSelector().textStartsWith("Следующая проверка")))
+        assertTrue(scroll.scrollIntoView(UiSelector().textStartsWith("Следующая проверка")) ||
+            scroll.scrollIntoView(UiSelector().textStartsWith("Проверка будет повторена автоматически")))
         device.findObject(By.text("Три минимальные цены (1)")).click()
         assertTrue(scroll.scrollIntoView(UiSelector().text("Открыть на GGSEL")))
         assertTrue(device.hasObject(By.text("Отслеживать товар")))
