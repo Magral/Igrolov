@@ -38,6 +38,33 @@ data class SteamRankingPage(
     val hasMore: Boolean get() = nextStart < totalCount
 }
 
+data class SteamLeaderFilterInput(
+    val expanded: Boolean = false,
+    val maxPriceText: String = "",
+    val minimumDiscountText: String = "",
+    val minimumReviewText: String = ""
+) {
+    private fun parsedPrice(): Double? = maxPriceText.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it > 0.0 }
+    private fun parsedPercent(value: String): Int? = value.trim().toIntOrNull()?.takeIf { it in 0..100 }
+
+    val activeFilterCount: Int get() = listOf(
+        parsedPrice() != null,
+        (parsedPercent(minimumDiscountText) ?: 0) > 0,
+        (parsedPercent(minimumReviewText) ?: 0) > 0
+    ).count { it }
+
+    val hasInvalidInput: Boolean get() =
+        (maxPriceText.isNotBlank() && parsedPrice() == null) ||
+            (minimumDiscountText.isNotBlank() && parsedPercent(minimumDiscountText) == null) ||
+            (minimumReviewText.isNotBlank() && parsedPercent(minimumReviewText) == null)
+
+    fun toFilters() = SteamLeaderFilters(
+        maxPriceRub = parsedPrice(),
+        minimumDiscountPercent = parsedPercent(minimumDiscountText)?.takeIf { it > 0 },
+        minimumReviewPercent = parsedPercent(minimumReviewText)?.takeIf { it > 0 }
+    )
+}
+
 data class SteamLeaderFilters(
     val maxPriceRub: Double? = null,
     val minimumDiscountPercent: Int? = null,
