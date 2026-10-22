@@ -31,6 +31,27 @@ object MonitorPolicy {
     }
 }
 
+object MonitorSchedule {
+    const val CHECK_INTERVAL_MILLIS = 60L * 60L * 1000L
+
+    /** WorkManager runs approximately hourly; this is an estimate from the latest attempt. */
+    fun expectedNextCheck(checkedAt: Long, failedAt: Long): Long? {
+        val latestAttempt = maxOf(checkedAt, failedAt)
+        return latestAttempt.takeIf { it > 0L }?.plus(CHECK_INTERVAL_MILLIS)
+    }
+}
+
+object MonitorDiagnostics {
+    fun noOfferReason(totalCount: Int, eligibleCount: Int, rejectedCount: Int, hasError: Boolean): String? {
+        if (hasError || eligibleCount > 0) return null
+        return when {
+            totalCount <= 0 -> "Кандидаты основной игры Steam не найдены в каталогах Plati и GGSEL."
+            rejectedCount > 0 -> "Найдено кандидатов: $totalCount, но ни один не прошёл проверки основной игры, Gift/Key, РФ, наличия и цены."
+            else -> "Подходящих предложений пока нет."
+        }
+    }
+}
+
 object WatchHistory {
     data class Point(val at:Long,val price:Double?)
     fun points(history:JSONArray):List<Point> = (0 until history.length()).mapNotNull {i ->
