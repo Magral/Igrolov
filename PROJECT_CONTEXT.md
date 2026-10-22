@@ -52,14 +52,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T11:25:33.162Z
+- Обновлено (UTC): 2026-10-22T11:33:47.117Z
 - Ветка: `main`.
-- HEAD: [`117708ca7121`](https://github.com/Magral/Igrolov/commit/117708ca7121686bf983cd53acd5c129dee9cbae).
+- HEAD: [`e8ceae2dabf9`](https://github.com/Magral/Igrolov/commit/e8ceae2dabf9f8acc4949867438842948b55f0cc).
 - Последний опубликованный стабильный GitHub Release: [v1.2.6](https://github.com/Magral/Igrolov/releases/tag/v1.2.6); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [e8ceae2](https://github.com/Magral/Igrolov/commit/e8ceae2dabf9f8acc4949867438842948b55f0cc) — release: Игролов 1.2.7 — assert displayed price through Compose semantics
 - [117708c](https://github.com/Magral/Igrolov/commit/117708ca7121686bf983cd53acd5c129dee9cbae) — release: Игролов 1.2.7 — await offscreen search state before revealing offers
 - [b2f0ed6](https://github.com/Magral/Igrolov/commit/b2f0ed6ba57ef4ac865f33108f8bc7fc37ae5545) — release: Игролов 1.2.7 — scroll Stellaris regression through Compose semantics
 - [122b158](https://github.com/Magral/Igrolov/commit/122b1580ec7a18c27d43acf113746b88e8d10362) — release: Игролов 1.2.7 — qualify catalogue state Context type
-- [e6180d5](https://github.com/Magral/Igrolov/commit/e6180d51da64ab736dc4a1c9ae30b97adcf52f0c) — release: Игролов 1.2.7 — isolate catalogue state and navigation composition
 <!-- AUTO_CONTEXT_END -->
