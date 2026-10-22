@@ -3,6 +3,7 @@ package ru.igrolov.app
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.json.JSONObject
 
 class SteamTopSellerTest {
     @Test fun rankingRowsKeepSteamAppIdsAndTitles() {
@@ -52,5 +53,26 @@ class SteamTopSellerTest {
         val result = SteamTopSellerParser.applyRuDetails(game, "not-json", false)
         assertEquals(SteamRuAvailability.UNKNOWN, result.availability)
         assertTrue(result.steamPrice.isBlank())
+    }
+
+    @Test fun marketplaceMinimumRequiresConfirmedRuGiftOrKeyBaseGame() {
+        fun offer(id: String, price: Double, type: String = "Gift", region: String = "РФ указана в названии",
+                  edition: String = "Игра", marketplace: String = "Plati") = Offer(
+            id, "Stellaris Steam $type RU", price, type, region, edition,
+            detailsChecked = true, available = true, priceVerified = true, marketplace = marketplace
+        )
+        val offers = listOf(
+            offer("p1", 500.0), offer("p2", 350.0),
+            offer("g1", 400.0, type = "Key", marketplace = "GGSEL"),
+            offer("foreign", 100.0, region = "Регион не подтверждён"),
+            offer("dlc", 50.0, edition = "DLC"),
+            offer("unknown", 10.0, type = "Не указан")
+        )
+
+        val minima = LeaderOfferSelector.minimumConfirmedByMarketplace(
+            offers, ManualSearchFilters(), JSONObject(), emptySet()
+        )
+
+        assertEquals(mapOf("Plati" to 350.0, "GGSEL" to 400.0), minima)
     }
 }

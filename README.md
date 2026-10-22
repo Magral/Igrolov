@@ -1,12 +1,12 @@
-# Игролов 1.2.0
+# Игролов 1.2.1
 
 Android-приложение для поиска предложений Steam-игр на Plati и GGSEL, сравнения цен, списков желаний и ценового мониторинга.
 
-В 1.2.0 модернизирована вкладка лидеров Steam: показывается AppID, цена Steam RU и скидка, добавлены фильтры доступности в российском Steam. Статус недоступности подтверждается двумя ответами Steam; сетевые ошибки остаются неопределёнными. DLC скрыты. Из игры можно перейти к проверенному поиску Plati и GGSEL по тому же AppID.
+В 1.2.1 в карточке каждой игры в лидерах можно проверить минимальные цены Plati и GGSEL. Показываются только подтверждённые предложения Gift/Key для Steam RU; DLC исключаются. На время сбоя источника сохраняется последняя подтверждённая цена. Фильтры доступности, AppID и цена/скидка Steam RU остаются в карточке.
 
-Стабильный релиз: [Игролов 1.2.0](https://github.com/Magral/Igrolov/releases/tag/v1.2.0).
-- Сборка: versionCode 124, versionName 1.2.0.
-- Чек-лист: [RELEASE_120_CHECKLIST.md](RELEASE_120_CHECKLIST.md), изменения: [CHANGELOG_120.md](CHANGELOG_120.md), заметки: [RELEASE_NOTES_120.md](RELEASE_NOTES_120.md).
+Стабильный релиз: [Игролов 1.2.1](https://github.com/Magral/Igrolov/releases/tag/v1.2.1).
+- Сборка: versionCode 126, versionName 1.2.1.
+- Чек-лист: [RELEASE_121_CHECKLIST.md](RELEASE_121_CHECKLIST.md), изменения: [CHANGELOG_121.md](CHANGELOG_121.md), заметки: [RELEASE_NOTES_121.md](RELEASE_NOTES_121.md).
 
 ## Поиск
 

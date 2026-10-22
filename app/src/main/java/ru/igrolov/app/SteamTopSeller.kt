@@ -14,6 +14,31 @@ data class SteamTopSeller(
     val isGame: Boolean = true
 )
 
+data class LeaderOfferPrices(
+    val checking: Boolean = false,
+    val platiMinimum: Double? = null,
+    val ggselMinimum: Double? = null,
+    val checkedAt: Long? = null,
+    val message: String = ""
+)
+
+object LeaderOfferSelector {
+    fun minimumConfirmedByMarketplace(
+        offers: List<Offer>,
+        filters: ManualSearchFilters,
+        rules: JSONObject,
+        ignored: Set<String>
+    ): Map<String, Double> {
+        val strictFilters = filters.copy(type = "Все", edition = "Игра", confirmedRf = true)
+        return offers.asSequence()
+            .filter { it.type == "Gift" || it.type == "Key" }
+            .filter { ManualSearchFilter.rejection(it, strictFilters, rules, ignored) == null }
+            .filter { it.available == true && it.priceVerified && it.price > 0.0 }
+            .groupBy { it.marketplace }
+            .mapValues { (_, matches) -> matches.minOf { it.price } }
+    }
+}
+
 /** Parsing and RU-region evidence for Steam's paid top-seller rows. */
 object SteamTopSellerParser {
     private val row = Regex("(?is)<a\\b[^>]*class=[\"'][^\"']*search_result_row[^\"']*[\"'][^>]*>.*?</a>")
