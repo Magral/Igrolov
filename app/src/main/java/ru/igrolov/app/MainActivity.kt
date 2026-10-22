@@ -2127,6 +2127,8 @@ class MainActivity : ComponentActivity() {
                         Text(if (loadMoreBusy) "Загружаем…" else "Загрузить ещё")
                     }
                 }
+
+            }
                 leaderDetailsGame?.let { game ->
                     AlertDialog(
                         onDismissRequest = { leaderDetailsGame = null },
@@ -2152,7 +2154,6 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 }
-            }
             }
             ScreenSection {
             if (settingsOpen && !showDirectory) {

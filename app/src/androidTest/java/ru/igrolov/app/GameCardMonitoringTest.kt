@@ -2,6 +2,7 @@ package ru.igrolov.app
 
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.semantics.SemanticsActions
 import org.junit.Rule
@@ -108,6 +109,13 @@ class GameCardMonitoringTest {
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null), "leader-review-monitor.png"))
 
         compose.onNodeWithText("Желания").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitForIdle()
+        UiTestScroll.reveal(compose,"Подробнее")
+        compose.onAllNodesWithText("Подробнее").onFirst()
+            .performSemanticsAction(SemanticsActions.OnClick) { it() }
+        assertTrue(UiTestScroll.await(compose,5000) { device.hasObject(By.text("Закрыть")) })
+        assertTrue(UiTestScroll.await(compose,10000) { device.hasObject(By.text("A strategy game.")) })
+        compose.onNodeWithText("Закрыть").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         UiTestScroll.reveal(compose,"Dead by Daylight")
         UiTestScroll.reveal(compose,"В мониторинг")
