@@ -67,11 +67,12 @@ class StellarisUiRegressionTest {
         UiTestScroll.reveal(compose,"Искать")
         compose.onNodeWithText("Искать").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
-        assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.textContains("Проверено:")) })
+        compose.waitUntil(15000) {
+            compose.onAllNodesWithText("Проверено:", substring=true).fetchSemanticsNodes().isNotEmpty()
+        }
         UiTestScroll.reveal(compose,"Предложения по цене ↑ · 1")
-        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Stellaris Steam Key РФ")) })
-        assertEquals(1,device.findObjects(By.text("Stellaris Steam Key РФ")).size)
-        assertFalse(device.hasObject(By.text("Stellaris Utopia Steam Key РФ")))
+        compose.onAllNodesWithText("Stellaris Steam Key РФ").assertCountEquals(1)
+        compose.onNodeWithText("Stellaris Utopia Steam Key РФ").assertDoesNotExist()
         val priceVisible = { device.hasObject(By.textContains("1 000,00 ₽")) || device.hasObject(By.textContains("1000,00 ₽")) || device.hasObject(By.textContains("1 000,00 ₽")) }
         compose.onAllNodes(hasText("1 000,00 ₽", substring=true) or
             hasText("1000,00 ₽", substring=true) or hasText("1 000,00 ₽", substring=true))
