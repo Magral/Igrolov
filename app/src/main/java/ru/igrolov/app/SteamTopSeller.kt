@@ -59,16 +59,16 @@ object SteamTopSellerParser {
         return result.values.toList()
     }
 
-    /** `success=false` alone is ambiguous; a successful independent RU store search is required to mark unavailable. */
+    /** Store search visibility does not prove RU purchase availability; only positive regional price/free evidence does. */
     fun applyRuDetails(game: SteamTopSeller, json: String, ruSearchContainsApp: Boolean?): SteamTopSeller {
         val root = runCatching { JSONObject(json) }.getOrNull() ?: return game
         val entry = root.optJSONObject(game.appId.toString()) ?: return game
         if (!entry.has("success")) return game
         if (!entry.optBoolean("success")) {
             val status = when (ruSearchContainsApp) {
-                true -> SteamRuAvailability.AVAILABLE
+                // Regional search can still list products that Steam says cannot be purchased in this region.
+                true, null -> SteamRuAvailability.UNKNOWN
                 false -> SteamRuAvailability.UNAVAILABLE
-                null -> SteamRuAvailability.UNKNOWN
             }
             return game.copy(availability = status)
         }

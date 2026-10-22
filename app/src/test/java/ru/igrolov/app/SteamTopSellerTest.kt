@@ -29,15 +29,23 @@ class SteamTopSellerTest {
         assertEquals(75, result.discountPercent)
     }
 
-    @Test fun unsuccessfulAppDetailsNeedIndependentRuSearchEvidence() {
+    @Test fun regionalSearchPresenceDoesNotProvePurchaseAvailability() {
         val game = SteamTopSeller(281990, "Stellaris")
         val json = """{"281990":{"success":false}}"""
         assertEquals(SteamRuAvailability.UNKNOWN,
             SteamTopSellerParser.applyRuDetails(game, json, null).availability)
-        assertEquals(SteamRuAvailability.AVAILABLE,
+        assertEquals(SteamRuAvailability.UNKNOWN,
             SteamTopSellerParser.applyRuDetails(game, json, true).availability)
         assertEquals(SteamRuAvailability.UNAVAILABLE,
             SteamTopSellerParser.applyRuDetails(game, json, false).availability)
+    }
+
+    @Test fun successfulDetailsWithoutRegionalPriceDoNotProveAvailability() {
+        val game = SteamTopSeller(281990, "Stellaris")
+        val result = SteamTopSellerParser.applyRuDetails(game,
+            """{"281990":{"success":true,"data":{"type":"game","name":"Stellaris"}}}""", true)
+        assertEquals(SteamRuAvailability.UNKNOWN, result.availability)
+        assertTrue(result.steamPrice.isBlank())
     }
 
     @Test fun dlcTypeIsMarkedForExclusionFromLeaderRows() {
