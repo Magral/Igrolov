@@ -61,14 +61,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T22:25:10.134Z
+- Обновлено (UTC): 2026-10-22T23:59:52.356Z
 - Ветка: `main`.
-- HEAD: [`611ef8be09b6`](https://github.com/Magral/Igrolov/commit/611ef8be09b610fc2e4e9efc8259d3fb67757ab4).
+- HEAD: [`a84c8c54491b`](https://github.com/Magral/Igrolov/commit/a84c8c54491bd17874db0119aced5fc3a09fdc28).
 - Последний опубликованный стабильный GitHub Release: [v1.3.2](https://github.com/Magral/Igrolov/releases/tag/v1.3.2); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [a84c8c5](https://github.com/Magral/Igrolov/commit/a84c8c54491bd17874db0119aced5fc3a09fdc28) — release: prepare Игролов 1.3.3
 - [611ef8b](https://github.com/Magral/Igrolov/commit/611ef8be09b610fc2e4e9efc8259d3fb67757ab4) — docs: record published Игролов 1.3.2
 - [360d043](https://github.com/Magral/Igrolov/commit/360d043db29fb10703ed50b37eb858a4d1c570df) — release: fix wishlist thumbnail app ID call for Игролов 1.3.2
 - [da89edf](https://github.com/Magral/Igrolov/commit/da89edfb1dbc1572a3135df30979fbf0a8fef66e) — release: prepare Игролов 1.3.2
-- [b1a1210](https://github.com/Magral/Igrolov/commit/b1a1210997a2935160fd09c08c36c8669eac7eac) — docs: record published Игролов 1.3.1
 <!-- AUTO_CONTEXT_END -->
