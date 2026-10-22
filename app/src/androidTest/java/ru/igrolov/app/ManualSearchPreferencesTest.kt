@@ -5,10 +5,12 @@ import android.content.Intent
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertTextEquals
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -63,7 +65,8 @@ class ManualSearchPreferencesTest {
         assertEquals(expected, ManualSearchSettings.read(context))
         open()
         UiTestScroll.reveal(compose, "Цена до, ₽")
-        compose.onAllNodes(hasSetTextAction()).get(1).assertTextEquals("2500")
+        compose.onAllNodes(hasSetTextAction()).get(1)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("2500")))
         compose.onNodeWithText("Цена до, ₽").assertIsDisplayed()
         assertTrue(ManualSearchSettings.games(context).any { it.appId == 281990 })
         assertEquals(expected, ManualSearchSettings.read(context))
