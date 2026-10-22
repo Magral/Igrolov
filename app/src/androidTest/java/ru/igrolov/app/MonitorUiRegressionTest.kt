@@ -57,6 +57,7 @@ class MonitorUiRegressionTest {
         val scroll=UiScrollable(UiSelector().className("android.widget.ScrollView").scrollable(true)).setMaxSearchSwipes(30)
         assertTrue(scroll.scrollIntoView(UiSelector().text("Источники · Plati: 0 · GGSEL: 1")))
         assertTrue(scroll.scrollIntoView(UiSelector().text("Три минимальные цены (1)")))
+        assertTrue(scroll.scrollIntoView(UiSelector().textStartsWith("Следующая проверка")))
         device.findObject(By.text("Три минимальные цены (1)")).click()
         assertTrue(scroll.scrollIntoView(UiSelector().text("Открыть на GGSEL")))
         assertTrue(device.hasObject(By.text("Отслеживать товар")))
