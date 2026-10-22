@@ -52,14 +52,15 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T16:03:39.896Z
+- Обновлено (UTC): 2026-10-22T16:04:03.794Z
 - Ветка: `main`.
-- HEAD: [`674904a12d87`](https://github.com/Magral/Igrolov/commit/674904a12d871486cb2ec11bf9e7a58241f15084).
+- HEAD: [`336210b2c200`](https://github.com/Magral/Igrolov/commit/336210b2c2001f082aac54d61252134f827147f8).
 - Опубликованный стабильный GitHub Release не найден.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [336210b](https://github.com/Magral/Igrolov/commit/336210b2c2001f082aac54d61252134f827147f8) — feat: add price discount and review filters to Leaders
+- [7c97016](https://github.com/Magral/Igrolov/commit/7c9701691c18a04b5b091fe73b2417aed2da6fe9) — feat: add input state for Steam leaders filters
 - [2e91505](https://github.com/Magral/Igrolov/commit/2e91505d88a34b3dbbca8916a14604e19bb0fbaa) — test: cover Steam leaders filters
 - [f194eba](https://github.com/Magral/Igrolov/commit/f194eba64bbdf28cce6bb829aeb8828a5a4f7fda) — feat: add Steam leaders filter model
 - [ba1533d](https://github.com/Magral/Igrolov/commit/ba1533dc34a8f9893bf3a1b1bfbd5635ca545c99) — feat: add Steam artwork and details to wishlist games
-- [0679ba0](https://github.com/Magral/Igrolov/commit/0679ba0ae06bc0ae4228860e9bad519825ff36bb) — docs: close v1.2.7 release checklist
 <!-- AUTO_CONTEXT_END -->
