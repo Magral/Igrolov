@@ -1630,17 +1630,38 @@ class MainActivity : ComponentActivity() {
                         Text(w.optString("name"), style = MaterialTheme.typography.titleMedium)
                         Text("${w.optString("kind")} · цель: ${w.optDouble("limit").toInt()} ₽ · РФ: ${if (w.optBoolean("rf",true)) "да" else "не обязательно"}")
                         Text(if (w.optDouble("last", -1.0) > 0) "Последний найденный минимум: ${w.optDouble("last").toInt()} ₽" else "Проверка ещё не завершена или подходящих товаров нет")
-                        if (w.optLong("checked", 0L) > 0L) {
-                            val stamp = java.text.SimpleDateFormat("dd.MM HH:mm", Locale("ru", "RU"))
-                                .format(java.util.Date(w.optLong("checked")))
-                            Text("Последняя проверка: $stamp", style = MaterialTheme.typography.bodySmall)
+                        val checkedAt = w.optLong("checked", 0L)
+                        val failedAt = w.optLong("failedAt", 0L)
+                        val monitorDate = java.text.SimpleDateFormat("dd.MM HH:mm", Locale("ru", "RU"))
+                        if (checkedAt > 0L) {
+                            Text("Последняя проверка: ${monitorDate.format(java.util.Date(checkedAt))}",
+                                style = MaterialTheme.typography.bodySmall)
+                        }
+                        val expectedCheck = MonitorSchedule.expectedNextCheck(checkedAt, failedAt)
+                        if (expectedCheck != null) {
+                            val expectedStamp = monitorDate.format(java.util.Date(expectedCheck))
+                            val expectation = if (expectedCheck <= System.currentTimeMillis())
+                                "Следующая проверка ожидается; расчётное время $expectedStamp уже прошло"
+                            else "Ожидаемая следующая проверка: $expectedStamp"
+                            Text("$expectation · ориентировочно, Android может задержать",
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        } else {
+                            Text("Следующая проверка — по расписанию, примерно раз в час.",
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         if(w.optInt("steamAppId")>0) Text("Steam #${w.optInt("steamAppId")}",style=MaterialTheme.typography.bodySmall)
                         if (w.has("error")) Text("Ошибка проверки: ${w.optString("error")}. Показаны предыдущие данные.", style = MaterialTheme.typography.bodySmall)
                         if(w.has("notificationError"))Text(w.optString("notificationError"),style=MaterialTheme.typography.bodySmall)
-                        if (w.optLong("checked", 0L) > 0L) {
-                                        if (w.has("eligibleCount") && w.optInt("eligibleCount") == 0) Text("Подходящих предложений нет — это не ошибка сети.", style = MaterialTheme.typography.bodySmall)
-                                        else if (w.has("verifiedCount") && w.optInt("verifiedCount", 0) == 0) Text("Нет предложений с подтверждёнными наличием, ценой, РФ и способом передачи; уведомления не отправляются.", style = MaterialTheme.typography.bodySmall)
+                        if (w.has("checked") && w.has("eligibleCount")) {
+                            MonitorDiagnostics.noOfferReason(
+                                totalCount = w.optInt("totalCount", 0),
+                                eligibleCount = w.optInt("eligibleCount", 0),
+                                rejectedCount = w.optInt("rejectedCount", 0),
+                                hasError = w.has("error")
+                            )?.let { reason ->
+                                Text(reason, style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                         }
                         val sourceCounts=w.optJSONObject("sourceCounts")
                         if(sourceCounts!=null) Text("Источники · Plati: ${sourceCounts.optInt("Plati")} · GGSEL: ${sourceCounts.optInt("GGSEL")}",style=MaterialTheme.typography.bodySmall)
