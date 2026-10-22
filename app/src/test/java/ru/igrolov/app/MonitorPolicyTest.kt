@@ -8,7 +8,7 @@ import org.junit.Test
 class MonitorPolicyTest {
     private fun offer(price:Double=100.0)=Offer("123456","Stellaris Steam Key РФ",price,"Key","РФ указана в названии","Игра",detailsChecked=true,available=true,priceVerified=true)
     @Test fun expectedNextCheckUsesLatestSuccessfulOrFailedAttempt() {
-        assertEquals(3600000L, MonitorSchedule.expectedNextCheck(0L, 0L) ?: 0L)
+        assertNull(MonitorSchedule.expectedNextCheck(0L, 0L))
         assertEquals(4600000L, MonitorSchedule.expectedNextCheck(1000000L, 100000L))
         assertEquals(4600000L, MonitorSchedule.expectedNextCheck(100000L, 1000000L))
     }
