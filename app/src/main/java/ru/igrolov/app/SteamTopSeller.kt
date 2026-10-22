@@ -87,7 +87,7 @@ object SteamLeaderFilter {
 
     fun parsePriceRub(value: String): Double? {
         val compact = value.replace(Regex("\\s+"), "")
-        val numeric = compact.replace(Regex("[^0-9,.]"), "")
+        val numeric = compact.replace(Regex("[^0-9,.]"), "").trim(',', '.')
         if (numeric.isBlank()) return null
         val comma = numeric.lastIndexOf(',')
         val dot = numeric.lastIndexOf('.')
