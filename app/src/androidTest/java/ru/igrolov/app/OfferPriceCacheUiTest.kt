@@ -2,7 +2,8 @@ package ru.igrolov.app
 
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.semantics.SemanticsActions
 import org.junit.Rule
 import android.content.Context
 import android.content.Intent
@@ -39,7 +40,7 @@ class OfferPriceCacheUiTest {
     private fun launchWishlist() {
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.2.7")),15000))
-        compose.onNodeWithText("Желания").performClick()
+        compose.onNodeWithText("Желания").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertTrue(device.wait(Until.hasObject(By.textContains("Price cache test")),5000))
     }
     @Test fun batchRetainsSuccessfulTimesOnSourceFailures() {
@@ -82,9 +83,9 @@ class OfferPriceCacheUiTest {
             .putString("wishlist_selected_profile",profile.steamId64).commit()
         launchWishlist()
         reveal("Выбрать первые 5")
-        compose.onNodeWithText("Выбрать первые 5").performClick()
+        compose.onNodeWithText("Выбрать первые 5").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertTrue(device.wait(Until.hasObject(By.text("Проверить выбранные (2)")),5000))
-        compose.onNodeWithText("Проверить выбранные (2)").performClick()
+        compose.onNodeWithText("Проверить выбранные (2)").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertTrue(device.wait(Until.hasObject(By.text("Готово 2 / 2")),90000))
         val cached=OfferPriceCacheStore.readAll(context)
         for(i in 0 until keys.length()) {
