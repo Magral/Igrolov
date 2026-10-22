@@ -51,6 +51,31 @@ class SteamTopSellerTest {
         assertEquals(games, SteamLeaderSection.TOP_SELLERS.filter(games))
     }
 
+    @Test fun leaderFiltersUseRegionalPriceDiscountAndAvailableReviewPercent() {
+        val games = listOf(
+            SteamTopSeller(1, "Affordable", steamPrice = "599 руб.", discountPercent = 25,
+                reviewSummary = SteamReviewSummary(92, 100)),
+            SteamTopSeller(2, "Expensive", steamPrice = "1 599 руб.", discountPercent = 50,
+                reviewSummary = SteamReviewSummary(95, 100)),
+            SteamTopSeller(3, "No regional price", steamPrice = "", discountPercent = 80,
+                reviewSummary = SteamReviewSummary(99, 100)),
+            SteamTopSeller(4, "No reviews", steamPrice = "499 руб.", discountPercent = 30)
+        )
+
+        val filtered = SteamLeaderFilter.apply(games, SteamLeaderFilters(
+            maxPriceRub = 700.0, minimumDiscountPercent = 20, minimumReviewPercent = 90
+        ))
+
+        assertEquals(listOf(1), filtered.map { it.appId })
+    }
+
+    @Test fun russianSteamPriceParserHandlesGroupedAndDecimalValues() {
+        assertEquals(1599.0, SteamLeaderFilter.parsePriceRub("1 599 руб.")!!, 0.0)
+        assertEquals(1299.0, SteamLeaderFilter.parsePriceRub("1 299 ₽")!!, 0.0)
+        assertEquals(99.99, SteamLeaderFilter.parsePriceRub("99,99 руб.")!!, 0.0)
+        assertEquals(null, SteamLeaderFilter.parsePriceRub("Цена не указана"))
+    }
+
     @Test fun rankingRowsKeepSteamAppIdsAndTitles() {
         val rows = SteamTopSellerParser.parseRankingHtml("""
             <a class="search_result_row" data-ds-appid="281990"><span class="title">Stellaris</span></a>
