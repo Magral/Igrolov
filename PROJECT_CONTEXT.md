@@ -4,12 +4,12 @@
 
 ## Проверенный опубликованный статус
 
-- Стабильный релиз: [v1.2.8](https://github.com/Magral/Igrolov/releases/tag/v1.2.8).
-- APK: [Igrolov-1.2.8.apk](https://github.com/Magral/Igrolov/releases/download/v1.2.8/Igrolov-1.2.8.apk).
-- versionName 1.2.8, versionCode 133.
-- Release commit: `3330ba791c70da88cd9bb5b62c76815bfbfe94c8`.
-- Actions [39825768617](https://github.com/Magral/Igrolov/actions/runs/39825768617): unit-тесты, Debug APK, instrumentation APK, live smoke, UI на API 26 и 29, публикация release — успешно.
-- Чек-лист: `RELEASE_128_CHECKLIST.md`. SHA-256 APK: `24368119cae346914662abde0000aaf1f4766c4e158092a9d55489cfbbe828e7`.
+- Стабильный релиз: [v1.2.9](https://github.com/Magral/Igrolov/releases/tag/v1.2.9).
+- APK: [Igrolov-1.2.9.apk](https://github.com/Magral/Igrolov/releases/download/v1.2.9/Igrolov-1.2.9.apk).
+- versionName 1.2.9, versionCode 134.
+- Release commit: `37002112bb64fe4c47fab305810f35101b3fffe4`.
+- Actions [39830742947](https://github.com/Magral/Igrolov/actions/runs/39830742947): unit-тесты, Debug APK, instrumentation APK, live smoke, UI на API 26 и 29, публикация release — успешно.
+- Чек-лист: `RELEASE_129_CHECKLIST.md`. SHA-256 APK: `9e7bea54749fa4ed29a95d0d65e61897906542e5f7f9c8593a8b21fcc4e009c1`.
 
 ## Реализовано
 
@@ -22,6 +22,7 @@
 - Общий рейтинг за всё время загружается независимо от RU через актуальный IUserReviewsService/GetAppReviews с резервом /appreviews и кэшируется на 6 часов. Пустые или ошибочные данные не превращаются в 0%.
 - Из «Лидеров» и желаемого можно добавить игру в мониторинг: целевая цена, Все/Gift/Key, только РФ. После добавления запускается обычная проверка Plati/GGSEL, карточки показывают «В мониторинге».
 - Идентичность мониторинга учитывает Steam AppID и тип предложения; переименование игры не создаёт дубликат того же типа.
+- В 1.2.9 исправлена кнопка «Подробнее» в «Желаемом»: диалог с изображением и описанием Steam рендерится и при активной вкладке желаемого.
 
 ## Техническое замечание
 

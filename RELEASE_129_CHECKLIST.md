@@ -4,4 +4,4 @@
 - [x] Добавлена UI-регрессия на открытие диалога, описание Steam и закрытие.
 - [x] Полный Actions `39829548940` зелёный на API 26/29 для кода с исправлением.
 - [x] versionName 1.2.9 / versionCode 134.
-- [ ] Release commit: unit-тесты, APK, instrumentation APK, live smoke, UI API 26/29 и публикация GitHub Release.
+- [x] Release commit `3700211`: Actions `39830742947` успешно прошёл unit-тесты, APK, instrumentation, live smoke, UI API 26/29 и опубликовал GitHub Release v1.2.9.
