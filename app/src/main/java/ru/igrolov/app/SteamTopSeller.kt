@@ -111,6 +111,22 @@ object SteamTopSellerParser {
         return result.values.toList()
     }
 
+    /** Fills artwork and description from the global store without changing RU evidence. */
+    fun applyGlobalMetadata(game: SteamTopSeller, json: String): SteamTopSeller {
+        val root = runCatching { JSONObject(json) }.getOrNull() ?: return game
+        val entry = root.optJSONObject(game.appId.toString()) ?: return game
+        if (!entry.optBoolean("success")) return game
+        val data = entry.optJSONObject("data") ?: return game
+        if (data.optString("type") != "game") return game
+        return game.copy(
+            title = game.title.ifBlank { data.optString("name").trim() },
+            headerImageUrl = game.headerImageUrl.ifBlank { data.optString("header_image").trim() },
+            description = game.description.ifBlank {
+                data.optString("short_description").ifBlank { data.optString("about_the_game") }.trim()
+            }
+        )
+    }
+
     /** Store search visibility does not prove RU purchase availability; only positive regional price/free evidence does. */
     fun applyRuDetails(game: SteamTopSeller, json: String, ruSearchContainsApp: Boolean?): SteamTopSeller {
         val root = runCatching { JSONObject(json) }.getOrNull() ?: return game

@@ -76,6 +76,23 @@ class SteamTopSellerTest {
         assertEquals("A strategy game.", result.description)
     }
 
+    @Test fun globalMetadataFillsArtworkAndDescriptionWithoutChangingRuEvidence() {
+        val game = SteamTopSeller(
+            123456, "Original title", steamPrice = "", availability = SteamRuAvailability.UNAVAILABLE
+        )
+        val result = SteamTopSellerParser.applyGlobalMetadata(game, """
+            {"123456":{"success":true,"data":{"type":"game","name":"Global title",
+              "header_image":"https://cdn.example/header.jpg","short_description":"Global description.",
+              "price_overview":{"final_formatted":"$19.99"}}}}
+        """.trimIndent())
+
+        assertEquals("Original title", result.title)
+        assertEquals("https://cdn.example/header.jpg", result.headerImageUrl)
+        assertEquals("Global description.", result.description)
+        assertEquals("", result.steamPrice)
+        assertEquals(SteamRuAvailability.UNAVAILABLE, result.availability)
+    }
+
     @Test fun regionalSearchPresenceDoesNotProvePurchaseAvailability() {
         val game = SteamTopSeller(281990, "Stellaris")
         val json = """{"281990":{"success":false}}"""

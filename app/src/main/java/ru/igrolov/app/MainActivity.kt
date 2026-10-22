@@ -322,22 +322,34 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkTopSellerRu(game: SteamTopSeller): SteamTopSeller {
-        return try {
+        val regional = try {
             val details = steamGet("https://store.steampowered.com/api/appdetails?appids=${game.appId}&cc=ru&l=russian")
             val entry = JSONObject(details).optJSONObject(game.appId.toString())
-            if (entry?.optBoolean("success") == true) SteamTopSellerParser.applyRuDetails(game, details, null)
-            else {
-                // Steam sometimes omits appdetails in RU; corroborate a negative result with a separate regional search.
+            if (entry?.optBoolean("success") == true) {
+                SteamTopSellerParser.applyRuDetails(game, details, null)
+            } else {
+                // A failed RU appdetails response describes the region, so corroborate it only with the RU search.
                 val term = URLEncoder.encode(game.title, "UTF-8")
-                val search = JSONObject(steamGet("https://store.steampowered.com/api/storesearch/?term=$term&l=russian&cc=ru"))
-                val items = search.optJSONArray("items") ?: return game
-                val found = (0 until items.length()).any { index ->
-                    val item = items.optJSONObject(index) ?: return@any false
-                    item.optInt("id", item.optInt("appid", 0)) == game.appId
-                }
-                SteamTopSellerParser.applyRuDetails(game, details, found)
+                val searchContainsApp = runCatching {
+                    val search = JSONObject(steamGet("https://store.steampowered.com/api/storesearch/?term=$term&l=russian&cc=ru"))
+                    val items = search.optJSONArray("items") ?: return@runCatching null
+                    (0 until items.length()).any { index ->
+                        val item = items.optJSONObject(index) ?: return@any false
+                        item.optInt("id", item.optInt("appid", 0)) == game.appId
+                    }
+                }.getOrNull()
+                SteamTopSellerParser.applyRuDetails(game, details, searchContainsApp)
             }
         } catch (_: Exception) { game }
+
+        // The global store supplies artwork and description for games without a Russian store page.
+        // Its price and availability are deliberately ignored: only cc=ru can establish RU status.
+        return if (regional.headerImageUrl.isBlank() || regional.description.isBlank()) {
+            runCatching {
+                val global = steamGet("https://store.steampowered.com/api/appdetails?appids=${game.appId}&cc=us&l=russian")
+                SteamTopSellerParser.applyGlobalMetadata(regional, global)
+            }.getOrDefault(regional)
+        } else regional
     }
 
     private fun fetchSteamRankingPage(
@@ -1057,7 +1069,7 @@ class MainActivity : ComponentActivity() {
             }
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Игролов 1.2.4", style = MaterialTheme.typography.headlineSmall)
+                Text("Игролов 1.2.5", style = MaterialTheme.typography.headlineSmall)
                 IconButton(onClick = { settingsOpen = !settingsOpen; showDirectory = false }) {
                     Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                         color = MaterialTheme.colorScheme.onSurface)
@@ -1475,19 +1487,24 @@ class MainActivity : ComponentActivity() {
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     filteredOffers.take(visibleOfferLimit).forEach { offer ->
                         ElevatedCard(Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(10.dp)) {
+                            Column(Modifier.padding(horizontal = 9.dp, vertical = 7.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(offer.marketplace, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                                Text(offer.name, style = MaterialTheme.typography.bodyMedium)
-                                if (offer.categoryLabel.isNotBlank()) Text(offer.categoryLabel, style = MaterialTheme.typography.bodySmall)
-                                if (offer.purchaseNote.isNotBlank()) Text(offer.purchaseNote, style = MaterialTheme.typography.bodySmall)
-                                Text("${offer.type} · ${offer.rfStatus} · " + String.format(Locale("ru", "RU"), "%.2f ₽", offer.price))
-                                Text(if (offer.variablePrice) "Цена варианта не подтверждена" else offer.edition, style = MaterialTheme.typography.bodySmall)
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    TextButton(onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(
+                                Text(offer.name, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
+                                if (offer.categoryLabel.isNotBlank()) Text(offer.categoryLabel, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                                if (offer.purchaseNote.isNotBlank()) Text(offer.purchaseNote, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                                Text("${offer.type} · ${offer.rfStatus} · " + String.format(Locale("ru", "RU"), "%.2f ₽", offer.price),
+                                    style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                                Text(if (offer.variablePrice) "Цена варианта не подтверждена" else offer.edition,
+                                    style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    OutlinedButton(onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(
                                         offer.productUrl.ifBlank { "https://plati.market/itm/${offer.id}" }
                                     ))) },
-                                        modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp)) { Text("Открыть", maxLines = 1) }
-                                    TextButton(onClick = {
+                                        modifier = Modifier.weight(1f).height(36.dp),
+                                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                                        Text("Открыть", maxLines = 1, style = MaterialTheme.typography.labelSmall)
+                                    }
+                                    OutlinedButton(onClick = {
                                         val tracked=TrackedPriceCache.fromOffer(offer.copy(
                                             canonical=offer.canonical.ifBlank { selectedGame?.name ?: query },
                                             steamAppId=offer.steamAppId.takeIf { it>0 } ?: selectedGame?.appId ?: 0
@@ -1502,24 +1519,27 @@ class MainActivity : ComponentActivity() {
                                             }
                                         }
                                     }, enabled = offer.marketplace in setOf("Plati","GGSEL") &&
-                                        items.none { it.storageKey==TrackedPriceCache.storageKey(offer.marketplace,offer.id) }, modifier = Modifier.weight(1f),
-                                        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp)) {
+                                        items.none { it.storageKey==TrackedPriceCache.storageKey(offer.marketplace,offer.id) },
+                                        modifier = Modifier.weight(1f).height(36.dp),
+                                        contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp)) {
                                         Text(if (items.any { it.storageKey==TrackedPriceCache.storageKey(offer.marketplace,offer.id) })
                                             "Уже отслеживается" else "Отслеживать",
                                             maxLines = 1, style = MaterialTheme.typography.labelSmall)
                                     }
                                 }
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    TextButton(onClick = {
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    OutlinedButton(onClick = {
                                         IgnoredStore.add(this@MainActivity, offer.id, offer.name)
                                         ignoredIds = IgnoredStore.ids(this@MainActivity)
-                                    }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp)) {
+                                    }, modifier = Modifier.weight(1f).height(36.dp),
+                                        contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp)) {
                                         Text("Игнорировать", maxLines = 1, style = MaterialTheme.typography.labelSmall)
                                     }
-                                    TextButton(onClick = {
+                                    OutlinedButton(onClick = {
                                         GameRuleStore.add(this@MainActivity, query, "blocked", offer.name)
                                         rulesRevision++
-                                    }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp)) {
+                                    }, modifier = Modifier.weight(1f).height(36.dp),
+                                        contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp)) {
                                         Text("Исключить как DLC", maxLines = 1, style = MaterialTheme.typography.labelSmall)
                                     }
                                 }
