@@ -52,14 +52,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T14:10:26.436Z
+- Обновлено (UTC): 2026-10-22T14:17:36.563Z
 - Ветка: `main`.
-- HEAD: [`504bfa30f55c`](https://github.com/Magral/Igrolov/commit/504bfa30f55c349e2c86ee31cfaeb99619504399).
+- HEAD: [`c4b1ca93b217`](https://github.com/Magral/Igrolov/commit/c4b1ca93b217162a396ec8bda812c51b0f37e028).
 - Последний опубликованный стабильный GitHub Release: [v1.2.6](https://github.com/Magral/Igrolov/releases/tag/v1.2.6); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [c4b1ca9](https://github.com/Magral/Igrolov/commit/c4b1ca93b217162a396ec8bda812c51b0f37e028) — fix: select price field by Compose semantics index
 - [504bfa3](https://github.com/Magral/Igrolov/commit/504bfa30f55c349e2c86ee31cfaeb99619504399) — fix: remove invalid Compose test import
 - [96a2cfb](https://github.com/Magral/Igrolov/commit/96a2cfb68caef3b41273fc3ffd180259a3d5ee8a) — test: use Compose semantics for filter persistence on API 26
 - [8aafa09](https://github.com/Magral/Igrolov/commit/8aafa09176549d78cf3c63f5e6ea116dabada2dc) — release: Игролов 1.2.7 — exclude editors from legacy UI scrolling
-- [e8ceae2](https://github.com/Magral/Igrolov/commit/e8ceae2dabf9f8acc4949867438842948b55f0cc) — release: Игролов 1.2.7 — assert displayed price through Compose semantics
 <!-- AUTO_CONTEXT_END -->
