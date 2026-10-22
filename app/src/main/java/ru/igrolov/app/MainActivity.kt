@@ -2567,7 +2567,7 @@ class MainActivity : ComponentActivity() {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Column(Modifier.width(116.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                             SteamArtwork(
-                                game.headerImageUrl.ifBlank { "https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/header.jpg" },
+                                "https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/header.jpg",
                                 Modifier.size(112.dp, 63.dp),
                                 appId = game.appId
                             )
