@@ -2,7 +2,9 @@
 
 - [x] В мониторинге добавлены фильтры и сортировка списка игр.
 - [x] Добавлены unit-тесты фильтрации, сортировки и сохранения исходного индекса записи.
-- [ ] Unit-тесты и сборка APK/instrumentation прошли в GitHub Actions.
-- [ ] UI-сценарии прошли на Android API 26 и 29.
-- [ ] Live smoke GGSEL и Steam прошёл.
+- [x] Unit-тесты и сборка APK/instrumentation прошли в GitHub Actions.
+- [x] UI-сценарии прошли на Android API 26 и 29.
+- [x] Live smoke GGSEL и Steam прошёл.
 - [ ] Опубликован GitHub Release v1.3.0 с APK.
+
+- Actions run [39849465972](https://github.com/Magral/Igrolov/actions/runs/39849465972) прошёл успешно; APK-релиз будет опубликован release workflow.
