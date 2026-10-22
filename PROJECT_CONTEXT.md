@@ -57,14 +57,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T17:57:54.766Z
+- Обновлено (UTC): 2026-10-22T18:04:53.951Z
 - Ветка: `main`.
-- HEAD: [`b172fa54b8d2`](https://github.com/Magral/Igrolov/commit/b172fa54b8d2687c31527a59a8a162672b6b5031).
+- HEAD: [`94de2ed39ae5`](https://github.com/Magral/Igrolov/commit/94de2ed39ae5b5004864f7144d14acd912689893).
 - Последний опубликованный стабильный GitHub Release: [v1.2.8](https://github.com/Magral/Igrolov/releases/tag/v1.2.8); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [94de2ed](https://github.com/Magral/Igrolov/commit/94de2ed39ae5b5004864f7144d14acd912689893) — fix: show Steam details from wishlist
 - [b172fa5](https://github.com/Magral/Igrolov/commit/b172fa54b8d2687c31527a59a8a162672b6b5031) — docs: close Игролов 1.2.8 release checklist
 - [3330ba7](https://github.com/Magral/Igrolov/commit/3330ba791c70da88cd9bb5b62c76815bfbfe94c8) — release: finalize Игролов 1.2.8
 - [12c8981](https://github.com/Magral/Igrolov/commit/12c8981c52756718a167f50c75f9d161f9c33974) — test: update UI smoke version for 1.2.8
-- [8dba563](https://github.com/Magral/Igrolov/commit/8dba56314baed8bcebfd8217da8f85520526630e) — test: align smoke test with 1.2.8
 <!-- AUTO_CONTEXT_END -->
