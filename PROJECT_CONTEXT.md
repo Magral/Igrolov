@@ -58,14 +58,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T20:40:27.922Z
+- Обновлено (UTC): 2026-10-22T20:49:38.499Z
 - Ветка: `main`.
-- HEAD: [`55a45048240a`](https://github.com/Magral/Igrolov/commit/55a45048240a341bf4d11d2a6bf9a426cdf657c2).
+- HEAD: [`b19da3adfbdc`](https://github.com/Magral/Igrolov/commit/b19da3adfbdc4d9af4ee53015c27a121539deeb7).
 - Последний опубликованный стабильный GitHub Release: [v1.3.0](https://github.com/Magral/Igrolov/releases/tag/v1.3.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [b19da3a](https://github.com/Magral/Igrolov/commit/b19da3adfbdc4d9af4ee53015c27a121539deeb7) — docs: record published Игролов 1.3.0
 - [55a4504](https://github.com/Magral/Igrolov/commit/55a45048240a341bf4d11d2a6bf9a426cdf657c2) — release: prepare Игролов 1.3.0
 - [14c696b](https://github.com/Magral/Igrolov/commit/14c696bf843d65899c541f1c8a772238e4d91012) — test: verify monitor list controls without altering seeded state
 - [c04fdf5](https://github.com/Magral/Igrolov/commit/c04fdf5ee3d48e09d62468b47cdee65edb349533) — test: accept monitor retry schedule state
-- [04d626a](https://github.com/Magral/Igrolov/commit/04d626a8c659d1dd64551a3ecf97bddf6fb17d7a) — test: reveal selected monitor sort control
 <!-- AUTO_CONTEXT_END -->
