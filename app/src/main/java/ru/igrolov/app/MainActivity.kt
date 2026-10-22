@@ -724,7 +724,7 @@ class MainActivity : ComponentActivity() {
         content()
     }
 
-    private class CatalogueUiState(prefs: android.content.SharedPreferences, context: Context) {
+    private class CatalogueUiState(prefs: android.content.SharedPreferences, context: android.content.Context) {
         var wishlistProfile by mutableStateOf(if (prefs.getString("wishlist_profiles", null).isNullOrBlank())
             prefs.getString("wishlist_profile", "") ?: "" else "")
         var wishlistProfiles by mutableStateOf(SteamWishlist.decodeProfiles(prefs.getString("wishlist_profiles", null)).ifEmpty {
