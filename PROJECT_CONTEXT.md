@@ -52,14 +52,13 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T16:20:46.887Z
+- Обновлено (UTC): 2026-10-22T16:29:52.465Z
 - Ветка: `main`.
-- HEAD: [`dec8498be280`](https://github.com/Magral/Igrolov/commit/dec8498be2801e11ea70c430d1d0ac2f71919c4c).
-- Опубликованный стабильный GitHub Release не найден.
+- HEAD: [`f94ee96e7cfb`](https://github.com/Magral/Igrolov/commit/f94ee96e7cfbfcd905dda4ec9608fd1399b9ab20).
+- Последний опубликованный стабильный GitHub Release: [v1.2.7](https://github.com/Magral/Igrolov/releases/tag/v1.2.7); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [f94ee96](https://github.com/Magral/Igrolov/commit/f94ee96e7cfbfcd905dda4ec9608fd1399b9ab20) — test: avoid flaky history gap text lookup
 - [dd1c50d](https://github.com/Magral/Igrolov/commit/dd1c50d414c9ada5aaea79cee9268dcdce19c192) — ui: use consistent next-check label
 - [9ada5c9](https://github.com/Magral/Igrolov/commit/9ada5c93cdd94f436c4b4d8b1079054f4f62364d) — test: verify monitor card shows next check
-- [98735c7](https://github.com/Magral/Igrolov/commit/98735c779b075d5ca42d0db007bcc33bb7c0b100) — fix: explain monitor retries without a false hourly estimate
-- [7c77ace](https://github.com/Magral/Igrolov/commit/7c77aceebe2b9103019bf2b3032156ec11b5aaac) — test: distinguish retry from hourly monitor schedule
 <!-- AUTO_CONTEXT_END -->
