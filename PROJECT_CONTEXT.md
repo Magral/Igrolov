@@ -52,15 +52,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T16:03:30.761Z
+- Обновлено (UTC): 2026-10-22T16:03:39.896Z
 - Ветка: `main`.
-- HEAD: [`2e91505d88a3`](https://github.com/Magral/Igrolov/commit/2e91505d88a34b3dbbca8916a14604e19bb0fbaa).
-- Последний опубликованный стабильный GitHub Release: [v1.2.7](https://github.com/Magral/Igrolov/releases/tag/v1.2.7); APK-файлы: есть вложение APK.
+- HEAD: [`674904a12d87`](https://github.com/Magral/Igrolov/commit/674904a12d871486cb2ec11bf9e7a58241f15084).
+- Опубликованный стабильный GitHub Release не найден.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
 - [2e91505](https://github.com/Magral/Igrolov/commit/2e91505d88a34b3dbbca8916a14604e19bb0fbaa) — test: cover Steam leaders filters
 - [f194eba](https://github.com/Magral/Igrolov/commit/f194eba64bbdf28cce6bb829aeb8828a5a4f7fda) — feat: add Steam leaders filter model
 - [ba1533d](https://github.com/Magral/Igrolov/commit/ba1533dc34a8f9893bf3a1b1bfbd5635ca545c99) — feat: add Steam artwork and details to wishlist games
 - [0679ba0](https://github.com/Magral/Igrolov/commit/0679ba0ae06bc0ae4228860e9bad519825ff36bb) — docs: close v1.2.7 release checklist
-- [e9ac09a](https://github.com/Magral/Igrolov/commit/e9ac09a57050a8933dd38b7e618f99b4b9da0235) — release: prepare Игролов 1.2.7
 <!-- AUTO_CONTEXT_END -->
