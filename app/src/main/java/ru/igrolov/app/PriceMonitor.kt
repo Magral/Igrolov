@@ -251,8 +251,8 @@ object WatchStore {
         val arr = read(context)
         for (i in 0 until arr.length()) {
             val obj = arr.optJSONObject(i) ?: continue
-            if (obj.optString("name").equals(name, true) && obj.optString("kind") == kind) {
-                obj.put("limit", limit).put("rf", rf)
+            if (WatchGameIdentity.matches(obj, appId ?: 0, name) && obj.optString("kind") == kind) {
+                obj.put("name", name).put("limit", limit).put("rf", rf)
                 if(appId!=null && appId>0)obj.put("steamAppId",appId)
                 write(context, arr); return
             }

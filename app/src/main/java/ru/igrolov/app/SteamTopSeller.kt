@@ -26,7 +26,8 @@ data class SteamTopSeller(
     val isGame: Boolean = true,
     val isFree: Boolean = false,
     val headerImageUrl: String = "",
-    val description: String = ""
+    val description: String = "",
+    val reviewSummary: SteamReviewSummary? = null
 )
 
 data class SteamRankingPage(

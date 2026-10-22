@@ -36,6 +36,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import org.json.JSONObject
 import org.json.JSONArray
@@ -367,10 +369,44 @@ class MainActivity : ComponentActivity() {
         return SteamTopSellerParser.parseSearchPage(steamGet(url), start)
     }
 
+    private fun loadSteamReviewSummary(appId: Int): SteamReviewSummary? {
+        val cache = getSharedPreferences("steam_review_cache", MODE_PRIVATE)
+        val now = System.currentTimeMillis()
+        val age = now - cache.getLong("$appId:at", 0L)
+        if (age in 0 until 6L * 60 * 60 * 1000) {
+            cache.getString("$appId:json", null)?.let { SteamReviews.parse(it) }?.let { return it }
+        }
+        for (url in listOf(SteamReviews.requestUrl(appId), SteamReviews.legacyRequestUrl(appId))) {
+            val raw = runCatching { steamGet(url) }.getOrNull() ?: continue
+            val result = SteamReviews.parse(raw) ?: continue
+            cache.edit().putString("$appId:json", raw).putLong("$appId:at", now).apply()
+            return result
+        }
+        return null
+    }
+
+    @Composable
+    private fun SteamReviewBadge(summary: SteamReviewSummary?) {
+        val percent = summary?.percent ?: return
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text("$percent%", style = MaterialTheme.typography.labelMedium)
+            if (summary.tone != SteamReviewTone.NEUTRAL) {
+                Icon(painterResource(R.drawable.ic_thumb_up),
+                    contentDescription = if (summary.tone == SteamReviewTone.POSITIVE) "Положительные отзывы" else "Низкий рейтинг",
+                    tint = if (summary.tone == SteamReviewTone.POSITIVE) Color(0xFF218739) else Color(0xFFC62828),
+                    modifier = Modifier.size(14.dp).rotate(if (summary.tone == SteamReviewTone.NEGATIVE) 180f else 0f))
+            }
+        }
+    }
+
     private fun enrichSteamGames(games: List<SteamTopSeller>): List<SteamTopSeller> {
         val pool = Executors.newFixedThreadPool(4)
         return try {
-            pool.invokeAll(games.map { game -> java.util.concurrent.Callable { checkTopSellerRu(game) } })
+            pool.invokeAll(games.map { game -> java.util.concurrent.Callable {
+                val regional = checkTopSellerRu(game)
+                if (regional.isGame && !regional.isFree) regional.copy(reviewSummary = loadSteamReviewSummary(game.appId))
+                else regional
+            } })
                 .mapNotNull { runCatching { it.get() }.getOrNull() }
                 .filter { it.isGame && !it.isFree }
         } finally { pool.shutdownNow() }
@@ -722,6 +758,23 @@ class MainActivity : ComponentActivity() {
         var discountedHasMore by remember { mutableStateOf(true) }
         var loadMoreBusy by remember { mutableStateOf(false) }
         var leaderDetailsGame by remember { mutableStateOf<SteamTopSeller?>(null) }
+        var pendingWatchGame by remember { mutableStateOf<GameSearchResolver.Candidate?>(null) }
+        var pendingWatchPrice by remember { mutableStateOf("") }
+        var pendingWatchKind by remember { mutableStateOf("Все") }
+        var pendingWatchSaving by remember { mutableStateOf(false) }
+        var pendingWatchError by remember { mutableStateOf("") }
+        val watchEntries = remember(watches) {
+            val array = runCatching { JSONArray(watches) }.getOrDefault(JSONArray())
+            (0 until array.length()).mapNotNull { array.optJSONObject(it) }
+        }
+        fun isGameWatched(appId: Int, name: String) = watchEntries.any { WatchGameIdentity.matches(it, appId, name) }
+        fun openGameMonitoring(appId: Int, name: String) {
+            if (appId <= 0 || name.isBlank() || isGameWatched(appId, name)) return
+            pendingWatchPrice = ""
+            pendingWatchKind = "Все"
+            pendingWatchError = ""
+            pendingWatchGame = GameSearchResolver.Candidate(appId, name)
+        }
         var leaderSection by remember { mutableStateOf(SteamLeaderSection.TOP_SELLERS) }
         var topBusy by remember { mutableStateOf(false) }
         var topError by remember { mutableStateOf("") }
@@ -1067,9 +1120,64 @@ class MainActivity : ComponentActivity() {
                     confirmButton = { TextButton(onClick = { dismissAliasPrompt() }) { Text("Пропустить") } }
                 )
             }
+            pendingWatchGame?.let { game ->
+                AlertDialog(
+                    onDismissRequest = { if (!pendingWatchSaving) pendingWatchGame = null },
+                    title = { Text("В мониторинг") },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(game.name, style = MaterialTheme.typography.titleSmall)
+                            OutlinedTextField(pendingWatchPrice, { pendingWatchPrice = it; pendingWatchError = "" },
+                                label = { Text("Желаемая цена, ₽") }, singleLine = true,
+                                modifier = Modifier.fillMaxWidth(), enabled = !pendingWatchSaving)
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                listOf("Все", "Gift", "Key").forEach { kind ->
+                                    FilterChip(selected = pendingWatchKind == kind, enabled = !pendingWatchSaving,
+                                        onClick = { pendingWatchKind = kind }, label = { Text(kind) })
+                                }
+                            }
+                            Text("Plati и GGSEL · только предложения для РФ", style = MaterialTheme.typography.bodySmall)
+                            if (pendingWatchError.isNotBlank()) Text(pendingWatchError,
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                        }
+                    },
+                    confirmButton = {
+                        Button(enabled = !pendingWatchSaving, onClick = {
+                            val amount = pendingWatchPrice.trim().replace(',', '.').toDoubleOrNull()
+                            if (amount == null || !amount.isFinite() || amount <= 0) {
+                                pendingWatchError = "Введите положительную цену"
+                            } else {
+                                pendingWatchSaving = true
+                                val kind = pendingWatchKind
+                                ioExecutor.execute {
+                                    val result = runCatching {
+                                        WatchStore.add(this@MainActivity, game.name, kind, amount, true, game.appId)
+                                        WatchStore.read(this@MainActivity).toString()
+                                    }
+                                    runOnUiThread {
+                                        pendingWatchSaving = false
+                                        result.onSuccess {
+                                            watches = it
+                                            pendingWatchGame = null
+                                            WatchScheduler.start(this@MainActivity)
+                                            WatchScheduler.checkNow(this@MainActivity)
+                                            if (Build.VERSION.SDK_INT >= 33) askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                        }.onFailure {
+                                            pendingWatchError = "Не удалось добавить игру. Повторите попытку."
+                                        }
+                                    }
+                                }
+                            }
+                        }) { Text(if (pendingWatchSaving) "Добавляем…" else "Добавить") }
+                    },
+                    dismissButton = {
+                        TextButton(enabled = !pendingWatchSaving, onClick = { pendingWatchGame = null }) { Text("Отмена") }
+                    }
+                )
+            }
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Игролов 1.2.5", style = MaterialTheme.typography.headlineSmall)
+                Text("Игролов 1.2.6", style = MaterialTheme.typography.headlineSmall)
                 IconButton(onClick = { settingsOpen = !settingsOpen; showDirectory = false }) {
                     Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                         color = MaterialTheme.colorScheme.onSurface)
@@ -1604,6 +1712,8 @@ class MainActivity : ComponentActivity() {
                             hiddenWishlistSearch = true
                         )
                     },
+                    isMonitored = { game -> isGameWatched(game.appId, game.title) },
+                    onMonitor = { game -> openGameMonitoring(game.appId, game.title) },
                     onShowMore = { wishlistVisibleLimit += 50 }
                 )
             }
@@ -1719,9 +1829,13 @@ class MainActivity : ComponentActivity() {
                                 SteamRuAvailability.UNAVAILABLE -> "Не продаётся в Steam RU"
                                 SteamRuAvailability.UNKNOWN -> "Статус Steam RU не удалось определить"
                             }
-                            Text("Steam RU: ${game.steamPrice.ifBlank { "цена не указана" }}" +
-                                if (game.discountPercent > 0) " · −${game.discountPercent}%" else "",
-                                style = MaterialTheme.typography.bodyMedium)
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("Steam RU: ${game.steamPrice.ifBlank { "цена не указана" }}" +
+                                    if (game.discountPercent > 0) " · −${game.discountPercent}%" else "",
+                                    style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                                SteamReviewBadge(game.reviewSummary)
+                            }
                             if (game.discountPercent > 0 && game.steamInitialPrice.isNotBlank()) {
                                 Text("Было ${game.steamInitialPrice}", style = MaterialTheme.typography.bodySmall.copy(
                                     textDecoration = TextDecoration.LineThrough), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1760,6 +1874,12 @@ class MainActivity : ComponentActivity() {
                                         else -> "Проверить Plati/GGSEL"
                                     })
                                 }
+                            }
+                            OutlinedButton(onClick = { openGameMonitoring(game.appId, game.title) },
+                                enabled = !isGameWatched(game.appId, game.title),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
+                                Text(if (isGameWatched(game.appId, game.title)) "В мониторинге" else "В мониторинг",
+                                    style = MaterialTheme.typography.labelSmall)
                             }
                         }
                     }
@@ -1970,7 +2090,9 @@ class MainActivity : ComponentActivity() {
         onDelete: () -> Unit,
         onOpenSearch: (WishlistGame) -> Unit,
         onSearchPrice: (WishlistGame) -> Unit,
-        onShowMore: () -> Unit
+        onShowMore: () -> Unit,
+        isMonitored: (WishlistGame) -> Boolean,
+        onMonitor: (WishlistGame) -> Unit
     ) {
         ElevatedCard(Modifier.fillMaxWidth(), colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -2053,6 +2175,11 @@ class MainActivity : ComponentActivity() {
                                 enabled = searchEnabled && searchKey != null && searchKey !in searchingKeys,
                                 contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
                                 Text(if (searchKey != null && searchKey in searchingKeys) "Ищем…" else "Искать")
+                            }
+                            OutlinedButton(onClick = { onMonitor(game) }, enabled = game.appId > 0 && !isMonitored(game),
+                                contentPadding = PaddingValues(horizontal = 7.dp, vertical = 0.dp)) {
+                                Text(if (isMonitored(game)) "В мониторинге" else "В мониторинг",
+                                    style = MaterialTheme.typography.labelSmall)
                             }
                         }
                     }
