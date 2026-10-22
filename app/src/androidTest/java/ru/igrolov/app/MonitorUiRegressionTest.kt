@@ -55,7 +55,7 @@ class MonitorUiRegressionTest {
         assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.3.0")),15000))
         device.findObject(By.text("Мониторинг")).click()
         val scroll=UiScrollable(UiSelector().className("android.widget.ScrollView").scrollable(true)).setMaxSearchSwipes(30)
-        assertTrue(device.hasObject(By.text("Показано 1 из 1")))
+        assertTrue(device.wait(Until.hasObject(By.text("Показано 1 из 1")),5000))
         device.findObject(By.text("С ошибкой")).click()
         assertTrue(device.wait(Until.hasObject(By.text("По этому фильтру игр нет.")),3000))
         device.findObjects(By.text("Все")).last().click()
