@@ -1,6 +1,8 @@
 package ru.igrolov.app
 
 import android.os.Bundle
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.text.Html
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.style.TextDecoration
@@ -19,7 +21,11 @@ import androidx.work.WorkInfo
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.sp
@@ -38,7 +44,9 @@ import java.net.URL
 import java.net.URLEncoder
 import java.util.Locale
 import java.util.concurrent.Executors
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 data class Offer(val id: String, val name: String, val price: Double, val type: String, val rfStatus: String, val edition: String, val categoryLabel: String = "", val detailsChecked: Boolean = false, val variablePrice: Boolean = false, val available: Boolean? = null, val priceVerified: Boolean = false, val purchaseNote: String = "", val canonical:String="", val steamAppId:Int=0, val marketplace:String="Plati", val productUrl:String="")
 
@@ -46,6 +54,8 @@ data class Tracked(val id: String, val name: String, val price: Double?, val sta
 
 class MainActivity : ComponentActivity() {
     // Bound concurrent product detail requests so large watch lists do not spawn unlimited threads.
+    private val artworkCache = LinkedHashMap<String, Bitmap>(48, 0.75f, true)
+    private val artworkPermits = java.util.concurrent.Semaphore(4)
     private val detailExecutor = Executors.newFixedThreadPool(4)
     private val ioExecutor = Executors.newSingleThreadExecutor()
     private val wishlistExecutor = Executors.newSingleThreadExecutor()
@@ -330,61 +340,130 @@ class MainActivity : ComponentActivity() {
         } catch (_: Exception) { game }
     }
 
-    // Steam's paid top-seller ranking, enriched with exact AppIDs and regional RU price evidence.
-    // This is a store ranking, not the separate Steam Charts revenue chart.
-    private fun loadPaidTopSellers(callback: (List<SteamTopSeller>, String) -> Unit) {
+    private fun fetchSteamRankingPage(
+        start: Int,
+        count: Int,
+        sortBy: String,
+        filter: String,
+        country: String,
+        language: String
+    ): SteamRankingPage {
+        val filterPart = if (filter.isBlank()) "" else "&filter=$filter"
+        val url = "https://store.steampowered.com/search/results/?" +
+            "query&start=$start&count=$count&dynamic_data=&sort_by=$sortBy" +
+            "$filterPart&category1=998&hidef2p=1&infinite=1&json=1&cc=$country&l=$language"
+        return SteamTopSellerParser.parseSearchPage(steamGet(url), start)
+    }
+
+    private fun enrichSteamGames(games: List<SteamTopSeller>): List<SteamTopSeller> {
+        val pool = Executors.newFixedThreadPool(4)
+        return try {
+            pool.invokeAll(games.map { game -> java.util.concurrent.Callable { checkTopSellerRu(game) } })
+                .mapNotNull { runCatching { it.get() }.getOrNull() }
+                .filter { it.isGame && !it.isFree }
+        } finally { pool.shutdownNow() }
+    }
+
+    // Initial paid top sellers: keep the existing 100-game view, but retain the next Steam offset for the discount subsection.
+    private fun loadPaidTopSellers(callback: (List<SteamTopSeller>, String, Int, Boolean) -> Unit) {
         Thread {
             val games = linkedMapOf<Int, SteamTopSeller>()
+            var nextStart = 0
+            var hasMore = false
             var error = ""
             try {
-                for (start in listOf(0, 50, 100, 150)) {
-                    if (games.size >= 100) break
-                    val url = "https://store.steampowered.com/search/results/?" +
-                        "query&start=$start&count=50&dynamic_data=&sort_by=TopSellers" +
-                        "&category1=998&hidef2p=1&infinite=1&json=1&cc=us&l=english"
-                    val connection = URL(url).openConnection() as HttpURLConnection
-                    connection.connectTimeout = 12000
-                    connection.readTimeout = 20000
-                    connection.setRequestProperty("User-Agent", "Igrolov Android")
-                    try {
-                        if (connection.responseCode !in 200..299) error("Steam HTTP ${connection.responseCode}")
-                        val root = JSONObject(connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
-                        val html = root.optString("results_html", "")
-                        if (html.isBlank()) break
-                        SteamTopSellerParser.parseRankingHtml(html).forEach { games.putIfAbsent(it.appId, it) }
-                    } finally { connection.disconnect() }
+                for (pageIndex in 0 until 2) {
+                    val page = fetchSteamRankingPage(nextStart, 50, "TopSellers", "", "us", "english")
+                    page.games.forEach { games.putIfAbsent(it.appId, it) }
+                    nextStart = page.nextStart
+                    hasMore = page.hasMore
+                    if (page.games.isEmpty() || !hasMore) break
                 }
                 if (games.isEmpty()) error = "Steam не вернул список. Попробуйте обновить позже."
             } catch (e: Exception) { error = e.message ?: "Ошибка загрузки Steam" }
-            val pool = Executors.newFixedThreadPool(4)
-            val checked = try {
-                pool.invokeAll(games.values.take(100).map { game -> java.util.concurrent.Callable { checkTopSellerRu(game) } })
-                    .mapNotNull { runCatching { it.get() }.getOrNull() }
-            } finally { pool.shutdownNow() }
-            runOnUiThread { callback(checked, error) }
+            val checked = enrichSteamGames(games.values.take(100))
+            runOnUiThread { callback(checked, error, nextStart, hasMore) }
         }.start()
     }
 
-    // Steam's popular new releases shelf is localized to RU before exact AppID price/status checks.
-    private fun loadPopularNewReleases(callback: (List<SteamTopSeller>, String) -> Unit) {
+    // Steam Search exposes the same Popular New Releases ranking in pageable result batches.
+    private fun loadPopularNewReleasePage(
+        start: Int,
+        count: Int,
+        callback: (SteamRankingPage, String) -> Unit
+    ) {
+        loadSteamRankingPage(start, count, "Released_DESC", "popularnew", "ru", "russian", callback)
+    }
+
+    private fun loadDiscountedTopSellerPage(
+        start: Int,
+        callback: (SteamRankingPage, String) -> Unit
+    ) {
+        loadSteamRankingPage(start, 50, "TopSellers", "", "us", "english", callback)
+    }
+
+    private fun loadSteamRankingPage(
+        start: Int,
+        count: Int,
+        sortBy: String,
+        filter: String,
+        country: String,
+        language: String,
+        callback: (SteamRankingPage, String) -> Unit
+    ) {
         Thread {
             var error = ""
-            val games = try {
-                SteamTopSellerParser.parseFeaturedCategory(
-                    steamGet("https://store.steampowered.com/api/featuredcategories/?cc=ru&l=russian")
-                )
-            } catch (e: Exception) {
-                error = e.message ?: "Ошибка загрузки новинок Steam"
-                emptyList()
-            }
-            if (games.isEmpty() && error.isBlank()) error = "Steam пока не вернул популярные новинки. Попробуйте обновить позже."
-            val pool = Executors.newFixedThreadPool(4)
-            val checked = try {
-                pool.invokeAll(games.map { game -> java.util.concurrent.Callable { checkTopSellerRu(game) } })
-                    .mapNotNull { runCatching { it.get() }.getOrNull() }
-            } finally { pool.shutdownNow() }
-            runOnUiThread { callback(checked, error) }
+            var page = SteamRankingPage(emptyList(), start, start)
+            try {
+                page = fetchSteamRankingPage(start, count, sortBy, filter, country, language)
+                if (page.games.isEmpty() && start == 0) error = "Steam не вернул список. Попробуйте обновить позже."
+            } catch (e: Exception) { error = e.message ?: "Ошибка загрузки Steam" }
+            val checked = enrichSteamGames(page.games)
+            val result = page.copy(games = checked)
+            runOnUiThread { callback(result, error) }
         }.start()
+    }
+
+    private fun cachedArtwork(url: String): Bitmap? = synchronized(artworkCache) { artworkCache[url] }
+
+    private fun rememberArtwork(url: String, bitmap: Bitmap) {
+        synchronized(artworkCache) {
+            artworkCache[url] = bitmap
+            if (artworkCache.size > 40) {
+                val oldest = artworkCache.entries.iterator()
+                oldest.next()
+                oldest.remove()
+            }
+        }
+    }
+
+    @Composable
+    private fun SteamArtwork(url: String, modifier: Modifier = Modifier) {
+        var bitmap by remember(url) { mutableStateOf(cachedArtwork(url)) }
+        LaunchedEffect(url) {
+            if (url.isNotBlank() && bitmap == null) {
+                val loaded = withContext(Dispatchers.IO) {
+                    artworkPermits.acquire()
+                    try {
+                        cachedArtwork(url) ?: runCatching {
+                            val connection = URL(url).openConnection() as HttpURLConnection
+                            connection.connectTimeout = 8000
+                            connection.readTimeout = 10000
+                            try {
+                                connection.inputStream.use { BitmapFactory.decodeStream(it) }
+                            } finally { connection.disconnect() }
+                        }.getOrNull()?.also { rememberArtwork(url, it) }
+                    } finally { artworkPermits.release() }
+                }
+                bitmap = loaded
+            }
+        }
+        if (bitmap != null) {
+            Image(bitmap!!.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop, modifier = modifier)
+        } else {
+            Box(modifier.background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center) { Text("🎮", style = MaterialTheme.typography.bodySmall) }
+        }
     }
 
     @Composable
@@ -624,27 +703,72 @@ class MainActivity : ComponentActivity() {
         var settingsOpen by remember { mutableStateOf(false) }
         var topGames by remember { mutableStateOf<List<SteamTopSeller>>(emptyList()) }
         var newReleaseGames by remember { mutableStateOf<List<SteamTopSeller>>(emptyList()) }
+        var discountedExtraGames by remember { mutableStateOf<List<SteamTopSeller>>(emptyList()) }
+        var newReleaseNextStart by remember { mutableStateOf(0) }
+        var newReleaseHasMore by remember { mutableStateOf(true) }
+        var discountedNextStart by remember { mutableStateOf(100) }
+        var discountedHasMore by remember { mutableStateOf(true) }
+        var loadMoreBusy by remember { mutableStateOf(false) }
+        var leaderDetailsGame by remember { mutableStateOf<SteamTopSeller?>(null) }
         var leaderSection by remember { mutableStateOf(SteamLeaderSection.TOP_SELLERS) }
         var topBusy by remember { mutableStateOf(false) }
         var topError by remember { mutableStateOf("") }
         var topAvailabilityFilter by remember { mutableStateOf("Все игры") }
         var leaderOfferPrices by remember { mutableStateOf<Map<Int, LeaderOfferPrices>>(emptyMap()) }
         fun refreshTop() {
-            if (topBusy) return
+            if (topBusy || loadMoreBusy) return
             topBusy = true
             topError = ""
             when (leaderSection) {
-                SteamLeaderSection.POPULAR_NEW_RELEASES -> loadPopularNewReleases { games, error ->
-                    newReleaseGames = games
-                    topError = error
-                    topBusy = false
-                }
-                SteamLeaderSection.TOP_SELLERS, SteamLeaderSection.DISCOUNTED_TOP_SELLERS ->
-                    loadPaidTopSellers { games, error ->
-                        topGames = games
+                SteamLeaderSection.POPULAR_NEW_RELEASES -> {
+                    newReleaseGames = emptyList()
+                    newReleaseNextStart = 0
+                    newReleaseHasMore = true
+                    loadPopularNewReleasePage(0, 30) { page, error ->
+                        newReleaseGames = page.games
+                        newReleaseNextStart = page.nextStart
+                        newReleaseHasMore = page.hasMore
                         topError = error
                         topBusy = false
                     }
+                }
+                SteamLeaderSection.TOP_SELLERS, SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> {
+                    discountedExtraGames = emptyList()
+                    discountedNextStart = 100
+                    discountedHasMore = true
+                    loadPaidTopSellers { games, error, nextStart, hasMore ->
+                        topGames = games
+                        discountedNextStart = nextStart
+                        discountedHasMore = hasMore
+                        topError = error
+                        topBusy = false
+                    }
+                }
+            }
+        }
+        fun loadMoreLeaderGames() {
+            if (loadMoreBusy || topBusy) return
+            loadMoreBusy = true
+            topError = ""
+            when (leaderSection) {
+                SteamLeaderSection.POPULAR_NEW_RELEASES ->
+                    loadPopularNewReleasePage(newReleaseNextStart, 30) { page, error ->
+                        newReleaseGames = (newReleaseGames + page.games).distinctBy { it.appId }
+                        newReleaseNextStart = page.nextStart
+                        newReleaseHasMore = page.hasMore
+                        topError = error
+                        loadMoreBusy = false
+                    }
+                SteamLeaderSection.DISCOUNTED_TOP_SELLERS ->
+                    loadDiscountedTopSellerPage(discountedNextStart) { page, error ->
+                        discountedExtraGames = (discountedExtraGames + page.games.filter { it.discountPercent > 0 })
+                            .distinctBy { it.appId }
+                        discountedNextStart = page.nextStart
+                        discountedHasMore = page.hasMore
+                        topError = error
+                        loadMoreBusy = false
+                    }
+                SteamLeaderSection.TOP_SELLERS -> loadMoreBusy = false
             }
         }
         LaunchedEffect(activeTab, settingsOpen, leaderSection, topBusy) {
@@ -933,7 +1057,7 @@ class MainActivity : ComponentActivity() {
             }
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Игролов 1.2.3", style = MaterialTheme.typography.headlineSmall)
+                Text("Игролов 1.2.4", style = MaterialTheme.typography.headlineSmall)
                 IconButton(onClick = { settingsOpen = !settingsOpen; showDirectory = false }) {
                     Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                         color = MaterialTheme.colorScheme.onSurface)
@@ -1474,7 +1598,11 @@ class MainActivity : ComponentActivity() {
                     style = MaterialTheme.typography.bodySmall
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val sectionGames = if (leaderSection == SteamLeaderSection.POPULAR_NEW_RELEASES) newReleaseGames else topGames
+                    val sectionGames = when (leaderSection) {
+                        SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseGames
+                        SteamLeaderSection.TOP_SELLERS -> topGames
+                        SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> topGames + discountedExtraGames
+                    }
                     val countLabel = when (leaderSection) {
                         SteamLeaderSection.TOP_SELLERS -> "Загружено: ${sectionGames.size} из 100"
                         SteamLeaderSection.POPULAR_NEW_RELEASES -> "Новинок: ${sectionGames.size}"
@@ -1518,7 +1646,8 @@ class MainActivity : ComponentActivity() {
                 }
                 val sectionGames = when (leaderSection) {
                     SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseGames
-                    SteamLeaderSection.TOP_SELLERS, SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> topGames
+                    SteamLeaderSection.TOP_SELLERS -> topGames
+                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> topGames + discountedExtraGames
                 }
                 val visibleTopGames = leaderSection.filter(sectionGames).filter { game ->
                     game.isGame && when (topAvailabilityFilter) {
@@ -1537,21 +1666,33 @@ class MainActivity : ComponentActivity() {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                val sectionHasMore = when (leaderSection) {
+                    SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseHasMore
+                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedHasMore
+                    SteamLeaderSection.TOP_SELLERS -> false
+                }
                 visibleTopGames.forEachIndexed { index, game ->
                     ElevatedCard(Modifier.fillMaxWidth()) {
                         Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
-                            TextButton(onClick = {
-                                searchGeneration++
-                                activeCatalogGeneration.set(searchGeneration)
-                                searching = false
-                                steamGame = null
-                                selectedGame = GameSearchResolver.Candidate(game.appId, game.title)
-                                query = game.title
-                                offers = emptyList()
-                                searchMessage = "Игра выбрана из лидеров продаж. Найдены будут только проверенные предложения Steam Gift/Key для RU. Нажмите «Искать»."
-                                activeTab = 0
-                            }, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 4.dp)) {
-                                Text("${index + 1}. ${game.title}", modifier = Modifier.fillMaxWidth(), maxLines = 2)
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                SteamArtwork(game.headerImageUrl, Modifier.size(88.dp, 50.dp))
+                                TextButton(onClick = {
+                                    searchGeneration++
+                                    activeCatalogGeneration.set(searchGeneration)
+                                    searching = false
+                                    steamGame = null
+                                    selectedGame = GameSearchResolver.Candidate(game.appId, game.title)
+                                    query = game.title
+                                    offers = emptyList()
+                                    searchMessage = "Игра выбрана из лидеров продаж. Найдены будут только проверенные предложения Steam Gift/Key для RU. Нажмите «Искать»."
+                                    activeTab = 0
+                                }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)) {
+                                    Text("${index + 1}. ${game.title}", modifier = Modifier.fillMaxWidth(), maxLines = 2)
+                                }
+                                TextButton(onClick = { leaderDetailsGame = game },
+                                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp)) {
+                                    Text("Подробнее", style = MaterialTheme.typography.labelSmall)
+                                }
                             }
                             val availabilityLabel = when (game.availability) {
                                 SteamRuAvailability.AVAILABLE -> "Доступна в Steam RU"
@@ -1602,6 +1743,36 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
+                }
+                if (sectionHasMore) {
+                    OutlinedButton(
+                        onClick = { loadMoreLeaderGames() },
+                        enabled = !loadMoreBusy && !topBusy,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(if (loadMoreBusy) "Загружаем…" else "Загрузить ещё")
+                    }
+                }
+                leaderDetailsGame?.let { game ->
+                    AlertDialog(
+                        onDismissRequest = { leaderDetailsGame = null },
+                        title = { Text(game.title) },
+                        text = {
+                            Column(
+                                Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                SteamArtwork(game.headerImageUrl, Modifier.fillMaxWidth().height(176.dp))
+                                Text(
+                                    Html.fromHtml(game.description, Html.FROM_HTML_MODE_COMPACT).toString().trim()
+                                        .ifBlank { "Описание Steam для этой игры не получено." }
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { leaderDetailsGame = null }) { Text("Закрыть") }
+                        }
+                    )
                 }
             }
             if (settingsOpen && !showDirectory) {

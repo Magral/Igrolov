@@ -6,6 +6,27 @@ import org.junit.Test
 import org.json.JSONObject
 
 class SteamTopSellerTest {
+    @Test fun searchPagesExposeSteamTotalAndNextOffset() {
+        val page = SteamTopSellerParser.parseSearchPage("""{
+            "total_count":80,
+            "results_html":"<a class=\"search_result_row\" data-ds-appid=\"281990\"><span class=\"title\">Stellaris</span></a>"
+        }""", 30)
+        assertEquals(listOf(281990), page.games.map { it.appId })
+        assertEquals(31, page.nextStart)
+        assertEquals(80, page.totalCount)
+        assertTrue(page.hasMore)
+    }
+
+    @Test fun freeGamesAreMarkedAndExcludedFromDiscountedLeaders() {
+        val free = SteamTopSellerParser.applyRuDetails(SteamTopSeller(730, "Counter-Strike 2"),
+            """{"730":{"success":true,"data":{"type":"game","name":"Counter-Strike 2","is_free":true,"price_overview":{"discount_percent":100,"final_formatted":"Бесплатно"}}}}""", null)
+        assertTrue(free.isFree)
+        assertEquals("Бесплатно", free.steamPrice)
+        assertEquals(0, free.discountPercent)
+        assertTrue(SteamLeaderSection.TOP_SELLERS.filter(listOf(free)).isEmpty())
+        assertTrue(SteamLeaderSection.DISCOUNTED_TOP_SELLERS.filter(listOf(free)).isEmpty())
+    }
+
     @Test fun featuredNewReleasesKeepExactAppIdsAndIgnoreDuplicates() {
         val games = SteamTopSellerParser.parseFeaturedCategory("""{
             "new_releases":{"items":[
@@ -45,12 +66,14 @@ class SteamTopSellerTest {
         val game = SteamTopSeller(281990, "Stellaris")
         val result = SteamTopSellerParser.applyRuDetails(game, """
             {"281990":{"success":true,"data":{"type":"game","name":"Stellaris","price_overview":{
-              "final_formatted":"399 руб.","initial_formatted":"1 599 руб.","discount_percent":75}}}}
+              "final_formatted":"399 руб.","initial_formatted":"1 599 руб.","discount_percent":75},"header_image":"https://cdn.example/header.jpg","short_description":"A strategy game."}}}
         """.trimIndent(), null)
         assertEquals(SteamRuAvailability.AVAILABLE, result.availability)
         assertEquals("399 руб.", result.steamPrice)
         assertEquals("1 599 руб.", result.steamInitialPrice)
         assertEquals(75, result.discountPercent)
+        assertEquals("https://cdn.example/header.jpg", result.headerImageUrl)
+        assertEquals("A strategy game.", result.description)
     }
 
     @Test fun regionalSearchPresenceDoesNotProvePurchaseAvailability() {

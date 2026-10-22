@@ -10,7 +10,10 @@ enum class SteamLeaderSection(val label: String) {
     DISCOUNTED_TOP_SELLERS("Топ со скидками");
 
     fun filter(games: List<SteamTopSeller>): List<SteamTopSeller> =
-        if (this == DISCOUNTED_TOP_SELLERS) games.filter { it.discountPercent > 0 } else games
+        when (this) {
+            DISCOUNTED_TOP_SELLERS -> games.filter { !it.isFree && it.discountPercent > 0 }
+            else -> games.filter { !it.isFree }
+        }
 }
 
 data class SteamTopSeller(
@@ -20,8 +23,19 @@ data class SteamTopSeller(
     val steamInitialPrice: String = "",
     val discountPercent: Int = 0,
     val availability: SteamRuAvailability = SteamRuAvailability.UNKNOWN,
-    val isGame: Boolean = true
+    val isGame: Boolean = true,
+    val isFree: Boolean = false,
+    val headerImageUrl: String = "",
+    val description: String = ""
 )
+
+data class SteamRankingPage(
+    val games: List<SteamTopSeller>,
+    val nextStart: Int,
+    val totalCount: Int
+) {
+    val hasMore: Boolean get() = nextStart < totalCount
+}
 
 data class LeaderOfferPrices(
     val checking: Boolean = false,
@@ -48,7 +62,7 @@ object LeaderOfferSelector {
     }
 }
 
-/** Parsing and RU-region evidence for Steam's paid top-seller rows. */
+/** Parsing Steam Store search rows and regional RU evidence. */
 object SteamTopSellerParser {
     private val row = Regex("(?is)<a\\b[^>]*class=[\"'][^\"']*search_result_row[^\"']*[\"'][^>]*>.*?</a>")
     private val appId = Regex("(?i)data-ds-appid=[\"']([0-9]{1,10})[\"']")
@@ -66,6 +80,16 @@ object SteamTopSellerParser {
             if (name.isNotBlank()) result.putIfAbsent(id, SteamTopSeller(id, name))
         }
         return result.values.toList()
+    }
+
+    /** Parses one Steam Store search page and the total needed for on-demand pagination. */
+    fun parseSearchPage(json: String, requestedStart: Int): SteamRankingPage {
+        val root = runCatching { JSONObject(json) }.getOrNull()
+            ?: return SteamRankingPage(emptyList(), requestedStart, requestedStart)
+        val games = parseRankingHtml(root.optString("results_html", ""))
+        val nextStart = requestedStart + games.size
+        val totalCount = root.optInt("total_count", nextStart).coerceAtLeast(nextStart)
+        return SteamRankingPage(games, nextStart, totalCount)
     }
 
     /** Steam's featured "new releases" shelf, localized to the requested market. */
@@ -110,8 +134,11 @@ object SteamTopSellerParser {
             title = data.optString("name").trim().ifBlank { game.title },
             steamPrice = if (isFree) "Бесплатно" else if (available) finalFormatted else "",
             steamInitialPrice = if (available) price?.optString("initial_formatted", "").orEmpty() else "",
-            discountPercent = if (available) price?.optInt("discount_percent", 0)?.coerceIn(0, 100) ?: 0 else 0,
-            availability = if (available) SteamRuAvailability.AVAILABLE else SteamRuAvailability.UNKNOWN
+            discountPercent = if (available && !isFree) price?.optInt("discount_percent", 0)?.coerceIn(0, 100) ?: 0 else 0,
+            availability = if (available) SteamRuAvailability.AVAILABLE else SteamRuAvailability.UNKNOWN,
+            isFree = isFree,
+            headerImageUrl = data.optString("header_image").trim(),
+            description = data.optString("short_description").ifBlank { data.optString("about_the_game") }.trim()
         )
     }
 }
