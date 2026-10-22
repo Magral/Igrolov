@@ -654,6 +654,11 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun ScreenSection(content: @Composable () -> Unit) {
+        content()
+    }
+
+    @Composable
     private fun Screen() {
         val savedFilters = remember {ManualSearchSettings.read(this@MainActivity)}
         var gameSuggestions by remember {mutableStateOf<List<GameSearchResolver.Candidate>>(emptyList())}
@@ -1270,6 +1275,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             Column(Modifier.fillMaxSize().verticalScroll(if (settingsOpen) directoryScroll else when(activeTab) { 0 -> searchScroll; 1 -> productsScroll; 2 -> watchScroll; else -> directoryScroll }).padding(16.dp)) {
+            ScreenSection {
             if (activeTab == 0 && !settingsOpen) {
             Text("Поиск предложений Steam · RUB", style = MaterialTheme.typography.bodySmall)
             if (searchMessage.startsWith("Автопоиск цен")) {
@@ -1374,6 +1380,8 @@ class MainActivity : ComponentActivity() {
             Spacer(Modifier.height(10.dp))
             Spacer(Modifier.height(12.dp))
             } // конец настроек поиска
+            }
+            ScreenSection {
             if (activeTab == 1 && !settingsOpen) {
             OutlinedTextField(entry, { entry = it }, label = { Text("Ссылка Plati или ID товара") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1427,6 +1435,8 @@ class MainActivity : ComponentActivity() {
                 }
             }
             } // конец вкладки товаров
+            }
+            ScreenSection {
             if (activeTab == 2 && !settingsOpen) {
             Text("Автоматическое отслеживание игр", style = MaterialTheme.typography.titleLarge)
             Text("Каждый кандидат проверяется: основная игра, Gift/Key, РФ, наличие и цена выбранного варианта. Затем выбираются три минимальные цены.", style = MaterialTheme.typography.bodySmall)
@@ -1634,6 +1644,8 @@ class MainActivity : ComponentActivity() {
             }
             HorizontalDivider()
             } // конец вкладки автоотслеживания
+            }
+            ScreenSection {
             if (activeTab == 0 && !settingsOpen) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Игнорируемые товары: ${ignoredIds.size}", style = MaterialTheme.typography.titleMedium)
@@ -1743,6 +1755,8 @@ class MainActivity : ComponentActivity() {
                 }
             }
             } // конец вкладки поиска
+            }
+            ScreenSection {
             if (activeTab == 3 && !settingsOpen) {
                 WishlistPanel(
                     profiles = wishlistProfiles, selectedId = selectedWishlistId, games = wishlistGames,
@@ -1798,6 +1812,8 @@ class MainActivity : ComponentActivity() {
                     onShowMore = { wishlistVisibleLimit += 50 }
                 )
             }
+            }
+            ScreenSection {
             if (activeTab == 4 && !settingsOpen) {
                 Text("Лидеры продаж Steam", style = MaterialTheme.typography.titleLarge)
                 Text(
@@ -1937,6 +1953,8 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+            }
+            ScreenSection {
             if (settingsOpen && !showDirectory) {
                 Text("Настройки", style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(12.dp))
@@ -1958,6 +1976,8 @@ class MainActivity : ComponentActivity() {
                 }
                 Text("Сохранённые правила справочника продолжают работать в поиске и мониторинге.", style = MaterialTheme.typography.bodySmall)
             }
+            }
+            ScreenSection {
             if (settingsOpen && showDirectory) {
                 TextButton(onClick = { showDirectory = false }) { Text("← Назад к настройкам") }
                 Text("Справочник игр", style = MaterialTheme.typography.titleLarge)
@@ -2089,6 +2109,7 @@ class MainActivity : ComponentActivity() {
                         rulesRevision++
                     }, enabled = directoryInput.isNotBlank()) { Text("Добавить правило") }
                 }
+            }
             }
             } // прокручиваемое содержимое
         } // экран с вкладками
