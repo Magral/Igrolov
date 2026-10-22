@@ -508,25 +508,100 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun readArtworkDiskCache(appId: Int): Bitmap? {
+        if (appId <= 0) return null
+        val file = java.io.File(filesDir, "steam_artwork/$appId.jpg")
+        if (!file.isFile) return null
+        return BitmapFactory.decodeFile(file.absolutePath) ?: run {
+            file.delete()
+            null
+        }
+    }
+
+    private fun writeArtworkDiskCache(appId: Int, bitmap: Bitmap) {
+        if (appId <= 0) return
+        runCatching {
+            val directory = java.io.File(filesDir, "steam_artwork")
+            if (!directory.exists()) directory.mkdirs()
+            val target = java.io.File(directory, "$appId.jpg")
+            val temporary = java.io.File(directory, "$appId.tmp")
+            java.io.FileOutputStream(temporary).use { bitmap.compress(Bitmap.CompressFormat.JPEG, 88, it) }
+            if (!temporary.renameTo(target)) {
+                temporary.copyTo(target, overwrite = true)
+                temporary.delete()
+            }
+            directory.listFiles()?.filter { it.isFile && it.extension == "jpg" }
+                ?.sortedByDescending { it.lastModified() }
+                ?.drop(120)?.forEach { it.delete() }
+        }
+    }
+
+    private fun downloadArtwork(url: String): Bitmap? {
+        if (url.isBlank()) return null
+        for (attempt in 0..2) {
+            var retry = false
+            try {
+                val connection = URL(url).openConnection() as HttpURLConnection
+                connection.connectTimeout = 8000
+                connection.readTimeout = 10000
+                connection.setRequestProperty("User-Agent", "Igrolov Android")
+                try {
+                    val status = connection.responseCode
+                    if (status in 400..499) return null
+                    if (status !in 200..299) throw java.io.IOException("Steam artwork HTTP $status")
+                    return connection.inputStream.use { BitmapFactory.decodeStream(it) }
+                        ?: throw java.io.IOException("Steam artwork decode failed")
+                } finally { connection.disconnect() }
+            } catch (_: java.io.IOException) {
+                retry = attempt < 2
+            } catch (_: Exception) {
+                retry = attempt < 2
+            }
+            if (!retry) return null
+            try { Thread.sleep(400L * (attempt + 1)) } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+                return null
+            }
+        }
+        return null
+    }
+
+    private fun loadSteamArtwork(url: String, appId: Int?): Bitmap? {
+        if (!url.isNullOrBlank()) cachedArtwork(url)?.let { return it }
+        appId?.let { readArtworkDiskCache(it) }?.let { bitmap ->
+            if (!url.isNullOrBlank()) rememberArtwork(url, bitmap)
+            return bitmap
+        }
+
+        var bitmap = downloadArtwork(url)
+        if (bitmap == null && appId != null && appId > 0) {
+            // Use Steam's own appdetails metadata as the fallback source. The US store page
+            // provides artwork even when the game has no Russian store listing.
+            val officialArtworkUrl = runCatching {
+                val raw = steamGet("https://store.steampowered.com/api/appdetails?appids=$appId&cc=us&l=russian")
+                SteamTopSellerParser.applyGlobalMetadata(SteamTopSeller(appId, ""), raw).headerImageUrl
+            }.getOrDefault("")
+            if (officialArtworkUrl.isNotBlank() && officialArtworkUrl != url) {
+                bitmap = downloadArtwork(officialArtworkUrl)
+            }
+        }
+        if (bitmap != null) {
+            if (!url.isNullOrBlank()) rememberArtwork(url, bitmap)
+            appId?.let { writeArtworkDiskCache(it, bitmap) }
+        }
+        return bitmap
+    }
+
     @Composable
-    private fun SteamArtwork(url: String, modifier: Modifier = Modifier) {
-        var bitmap by remember(url) { mutableStateOf(cachedArtwork(url)) }
-        LaunchedEffect(url) {
-            if (url.isNotBlank() && bitmap == null) {
-                val loaded = withContext(Dispatchers.IO) {
+    private fun SteamArtwork(url: String, modifier: Modifier = Modifier, appId: Int? = null) {
+        var bitmap by remember(url, appId) { mutableStateOf(cachedArtwork(url)) }
+        LaunchedEffect(url, appId) {
+            if (bitmap == null && (url.isNotBlank() || appId != null)) {
+                bitmap = withContext(Dispatchers.IO) {
                     artworkPermits.acquire()
-                    try {
-                        cachedArtwork(url) ?: runCatching {
-                            val connection = URL(url).openConnection() as HttpURLConnection
-                            connection.connectTimeout = 8000
-                            connection.readTimeout = 10000
-                            try {
-                                connection.inputStream.use { BitmapFactory.decodeStream(it) }
-                            } finally { connection.disconnect() }
-                        }.getOrNull()?.also { rememberArtwork(url, it) }
-                    } finally { artworkPermits.release() }
+                    try { loadSteamArtwork(url, appId) }
+                    finally { artworkPermits.release() }
                 }
-                bitmap = loaded
             }
         }
         if (bitmap != null) {
@@ -599,7 +674,7 @@ class MainActivity : ComponentActivity() {
         ElevatedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    SteamArtwork(game.headerImageUrl, Modifier.size(88.dp, 50.dp))
+                    SteamArtwork(game.headerImageUrl, Modifier.size(88.dp, 50.dp), appId = game.appId)
                     TextButton(onClick = onOpenSearch, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)) {
                         Text("${index + 1}. ${game.title}", modifier = Modifier.fillMaxWidth(), maxLines = 2)
                     }
@@ -757,7 +832,7 @@ class MainActivity : ComponentActivity() {
                                  onSettings: () -> Unit, onTab: (Int) -> Unit) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Игролов 1.3.1", style = MaterialTheme.typography.headlineSmall)
+            Text("Игролов 1.3.2", style = MaterialTheme.typography.headlineSmall)
             IconButton(onClick = onSettings) {
                 Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                     color = MaterialTheme.colorScheme.onSurface)
@@ -2161,7 +2236,7 @@ class MainActivity : ComponentActivity() {
                                 Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                SteamArtwork(game.headerImageUrl, Modifier.fillMaxWidth().height(176.dp))
+                                SteamArtwork(game.headerImageUrl, Modifier.fillMaxWidth().height(176.dp), appId = game.appId)
                                 if (game.description.isNotBlank()) {
                                     Text(Html.fromHtml(game.description, Html.FROM_HTML_MODE_COMPACT).toString().trim())
                                 } else if (leaderDetailsLoading) {
@@ -2492,8 +2567,9 @@ class MainActivity : ComponentActivity() {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Column(Modifier.width(116.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                             SteamArtwork(
-                                "https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/header.jpg",
-                                Modifier.size(112.dp, 63.dp)
+                                game.headerImageUrl.ifBlank { "https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/header.jpg" },
+                                Modifier.size(112.dp, 63.dp),
+                                appId = game.appId
                             )
                             TextButton(
                                 onClick = { onDetails(game) },

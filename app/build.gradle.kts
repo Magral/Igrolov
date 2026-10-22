@@ -11,8 +11,8 @@ android {
         applicationId = "ru.igrolov.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 136
-        versionName = "1.3.1"
+        versionCode = 137
+        versionName = "1.3.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     // Fixed DEVELOPMENT signing identity. Never use this key for production releases.
