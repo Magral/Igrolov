@@ -46,9 +46,10 @@ class ReleaseSmokeTest {
     @Test fun launchAndNavigateFiltersSettingsAndMonitoring() {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.2.7")),15000))
+        assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Игролов 1.2.7")) })
         compose.onNodeWithText("Лидеры").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        assertTrue(device.wait(Until.hasObject(By.text("Лидеры продаж Steam")),5000))
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Лидеры продаж Steam")) })
         assertTrue(device.hasObject(By.text("Топ продаж")))
         assertTrue(device.hasObject(By.text("Популярные новинки")))
         assertTrue(device.hasObject(By.text("Топ со скидками")))
@@ -56,18 +57,26 @@ class ReleaseSmokeTest {
         assertTrue(device.hasObject(By.text("Доступны в Steam RU")))
         assertTrue(device.hasObject(By.text("Недоступны в Steam RU")))
         compose.onNodeWithText("Поиск").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitForIdle()
         compose.onNodeWithText("Gift").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitForIdle()
         compose.onNodeWithText("Key").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitForIdle()
         compose.onNodeWithText("Товары").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        assertTrue(device.wait(Until.hasObject(By.text("Ссылка Plati или ID товара")),5000))
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Ссылка Plati или ID товара")) })
         compose.onNodeWithText("Мониторинг").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        assertTrue(device.wait(Until.hasObject(By.text("Мониторинг")),5000))
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Мониторинг")) })
         compose.onNodeWithText("⚙").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        assertTrue(device.wait(Until.hasObject(By.text("Настройки")),5000))
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Настройки")) })
         compose.onNodeWithText("×").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitForIdle()
         compose.onNodeWithText("Поиск").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitForIdle()
         UiScrollable(UiSelector().scrollable(true)).scrollToBeginning(15)
-        assertTrue(device.wait(Until.hasObject(By.text("Поиск игры по названию")),5000))
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Поиск игры по названию")) })
         assertTrue(device.hasObject(By.text("GGSEL")))
         assertTrue(device.hasObject(By.text("Plati")))
         assertTrue(device.hasObject(By.text("Искать")))
@@ -77,13 +86,15 @@ class ReleaseSmokeTest {
     @Test fun wishlistImportIsSeparateFromOfferSearch() {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.2.7")),15000))
+        assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Игролов 1.2.7")) })
         compose.onNodeWithText("Желания").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        assertTrue(device.wait(Until.hasObject(By.text("Загрузить и закрепить профиль")),5000))
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Загрузить и закрепить профиль")) })
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"wishlist.png"))
         assertFalse(device.hasObject(By.text("Искать")))
         compose.onNodeWithText("Загрузить и закрепить профиль").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        assertTrue(device.wait(Until.hasObject(By.textContains("Вставьте SteamID64")),3000))
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 3000) { device.hasObject(By.textContains("Вставьте SteamID64")) })
         assertFalse(device.hasObject(By.text("Искать")))
     }
 
@@ -100,16 +111,18 @@ class ReleaseSmokeTest {
             .putString("wishlist_selected_profile",steamId).putString("wishlist_profile",profile.input)
             .putString("wishlist_games",SteamWishlist.encode(profile.games)).putLong("wishlist_imported_at",profile.importedAt).commit()
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.2.7")),15000))
+        assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Игролов 1.2.7")) })
         compose.onNodeWithText("Желания").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        assertTrue(device.wait(Until.hasObject(By.textContains("Namtar")),5000))
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.textContains("Namtar")) })
         assertTrue(device.hasObject(By.textContains("Friend")))
         device.pressBack()
-        if (!device.wait(Until.hasObject(By.textContains("Namtar")),1500)) {
+        if (!UiTestScroll.await(compose, 1500) { device.hasObject(By.textContains("Namtar")) }) {
             context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-            assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.2.7")),15000))
+            assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Игролов 1.2.7")) })
             compose.onNodeWithText("Желания").performSemanticsAction(SemanticsActions.OnClick) { it() }
-            assertTrue(device.wait(Until.hasObject(By.textContains("Namtar")),5000))
+        compose.waitForIdle()
+            assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.textContains("Namtar")) })
         }
         val scroll=UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(20)
         UiTestScroll.reveal(compose,"Stellaris")
@@ -124,11 +137,13 @@ class ReleaseSmokeTest {
         assertFalse(device.hasObject(By.text("Искать Plati")))
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"wishlist.png"))
         compose.onNodeWithText("Искать").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        assertTrue(device.wait(Until.hasObject(By.textContains("Ищем минимальную цену")),5000))
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.textContains("Ищем минимальную цену")) })
         assertTrue(device.hasObject(By.text("900 руб.")))
         compose.onNodeWithText("Stellaris").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        assertTrue(device.wait(Until.hasObject(By.text("Поиск игры по названию")),5000))
-        assertTrue(device.wait(Until.hasObject(By.textContains("Автопоиск цен")),5000))
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Поиск игры по названию")) })
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.textContains("Автопоиск цен")) })
         assertFalse(device.hasObject(By.text("Искать Plati")))
         prefs.edit().remove("wishlist_profiles").remove("wishlist_selected_profile").remove("wishlist_profile")
             .remove("wishlist_games").remove("wishlist_imported_at").commit()

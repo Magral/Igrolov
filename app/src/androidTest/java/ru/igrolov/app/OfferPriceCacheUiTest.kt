@@ -39,9 +39,10 @@ class OfferPriceCacheUiTest {
     }
     private fun launchWishlist() {
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.2.7")),15000))
+        assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Игролов 1.2.7")) })
         compose.onNodeWithText("Желания").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        assertTrue(device.wait(Until.hasObject(By.textContains("Price cache test")),5000))
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.textContains("Price cache test")) })
     }
     @Test fun batchRetainsSuccessfulTimesOnSourceFailures() {
         URL.setURLStreamHandlerFactory {protocol->if(protocol!="https")null else object:URLStreamHandler() {
@@ -84,9 +85,11 @@ class OfferPriceCacheUiTest {
         launchWishlist()
         reveal("Выбрать первые 5")
         compose.onNodeWithText("Выбрать первые 5").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        assertTrue(device.wait(Until.hasObject(By.text("Проверить выбранные (2)")),5000))
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Проверить выбранные (2)")) })
         compose.onNodeWithText("Проверить выбранные (2)").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        assertTrue(device.wait(Until.hasObject(By.text("Готово 2 / 2")),90000))
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 90000) { device.hasObject(By.text("Готово 2 / 2")) })
         val cached=OfferPriceCacheStore.readAll(context)
         for(i in 0 until keys.length()) {
             val entry=cached[keys.getString(i)]!!
@@ -118,7 +121,7 @@ class OfferPriceCacheUiTest {
         if(!device.hasObject(By.textContains("Plati от 500 ₽"))) {
             UiTestScroll.reveal(compose,"Plati от 500 ₽",contains=true)
         }
-        assertTrue(device.wait(Until.hasObject(By.textContains("Plati от 500 ₽")),5000))
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.textContains("Plati от 500 ₽")) })
         assertTrue(device.hasObject(By.textContains("ошибка обновления")))
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"offer-cache-restored.png"))
         context.getSharedPreferences("tracked_products",0).edit().remove("wishlist_profiles").remove("wishlist_selected_profile")

@@ -73,25 +73,31 @@ class GameCardMonitoringTest {
             .putString("wishlist_selected_profile", id).commit()
         val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.2.7")), 15000))
+        assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Игролов 1.2.7")) })
         compose.onNodeWithText("Лидеры").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        assertTrue(device.wait(Until.hasObject(By.text("Загружено: 1 из 100")), 15000))
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Загружено: 1 из 100")) })
         val scroll = UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(20)
         UiTestScroll.reveal(compose,"92%")
-        assertTrue(device.wait(Until.hasObject(By.text("92%")), 5000))
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("92%")) })
         assertTrue(device.hasObject(By.desc("Положительные отзывы")))
         UiTestScroll.reveal(compose,"В мониторинг")
         compose.onNodeWithText("В мониторинг").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        assertTrue(device.wait(Until.hasObject(By.text("Желаемая цена, ₽")), 5000))
-        assertTrue(device.wait(Until.hasObject(By.clazz("android.widget.EditText")), 5000))
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Желаемая цена, ₽")) })
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.clazz("android.widget.EditText")) })
         compose.onNodeWithText("Добавить").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        assertTrue(device.wait(Until.hasObject(By.text("Введите положительную цену")), 3000))
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 3000) { device.hasObject(By.text("Введите положительную цену")) })
         device.findObjects(By.clazz("android.widget.EditText")).last().text = "500"
         compose.onNodeWithText("Gift").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitForIdle()
         compose.onNodeWithText("Добавить").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        assertTrue(device.wait(Until.gone(By.text("Добавить")), 5000))
-        assertTrue(device.wait(Until.hasObject(By.text("В мониторинге")), 5000))
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 5000) { !device.hasObject(By.text("Добавить")) })
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("В мониторинге")) })
         compose.onNodeWithText("В мониторинге").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitForIdle()
         device.waitForIdle()
         assertFalse(device.hasObject(By.text("Добавить")))
         WorkManager.getInstance(context).cancelAllWork().result.get()
@@ -102,16 +108,20 @@ class GameCardMonitoringTest {
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null), "leader-review-monitor.png"))
 
         compose.onNodeWithText("Желания").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitForIdle()
         UiTestScroll.reveal(compose,"Dead by Daylight")
         UiTestScroll.reveal(compose,"В мониторинг")
         compose.onNodeWithText("В мониторинг").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        assertTrue(device.wait(Until.hasObject(By.text("Желаемая цена, ₽")), 5000))
-        assertTrue(device.wait(Until.hasObject(By.clazz("android.widget.EditText")), 5000))
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Желаемая цена, ₽")) })
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.clazz("android.widget.EditText")) })
         device.findObjects(By.clazz("android.widget.EditText")).last().text = "750,50"
         compose.onNodeWithText("Key").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitForIdle()
         compose.onNodeWithText("Добавить").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        assertTrue(device.wait(Until.gone(By.text("Добавить")), 5000))
-        assertTrue(device.wait(Until.hasObject(By.text("В мониторинге")), 5000))
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 5000) { !device.hasObject(By.text("Добавить")) })
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("В мониторинге")) })
         WorkManager.getInstance(context).cancelAllWork().result.get()
         saved = WatchStore.read(context)
         assertEquals(2, saved.length())
