@@ -11,6 +11,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.After
 import org.junit.runner.RunWith
 import java.io.ByteArrayInputStream
 import java.net.HttpURLConnection
@@ -20,6 +21,11 @@ import java.net.URLStreamHandler
 
 @RunWith(AndroidJUnit4::class)
 class GameCardMonitoringTest {
+    @After fun captureCardScreen() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).takeScreenshot(
+            java.io.File(context.getExternalFilesDir(null), "game-card-last.png"))
+    }
     @Test fun leaderRatingAndWishlistMonitoringKeepExactAppIdAndPreventDuplicates() {
         URL.setURLStreamHandlerFactory { protocol -> if (protocol != "https") null else object : URLStreamHandler() {
             override fun openConnection(url: URL): URLConnection = object : HttpURLConnection(url) {
@@ -68,6 +74,8 @@ class GameCardMonitoringTest {
         val scroll = UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(20)
         if (!device.hasObject(By.text("В мониторинг"))) assertTrue(scroll.scrollTextIntoView("В мониторинг"))
         device.findObject(By.text("В мониторинг")).click()
+        assertTrue(device.wait(Until.hasObject(By.text("Желаемая цена, ₽")), 5000))
+        assertTrue(device.wait(Until.hasObject(By.clazz("android.widget.EditText")), 5000))
         device.findObject(By.text("Добавить")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Введите положительную цену")), 3000))
         device.findObjects(By.clazz("android.widget.EditText")).last().text = "500"
@@ -89,6 +97,8 @@ class GameCardMonitoringTest {
         if (!device.hasObject(By.text("Dead by Daylight"))) assertTrue(scroll.scrollTextIntoView("Dead by Daylight"))
         if (!device.hasObject(By.text("В мониторинг"))) assertTrue(scroll.scrollTextIntoView("В мониторинг"))
         device.findObject(By.text("В мониторинг")).click()
+        assertTrue(device.wait(Until.hasObject(By.text("Желаемая цена, ₽")), 5000))
+        assertTrue(device.wait(Until.hasObject(By.clazz("android.widget.EditText")), 5000))
         device.findObjects(By.clazz("android.widget.EditText")).last().text = "750,50"
         device.findObject(By.text("Key")).click()
         device.findObject(By.text("Добавить")).click()
