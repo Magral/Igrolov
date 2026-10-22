@@ -52,9 +52,9 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T16:19:17.854Z
+- Обновлено (UTC): 2026-10-22T16:20:46.887Z
 - Ветка: `main`.
-- HEAD: [`2ee62970cb72`](https://github.com/Magral/Igrolov/commit/2ee62970cb722e109e42736a808f487e4d1c8b3b).
+- HEAD: [`dec8498be280`](https://github.com/Magral/Igrolov/commit/dec8498be2801e11ea70c430d1d0ac2f71919c4c).
 - Опубликованный стабильный GitHub Release не найден.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
@@ -62,5 +62,4 @@
 - [9ada5c9](https://github.com/Magral/Igrolov/commit/9ada5c93cdd94f436c4b4d8b1079054f4f62364d) — test: verify monitor card shows next check
 - [98735c7](https://github.com/Magral/Igrolov/commit/98735c779b075d5ca42d0db007bcc33bb7c0b100) — fix: explain monitor retries without a false hourly estimate
 - [7c77ace](https://github.com/Magral/Igrolov/commit/7c77aceebe2b9103019bf2b3032156ec11b5aaac) — test: distinguish retry from hourly monitor schedule
-- [f69da33](https://github.com/Magral/Igrolov/commit/f69da33c31f55aed761124f1ec6e24019b2c1bc2) — fix: report retries separately from periodic monitor estimate
 <!-- AUTO_CONTEXT_END -->
