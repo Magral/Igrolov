@@ -111,7 +111,7 @@ class GameCardMonitoringTest {
         compose.onNodeWithText("Желания").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         UiTestScroll.reveal(compose,"Подробнее")
-        compose.onAllNodesWithText("Подробнее").onFirst()
+        compose.onAllNodesWithText("Подробнее")[0]
             .performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertTrue(UiTestScroll.await(compose,5000) { device.hasObject(By.text("Закрыть")) })
         assertTrue(UiTestScroll.await(compose,10000) { device.hasObject(By.text("A strategy game.")) })
