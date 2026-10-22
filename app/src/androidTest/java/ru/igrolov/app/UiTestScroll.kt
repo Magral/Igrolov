@@ -49,6 +49,7 @@ object UiTestScroll {
             } ?: throw AssertionError("Нет списка для прокрутки к: $text")
             list.performAction(if (forward) android.view.accessibility.AccessibilityNodeInfo.ACTION_SCROLL_FORWARD
                 else android.view.accessibility.AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)
+            android.os.SystemClock.sleep(700)
             device.waitForIdle()
         }
         if (visible()) return
