@@ -988,6 +988,7 @@ class MainActivity : ComponentActivity() {
         var discountedHasMore by remember { mutableStateOf(true) }
         var loadMoreBusy by remember { mutableStateOf(false) }
         var leaderDetailsGame by remember { mutableStateOf<SteamTopSeller?>(null) }
+        var leaderDetailsLoading by remember { mutableStateOf(false) }
         var pendingWatchGame by remember { mutableStateOf<GameSearchResolver.Candidate?>(null) }
         val watchEntries = remember(watches) {
             val array = runCatching { JSONArray(watches) }.getOrDefault(JSONArray())
@@ -1943,6 +1944,24 @@ class MainActivity : ComponentActivity() {
                             .map { PriceCheckTarget(it.appId, it.title, catalogueUi.selectedWishlistId) }, manualFilters, searchTotalPages)
                     },
                     cachedPrices = { game -> wishlistCacheKeys[game.appId]?.let { catalogueUi.priceCache[it] } },
+                    onDetails = { game ->
+                        val initial = SteamTopSeller(
+                            appId = game.appId,
+                            title = game.title,
+                            headerImageUrl = "https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/header.jpg"
+                        )
+                        leaderDetailsGame = initial
+                        leaderDetailsLoading = true
+                        detailExecutor.execute {
+                            val detailed = checkTopSellerRu(initial)
+                            runOnUiThread {
+                                if (leaderDetailsGame?.appId == game.appId) {
+                                    leaderDetailsGame = detailed
+                                    leaderDetailsLoading = false
+                                }
+                            }
+                        }
+                    },
                     onShowMore = { catalogueUi.wishlistVisibleLimit += 50 }
                 )
             }
@@ -2061,7 +2080,7 @@ class MainActivity : ComponentActivity() {
                                     activeTab = 0
 
                         },
-                        onDetails = { leaderDetailsGame = game },
+                        onDetails = { leaderDetailsGame = game; leaderDetailsLoading = false },
                         onSearchPrice = {
                             startCatalogSearch(
                                 candidateOverride = GameSearchResolver.Candidate(game.appId, game.title),
@@ -2089,10 +2108,14 @@ class MainActivity : ComponentActivity() {
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 SteamArtwork(game.headerImageUrl, Modifier.fillMaxWidth().height(176.dp))
-                                Text(
-                                    Html.fromHtml(game.description, Html.FROM_HTML_MODE_COMPACT).toString().trim()
-                                        .ifBlank { "Описание Steam для этой игры не получено." }
-                                )
+                                if (game.description.isNotBlank()) {
+                                    Text(Html.fromHtml(game.description, Html.FROM_HTML_MODE_COMPACT).toString().trim())
+                                } else if (leaderDetailsLoading) {
+                                    LinearProgressIndicator(Modifier.fillMaxWidth())
+                                    Text("Загружаем описание Steam…")
+                                } else {
+                                    Text("Описание Steam для этой игры не получено.")
+                                }
                             }
                         },
                         confirmButton = {
@@ -2281,6 +2304,7 @@ class MainActivity : ComponentActivity() {
         onDelete: () -> Unit,
         onOpenSearch: (WishlistGame) -> Unit,
         onSearchPrice: (WishlistGame) -> Unit,
+        onDetails: (WishlistGame) -> Unit,
         onShowMore: () -> Unit,
         isMonitored: (WishlistGame) -> Boolean,
         onMonitor: (WishlistGame) -> Unit,
@@ -2335,13 +2359,24 @@ class MainActivity : ComponentActivity() {
             ElevatedCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SteamArtwork(
+                            "https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/header.jpg",
+                            Modifier.size(88.dp, 50.dp)
+                        )
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             TextButton(onClick = { onOpenSearch(game) }, enabled = game.title.isNotBlank() && searchEnabled,
-                                contentPadding = PaddingValues(0.dp)) {
+                                contentPadding = PaddingValues(horizontal = 2.dp, vertical = 2.dp)) {
                                 Text(game.title.ifBlank { "Название игры не получено" }, style = MaterialTheme.typography.titleSmall,
                                     maxLines = 2)
                             }
-                            Text("Steam AppID ${game.appId}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("AppID ${game.appId}", style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                                TextButton(onClick = { onDetails(game) },
+                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                                    Text("Подробнее", style = MaterialTheme.typography.labelSmall)
+                                }
+                            }
                         }
                         Column(Modifier.widthIn(max = 168.dp), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(1.dp)) {
                             Text(game.steamPrice.ifBlank { "Нет цены RU" }, style = MaterialTheme.typography.titleSmall)
