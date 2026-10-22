@@ -52,15 +52,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T16:18:46.354Z
+- Обновлено (UTC): 2026-10-22T16:18:55.676Z
 - Ветка: `main`.
-- HEAD: [`98735c779b07`](https://github.com/Magral/Igrolov/commit/98735c779b075d5ca42d0db007bcc33bb7c0b100).
-- Опубликованный стабильный GitHub Release не найден.
+- HEAD: [`60efa8b94353`](https://github.com/Magral/Igrolov/commit/60efa8b943538643f82a018419524527239071f0).
+- Последний опубликованный стабильный GitHub Release: [v1.2.7](https://github.com/Magral/Igrolov/releases/tag/v1.2.7); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
 - [98735c7](https://github.com/Magral/Igrolov/commit/98735c779b075d5ca42d0db007bcc33bb7c0b100) — fix: explain monitor retries without a false hourly estimate
 - [7c77ace](https://github.com/Magral/Igrolov/commit/7c77aceebe2b9103019bf2b3032156ec11b5aaac) — test: distinguish retry from hourly monitor schedule
 - [f69da33](https://github.com/Magral/Igrolov/commit/f69da33c31f55aed761124f1ec6e24019b2c1bc2) — fix: report retries separately from periodic monitor estimate
 - [64744d5](https://github.com/Magral/Igrolov/commit/64744d5f8af61e708033f8dbc02e9e99c37fde67) — test: expect no schedule without a monitor attempt
-- [a3639ba](https://github.com/Magral/Igrolov/commit/a3639ba5d98c925082260d3932d6971873d87c93) — feat: show expected checks and monitor exclusion reasons
 <!-- AUTO_CONTEXT_END -->
