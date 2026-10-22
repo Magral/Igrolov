@@ -47,15 +47,15 @@ Android-приложение для отслеживания игр, предл�
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T06:04:16.297Z
+- Обновлено (UTC): 2026-10-22T06:24:33.035Z
 - Ветка: `main`.
-- HEAD: [`2a6648aaec42`](https://github.com/Magral/Igrolov/commit/2a6648aaec4285a3d7e9c44407046cdfcd69ff12).
+- HEAD: [`9653982f3446`](https://github.com/Magral/Igrolov/commit/9653982f34467be40494f00a608f39d43ef35d1d).
 - Последний опубликованный стабильный GitHub Release: [v1.2.3](https://github.com/Magral/Igrolov/releases/tag/v1.2.3); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [9653982](https://github.com/Magral/Igrolov/commit/9653982f34467be40494f00a608f39d43ef35d1d) — release: Igrolov 1.2.4 — Steam leader pagination and artwork
 - [e079e36](https://github.com/Magral/Igrolov/commit/e079e361d4351d85444e77850540d411eb92ead6) — docs: prepare auto-generated GitHub context section
 - [dfe7122](https://github.com/Magral/Igrolov/commit/dfe71221ec95c7f6f04330ae858e9263f89c75f2) — ci: automate project context updates
 - [e4a55f9](https://github.com/Magral/Igrolov/commit/e4a55f95b5e33c16189dd67e8b928ec27ea06340) — docs: add persistent project handoff context
 - [06f75ee](https://github.com/Magral/Igrolov/commit/06f75ee1a059bb5d46e62019125c8fd0252b2988) — docs: close Igrolov 1.2.3 release checklist
-- [80d3bff](https://github.com/Magral/Igrolov/commit/80d3bff56cf9c3b09477466690163ddc887c92ee) — release: Igrolov 1.2.3 — Steam Leader sections
 <!-- AUTO_CONTEXT_END -->
