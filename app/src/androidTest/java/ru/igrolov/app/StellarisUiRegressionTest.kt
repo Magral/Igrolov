@@ -1,5 +1,9 @@
 package ru.igrolov.app
 
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.semantics.SemanticsActions
+import org.junit.Rule
 import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
@@ -20,6 +24,7 @@ import java.net.URLStreamHandler
 
 @RunWith(AndroidJUnit4::class)
 class StellarisUiRegressionTest {
+    @get:Rule val compose = createEmptyComposeRule()
     @Test fun searchScreenShowsOnlyAvailableBaseGameAtFreshPrice() {
         URL.setURLStreamHandlerFactory { protocol -> if(protocol!="https") null else object:URLStreamHandler() {
             override fun openConnection(url:URL):URLConnection=object:HttpURLConnection(url) {
@@ -53,20 +58,25 @@ class StellarisUiRegressionTest {
         ManualSearchSettings.save(context,ManualSearchFilters())
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(device.wait(Until.hasObject(By.text("Игролов 1.2.7")),15000))
-        device.findObject(By.clazz("android.widget.EditText")).text="Stelaris"
-        assertTrue(device.wait(Until.hasObject(By.text("Stellaris · Steam #281990")),15000))
-        device.findObject(By.text("Stellaris · Steam #281990")).click()
-        val scroll=UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(30)
-        assertTrue(scroll.scrollTextIntoView("Искать"))
-        device.findObject(By.text("Искать")).click()
-        assertTrue(device.wait(Until.hasObject(By.textContains("Проверено:")),15000))
-        assertTrue(scroll.scrollTextIntoView("Предложения по цене ↑ · 1"))
-        assertTrue(device.wait(Until.hasObject(By.text("Stellaris Steam Key РФ")),5000))
+        assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Игролов 1.2.7")) })
+        compose.onAllNodes(hasSetTextAction()).onFirst().performTextReplacement("Stelaris")
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Stellaris · Steam #281990")) })
+        compose.onNodeWithText("Stellaris · Steam #281990").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitForIdle()
+        UiTestScroll.reveal(compose,"Искать")
+        compose.onNodeWithText("Искать").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.textContains("Проверено:")) })
+        UiTestScroll.reveal(compose,"Предложения по цене ↑ · 1")
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Stellaris Steam Key РФ")) })
         assertEquals(1,device.findObjects(By.text("Stellaris Steam Key РФ")).size)
         assertFalse(device.hasObject(By.text("Stellaris Utopia Steam Key РФ")))
         val priceVisible = { device.hasObject(By.textContains("1 000,00 ₽")) || device.hasObject(By.textContains("1000,00 ₽")) || device.hasObject(By.textContains("1 000,00 ₽")) }
-        repeat(5) { if (!priceVisible()) scroll.scrollForward() }
+        compose.onAllNodes(hasText("1 000,00 ₽", substring=true) or
+            hasText("1000,00 ₽", substring=true) or hasText("1 000,00 ₽", substring=true))
+            .onFirst().performScrollTo()
+        compose.waitForIdle()
         assertTrue(priceVisible())
         device.takeScreenshot(File(context.getExternalFilesDir(null),"stellaris-result.png"))
     }
