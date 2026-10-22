@@ -515,6 +515,145 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun SteamLeaderCard(
+        index: Int, game: SteamTopSeller, marketplacePrices: LeaderOfferPrices?,
+        monitored: Boolean, searchEnabled: Boolean,
+        onOpenSearch: () -> Unit, onDetails: () -> Unit,
+        onSearchPrice: () -> Unit, onMonitor: () -> Unit
+    ) {
+        ElevatedCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    SteamArtwork(game.headerImageUrl, Modifier.size(88.dp, 50.dp))
+                    TextButton(onClick = onOpenSearch, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)) {
+                        Text("${index + 1}. ${game.title}", modifier = Modifier.fillMaxWidth(), maxLines = 2)
+                    }
+                    TextButton(onClick = onDetails,
+                        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp)) {
+                        Text("Подробнее", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+                val availabilityLabel = when (game.availability) {
+                    SteamRuAvailability.AVAILABLE -> "Доступна в Steam RU"
+                    SteamRuAvailability.UNAVAILABLE -> "Не продаётся в Steam RU"
+                    SteamRuAvailability.UNKNOWN -> "Статус Steam RU не удалось определить"
+                }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Steam RU: ${game.steamPrice.ifBlank { "цена не указана" }}" +
+                        if (game.discountPercent > 0) " · −${game.discountPercent}%" else "",
+                        style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    SteamReviewBadge(game.reviewSummary)
+                }
+                if (game.discountPercent > 0 && game.steamInitialPrice.isNotBlank()) {
+                    Text("Было ${game.steamInitialPrice}", style = MaterialTheme.typography.bodySmall.copy(
+                        textDecoration = TextDecoration.LineThrough), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (marketplacePrices?.checkedAt != null) {
+                    val pricesLabel = listOfNotNull(
+                        marketplacePrices.platiMinimum?.let { "Plati от ${String.format(Locale("ru", "RU"), "%.0f ₽", it)}" },
+                        marketplacePrices.ggselMinimum?.let { "GGSEL от ${String.format(Locale("ru", "RU"), "%.0f ₽", it)}" }
+                    ).joinToString(" · ")
+                    if (pricesLabel.isNotBlank()) Text(pricesLabel, style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.tertiary)
+                    Text(marketplacePrices.message, style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else if (!marketplacePrices?.message.isNullOrBlank()) {
+                    Text(marketplacePrices?.message.orEmpty(), style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error)
+                }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(availabilityLabel, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall,
+                        color = when (game.availability) {
+                            SteamRuAvailability.AVAILABLE -> MaterialTheme.colorScheme.primary
+                            SteamRuAvailability.UNAVAILABLE -> MaterialTheme.colorScheme.error
+                            SteamRuAvailability.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant
+                        })
+                    TextButton(onClick = onSearchPrice,
+                        enabled = searchEnabled && marketplacePrices?.checking != true,
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                        Text(when {
+                            marketplacePrices?.checking == true -> "Проверяем…"
+                            marketplacePrices?.checkedAt != null -> "Обновить Plati/GGSEL"
+                            else -> "Проверить Plati/GGSEL"
+                        })
+                    }
+                }
+                OutlinedButton(onClick = onMonitor,
+                    enabled = !monitored,
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
+                    Text(if (monitored) "В мониторинге" else "В мониторинг",
+                        style = MaterialTheme.typography.labelSmall)
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun GameMonitoringDialog(
+        game: GameSearchResolver.Candidate,
+        onDismiss: () -> Unit,
+        onSaved: (String) -> Unit
+    ) {
+        var pendingWatchPrice by remember(game.appId) { mutableStateOf("") }
+        var pendingWatchKind by remember(game.appId) { mutableStateOf("Все") }
+        var pendingWatchSaving by remember(game.appId) { mutableStateOf(false) }
+        var pendingWatchError by remember(game.appId) { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { if (!pendingWatchSaving) onDismiss() },
+            title = { Text("В мониторинг") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(game.name, style = MaterialTheme.typography.titleSmall)
+                    OutlinedTextField(pendingWatchPrice, { pendingWatchPrice = it; pendingWatchError = "" },
+                        label = { Text("Желаемая цена, ₽") }, singleLine = true,
+                        modifier = Modifier.fillMaxWidth(), enabled = !pendingWatchSaving)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOf("Все", "Gift", "Key").forEach { kind ->
+                            FilterChip(selected = pendingWatchKind == kind, enabled = !pendingWatchSaving,
+                                onClick = { pendingWatchKind = kind }, label = { Text(kind) })
+                        }
+                    }
+                    Text("Plati и GGSEL · только предложения для РФ", style = MaterialTheme.typography.bodySmall)
+                    if (pendingWatchError.isNotBlank()) Text(pendingWatchError,
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                }
+            },
+            confirmButton = {
+                Button(enabled = !pendingWatchSaving, onClick = {
+                    val amount = pendingWatchPrice.trim().replace(',', '.').toDoubleOrNull()
+                    if (amount == null || !amount.isFinite() || amount <= 0) {
+                        pendingWatchError = "Введите положительную цену"
+                    } else {
+                        pendingWatchSaving = true
+                        val kind = pendingWatchKind
+                        ioExecutor.execute {
+                            val result = runCatching {
+                                WatchStore.add(this@MainActivity, game.name, kind, amount, true, game.appId)
+                                WatchStore.read(this@MainActivity).toString()
+                            }
+                            runOnUiThread {
+                                pendingWatchSaving = false
+                                result.onSuccess {
+                                    onSaved(it)
+                                    WatchScheduler.start(this@MainActivity)
+                                    WatchScheduler.checkNow(this@MainActivity)
+                                    if (Build.VERSION.SDK_INT >= 33) askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }.onFailure {
+                                    pendingWatchError = "Не удалось добавить игру. Повторите попытку."
+                                }
+                            }
+                        }
+                    }
+                }) { Text(if (pendingWatchSaving) "Добавляем…" else "Добавить") }
+            },
+            dismissButton = {
+                TextButton(enabled = !pendingWatchSaving, onClick = onDismiss) { Text("Отмена") }
+            }
+        )
+    }
+
+    @Composable
     private fun Screen() {
         val savedFilters = remember {ManualSearchSettings.read(this@MainActivity)}
         var gameSuggestions by remember {mutableStateOf<List<GameSearchResolver.Candidate>>(emptyList())}
@@ -759,10 +898,6 @@ class MainActivity : ComponentActivity() {
         var loadMoreBusy by remember { mutableStateOf(false) }
         var leaderDetailsGame by remember { mutableStateOf<SteamTopSeller?>(null) }
         var pendingWatchGame by remember { mutableStateOf<GameSearchResolver.Candidate?>(null) }
-        var pendingWatchPrice by remember { mutableStateOf("") }
-        var pendingWatchKind by remember { mutableStateOf("Все") }
-        var pendingWatchSaving by remember { mutableStateOf(false) }
-        var pendingWatchError by remember { mutableStateOf("") }
         val watchEntries = remember(watches) {
             val array = runCatching { JSONArray(watches) }.getOrDefault(JSONArray())
             (0 until array.length()).mapNotNull { array.optJSONObject(it) }
@@ -770,9 +905,6 @@ class MainActivity : ComponentActivity() {
         fun isGameWatched(appId: Int, name: String) = watchEntries.any { WatchGameIdentity.matches(it, appId, name) }
         fun openGameMonitoring(appId: Int, name: String) {
             if (appId <= 0 || name.isBlank() || isGameWatched(appId, name)) return
-            pendingWatchPrice = ""
-            pendingWatchKind = "Все"
-            pendingWatchError = ""
             pendingWatchGame = GameSearchResolver.Candidate(appId, name)
         }
         var leaderSection by remember { mutableStateOf(SteamLeaderSection.TOP_SELLERS) }
@@ -1121,59 +1253,8 @@ class MainActivity : ComponentActivity() {
                 )
             }
             pendingWatchGame?.let { game ->
-                AlertDialog(
-                    onDismissRequest = { if (!pendingWatchSaving) pendingWatchGame = null },
-                    title = { Text("В мониторинг") },
-                    text = {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(game.name, style = MaterialTheme.typography.titleSmall)
-                            OutlinedTextField(pendingWatchPrice, { pendingWatchPrice = it; pendingWatchError = "" },
-                                label = { Text("Желаемая цена, ₽") }, singleLine = true,
-                                modifier = Modifier.fillMaxWidth(), enabled = !pendingWatchSaving)
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                listOf("Все", "Gift", "Key").forEach { kind ->
-                                    FilterChip(selected = pendingWatchKind == kind, enabled = !pendingWatchSaving,
-                                        onClick = { pendingWatchKind = kind }, label = { Text(kind) })
-                                }
-                            }
-                            Text("Plati и GGSEL · только предложения для РФ", style = MaterialTheme.typography.bodySmall)
-                            if (pendingWatchError.isNotBlank()) Text(pendingWatchError,
-                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-                        }
-                    },
-                    confirmButton = {
-                        Button(enabled = !pendingWatchSaving, onClick = {
-                            val amount = pendingWatchPrice.trim().replace(',', '.').toDoubleOrNull()
-                            if (amount == null || !amount.isFinite() || amount <= 0) {
-                                pendingWatchError = "Введите положительную цену"
-                            } else {
-                                pendingWatchSaving = true
-                                val kind = pendingWatchKind
-                                ioExecutor.execute {
-                                    val result = runCatching {
-                                        WatchStore.add(this@MainActivity, game.name, kind, amount, true, game.appId)
-                                        WatchStore.read(this@MainActivity).toString()
-                                    }
-                                    runOnUiThread {
-                                        pendingWatchSaving = false
-                                        result.onSuccess {
-                                            watches = it
-                                            pendingWatchGame = null
-                                            WatchScheduler.start(this@MainActivity)
-                                            WatchScheduler.checkNow(this@MainActivity)
-                                            if (Build.VERSION.SDK_INT >= 33) askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                        }.onFailure {
-                                            pendingWatchError = "Не удалось добавить игру. Повторите попытку."
-                                        }
-                                    }
-                                }
-                            }
-                        }) { Text(if (pendingWatchSaving) "Добавляем…" else "Добавить") }
-                    },
-                    dismissButton = {
-                        TextButton(enabled = !pendingWatchSaving, onClick = { pendingWatchGame = null }) { Text("Отмена") }
-                    }
-                )
+                GameMonitoringDialog(game, onDismiss = { pendingWatchGame = null },
+                    onSaved = { saved -> watches = saved; pendingWatchGame = null })
             }
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
@@ -1802,11 +1883,9 @@ class MainActivity : ComponentActivity() {
                     SteamLeaderSection.TOP_SELLERS -> false
                 }
                 visibleTopGames.forEachIndexed { index, game ->
-                    ElevatedCard(Modifier.fillMaxWidth()) {
-                        Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
-                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                SteamArtwork(game.headerImageUrl, Modifier.size(88.dp, 50.dp))
-                                TextButton(onClick = {
+                    SteamLeaderCard(index, game, leaderOfferPrices[game.appId],
+                        monitored = isGameWatched(game.appId, game.title), searchEnabled = !searching,
+                        onOpenSearch = {
                                     searchGeneration++
                                     activeCatalogGeneration.set(searchGeneration)
                                     searching = false
@@ -1816,73 +1895,16 @@ class MainActivity : ComponentActivity() {
                                     offers = emptyList()
                                     searchMessage = "Игра выбрана из лидеров продаж. Найдены будут только проверенные предложения Steam Gift/Key для RU. Нажмите «Искать»."
                                     activeTab = 0
-                                }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)) {
-                                    Text("${index + 1}. ${game.title}", modifier = Modifier.fillMaxWidth(), maxLines = 2)
-                                }
-                                TextButton(onClick = { leaderDetailsGame = game },
-                                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp)) {
-                                    Text("Подробнее", style = MaterialTheme.typography.labelSmall)
-                                }
-                            }
-                            val availabilityLabel = when (game.availability) {
-                                SteamRuAvailability.AVAILABLE -> "Доступна в Steam RU"
-                                SteamRuAvailability.UNAVAILABLE -> "Не продаётся в Steam RU"
-                                SteamRuAvailability.UNKNOWN -> "Статус Steam RU не удалось определить"
-                            }
-                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text("Steam RU: ${game.steamPrice.ifBlank { "цена не указана" }}" +
-                                    if (game.discountPercent > 0) " · −${game.discountPercent}%" else "",
-                                    style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                                SteamReviewBadge(game.reviewSummary)
-                            }
-                            if (game.discountPercent > 0 && game.steamInitialPrice.isNotBlank()) {
-                                Text("Было ${game.steamInitialPrice}", style = MaterialTheme.typography.bodySmall.copy(
-                                    textDecoration = TextDecoration.LineThrough), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            val marketplacePrices = leaderOfferPrices[game.appId]
-                            if (marketplacePrices?.checkedAt != null) {
-                                val pricesLabel = listOfNotNull(
-                                    marketplacePrices.platiMinimum?.let { "Plati от ${String.format(Locale("ru", "RU"), "%.0f ₽", it)}" },
-                                    marketplacePrices.ggselMinimum?.let { "GGSEL от ${String.format(Locale("ru", "RU"), "%.0f ₽", it)}" }
-                                ).joinToString(" · ")
-                                if (pricesLabel.isNotBlank()) Text(pricesLabel, style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.tertiary)
-                                Text(marketplacePrices.message, style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            } else if (!marketplacePrices?.message.isNullOrBlank()) {
-                                Text(marketplacePrices?.message.orEmpty(), style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.error)
-                            }
-                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Text(availabilityLabel, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall,
-                                    color = when (game.availability) {
-                                        SteamRuAvailability.AVAILABLE -> MaterialTheme.colorScheme.primary
-                                        SteamRuAvailability.UNAVAILABLE -> MaterialTheme.colorScheme.error
-                                        SteamRuAvailability.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant
-                                    })
-                                TextButton(onClick = {
-                                    startCatalogSearch(
-                                        candidateOverride = GameSearchResolver.Candidate(game.appId, game.title),
-                                        leaderboardAppId = game.appId
-                                    )
-                                }, enabled = !searching && marketplacePrices?.checking != true,
-                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
-                                    Text(when {
-                                        marketplacePrices?.checking == true -> "Проверяем…"
-                                        marketplacePrices?.checkedAt != null -> "Обновить Plati/GGSEL"
-                                        else -> "Проверить Plati/GGSEL"
-                                    })
-                                }
-                            }
-                            OutlinedButton(onClick = { openGameMonitoring(game.appId, game.title) },
-                                enabled = !isGameWatched(game.appId, game.title),
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
-                                Text(if (isGameWatched(game.appId, game.title)) "В мониторинге" else "В мониторинг",
-                                    style = MaterialTheme.typography.labelSmall)
-                            }
-                        }
-                    }
+
+                        },
+                        onDetails = { leaderDetailsGame = game },
+                        onSearchPrice = {
+                            startCatalogSearch(
+                                candidateOverride = GameSearchResolver.Candidate(game.appId, game.title),
+                                leaderboardAppId = game.appId
+                            )
+                        },
+                        onMonitor = { openGameMonitoring(game.appId, game.title) })
                 }
                 if (sectionHasMore) {
                     OutlinedButton(
