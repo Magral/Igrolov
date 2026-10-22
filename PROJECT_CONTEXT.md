@@ -52,14 +52,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-22T16:04:13.313Z
+- Обновлено (UTC): 2026-10-22T16:07:44.476Z
 - Ветка: `main`.
-- HEAD: [`d09346fcee97`](https://github.com/Magral/Igrolov/commit/d09346fcee978d1e1c28630d46c2ecf6ef4e3d40).
+- HEAD: [`4fd16d9c8442`](https://github.com/Magral/Igrolov/commit/4fd16d9c844246672394eb784f33d7bce5edba96).
 - Опубликованный стабильный GitHub Release не найден.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [4fd16d9](https://github.com/Magral/Igrolov/commit/4fd16d9c844246672394eb784f33d7bce5edba96) — fix: ignore currency punctuation in Steam price parsing
 - [336210b](https://github.com/Magral/Igrolov/commit/336210b2c2001f082aac54d61252134f827147f8) — feat: add price discount and review filters to Leaders
 - [7c97016](https://github.com/Magral/Igrolov/commit/7c9701691c18a04b5b091fe73b2417aed2da6fe9) — feat: add input state for Steam leaders filters
 - [2e91505](https://github.com/Magral/Igrolov/commit/2e91505d88a34b3dbbca8916a14604e19bb0fbaa) — test: cover Steam leaders filters
-- [f194eba](https://github.com/Magral/Igrolov/commit/f194eba64bbdf28cce6bb829aeb8828a5a4f7fda) — feat: add Steam leaders filter model
 <!-- AUTO_CONTEXT_END -->
