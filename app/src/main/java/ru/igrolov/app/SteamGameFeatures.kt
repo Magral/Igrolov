@@ -18,9 +18,19 @@ data class SteamGameFeatures(
         fun fromDetails(data: JSONObject): SteamGameFeatures {
             val languages = data.optString("supported_languages", "")
             val localization = if (languages.isBlank()) SteamRussianLocalization.UNKNOWN else {
-                val russianListed = languages.replace(Regex("<[^>]*>"), " ")
+                // Steam localizes language names according to `l=`; the RU request may
+                // return "Русский" instead of "Russian". Strip markup and entities
+                // before matching so both response forms are recognized.
+                val plainLanguages = languages.replace(Regex("<[^>]*>"), " ")
+                    .replace("&nbsp;", " ")
+                    .replace("&amp;", "&")
+                val russianListed = plainLanguages
                     .split(',', ';')
-                    .any { it.trim().startsWith("Russian", ignoreCase = true) }
+                    .any {
+                        val language = it.trim().trimStart('*').trim()
+                        language.startsWith("Russian", ignoreCase = true) ||
+                            language.startsWith("Русск", ignoreCase = true)
+                    }
                 if (russianListed) SteamRussianLocalization.SUPPORTED else SteamRussianLocalization.NOT_SUPPORTED
             }
             val controller = when (data.optString("controller_support", "").trim().lowercase()) {

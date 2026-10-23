@@ -23,6 +23,14 @@ class SteamGameFeaturesTest {
         assertEquals(SteamControllerSupport.PARTIAL, features.controllerSupport)
     }
 
+    @Test fun recognizesRussianLanguageNameLocalizedBySteam() {
+        val features = SteamGameFeatures.fromDetails(JSONObject("""{
+            "supported_languages":"Английский, Русский <strong>*</strong>, Французский",
+            "controller_support":"full"
+        }"""))
+        assertEquals(SteamRussianLocalization.SUPPORTED, features.russianLocalization)
+    }
+
     @Test fun missingDataIsUnknownAndMissingControllerFieldMeansNoSupport() {
         assertEquals(SteamGameFeatures(), SteamGameFeatures.fromDetails(JSONObject("{}")))
         assertEquals(SteamControllerSupport.NONE,
