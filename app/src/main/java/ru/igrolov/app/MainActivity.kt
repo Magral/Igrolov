@@ -2338,6 +2338,17 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 Text("Показано: ${visibleTopGames.size}", style = MaterialTheme.typography.labelMedium)
+                if (leaderInitialLoaded) {
+                    SteamLeaderFilter.paginationStatus(
+                        leaderSection,
+                        visibleTopGames.size,
+                        leaderHasMore,
+                        topBusy || loadMoreBusy
+                    )?.let { status ->
+                        Text(status, style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
                 if (!topBusy && topError.isBlank() && visibleTopGames.isEmpty()) {
                     Text(
                         if (leaderSection == SteamLeaderSection.DISCOUNTED_TOP_SELLERS)

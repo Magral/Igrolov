@@ -144,6 +144,19 @@ class SteamTopSellerTest {
         assertFalse(SteamLeaderFilter.shouldLoadMoreMatching(SteamLeaderSection.TOP_SELLERS, 2, true))
     }
 
+    @Test fun leaderPaginationExplainsOngoingSearchAndExhaustedResults() {
+        assertEquals(
+            "Найдено подходящих игр: 4 из 10. Загружаем следующие страницы…",
+            SteamLeaderFilter.paginationStatus(SteamLeaderSection.POPULAR_NEW_RELEASES, 4, true, true)
+        )
+        assertEquals(
+            "Больше страниц нет. Найдено подходящих игр: 4 из 10.",
+            SteamLeaderFilter.paginationStatus(SteamLeaderSection.DISCOUNTED_TOP_SELLERS, 4, false, false)
+        )
+        assertNull(SteamLeaderFilter.paginationStatus(SteamLeaderSection.POPULAR_NEW_RELEASES, 10, true, true))
+        assertNull(SteamLeaderFilter.paginationStatus(SteamLeaderSection.TOP_SELLERS, 4, true, true))
+    }
+
     @Test fun leaderGenreFilterMatchesAnySelectedGenreAndLeavesUnknownOut() {
         val games = listOf(
             SteamTopSeller(1, "Space RPG", genres = listOf("RPG", "Симуляторы")),

@@ -97,6 +97,22 @@ data class SteamLeaderFilters(
 
 /** Applies optional Steam RU price, discount, and review filters to a loaded Leaders list. */
 object SteamLeaderFilter {
+    fun paginationStatus(
+        section: SteamLeaderSection,
+        matchingCount: Int,
+        hasMore: Boolean,
+        isLoading: Boolean
+    ): String? {
+        if (section !in setOf(SteamLeaderSection.POPULAR_NEW_RELEASES, SteamLeaderSection.DISCOUNTED_TOP_SELLERS) || matchingCount >= 10) {
+            return null
+        }
+        return when {
+            hasMore && isLoading -> "Найдено подходящих игр: $matchingCount из 10. Загружаем следующие страницы…"
+            !hasMore -> "Больше страниц нет. Найдено подходящих игр: $matchingCount из 10."
+            else -> null
+        }
+    }
+
     fun shouldLoadMoreMatching(section: SteamLeaderSection, matchingCount: Int, hasMore: Boolean): Boolean =
         hasMore && matchingCount < 10 && section in setOf(
             SteamLeaderSection.POPULAR_NEW_RELEASES,
