@@ -5,4 +5,4 @@
 - [x] Добавлен regression-тест на список языков, возвращённый на русском языке.
 - [x] Unit-тесты, APK и instrumentation APK прошли в GitHub Actions.
 - [x] Live smoke и UI-сценарии Android API 26 и 29 прошли.
-- [ ] GitHub Release опубликован с APK.
+- [x] GitHub Release v1.4.2 опубликован с APK.
