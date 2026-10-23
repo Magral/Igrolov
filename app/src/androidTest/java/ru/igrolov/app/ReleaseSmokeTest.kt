@@ -86,6 +86,9 @@ class ReleaseSmokeTest {
 
     @Test fun wishlistImportIsSeparateFromOfferSearch() {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        context.getSharedPreferences("tracked_products",0).edit()
+            .remove("wishlist_profiles").remove("wishlist_selected_profile").remove("wishlist_profile")
+            .remove("wishlist_games").remove("wishlist_imported_at").commit()
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Игролов 1.4.4")) })
         compose.onNodeWithText("Желания").performSemanticsAction(SemanticsActions.OnClick) { it() }
