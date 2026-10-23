@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-23T18:08:04.013Z
+- Обновлено (UTC): 2026-10-23T18:37:25.781Z
 - Ветка: `main`.
-- HEAD: [`0c3b6694ec4d`](https://github.com/Magral/Igrolov/commit/0c3b6694ec4d551b7550e2895647ea54a540250b).
+- HEAD: [`0360a98f6667`](https://github.com/Magral/Igrolov/commit/0360a98f6667f82afc35394ec3db71d4814af2b2).
 - Последний опубликованный стабильный GitHub Release: [v1.4.3](https://github.com/Magral/Igrolov/releases/tag/v1.4.3); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [0360a98](https://github.com/Magral/Igrolov/commit/0360a98f6667f82afc35394ec3db71d4814af2b2) — feat: add Steam edition monitoring and filters
 - [0c3b669](https://github.com/Magral/Igrolov/commit/0c3b6694ec4d551b7550e2895647ea54a540250b) — test: align compact count rounding expectation
 - [cf1c54e](https://github.com/Magral/Igrolov/commit/cf1c54e043b9425d448b932e64264984b46e8961) — test: correct compact review count expectation
 - [90ac65a](https://github.com/Magral/Igrolov/commit/90ac65a21b5d1ce3fb154fa4c440338cd6b77d23) — test: import review filter assertion
-- [30280e4](https://github.com/Magral/Igrolov/commit/30280e484cf130572b5b928e21feee8680655961) — feat: add review volume to Steam leaders
 <!-- AUTO_CONTEXT_END -->
