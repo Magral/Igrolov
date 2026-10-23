@@ -20,6 +20,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
@@ -680,7 +681,7 @@ class MainActivity : ComponentActivity() {
         onSearchPrice: () -> Unit, onMonitor: () -> Unit,
         cachedPrices: CachedGamePrices?, selected: Boolean, selectionEnabled: Boolean, onToggle: () -> Unit
     ) {
-        ElevatedCard(Modifier.fillMaxWidth()) {
+        OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     SteamArtwork(game.headerImageUrl, Modifier.size(88.dp, 50.dp), appId = game.appId)
@@ -1710,7 +1711,7 @@ class MainActivity : ComponentActivity() {
             Text("Отслеживаемые товары: ${items.size}", style = MaterialTheme.typography.titleMedium)
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items.sortedBy { it.price ?: Double.MAX_VALUE }.forEach { item ->
-                    ElevatedCard(Modifier.fillMaxWidth()) {
+                    OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
                         Column(Modifier.padding(12.dp)) {
                             Text(item.name, style = MaterialTheme.typography.titleMedium)
                             Text("${item.marketplace} · ID ${item.id} · ${item.status}", style = MaterialTheme.typography.bodySmall)
@@ -1812,7 +1813,7 @@ class MainActivity : ComponentActivity() {
             for (watchEntry in visibleWatchEntries) {
                 val wi = watchEntry.originalIndex
                 val w = watchEntry.game
-                ElevatedCard(Modifier.fillMaxWidth()) {
+                OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
                     Column(Modifier.padding(10.dp)) {
                         Text(w.optString("name"), style = MaterialTheme.typography.titleMedium)
                         Text(listOfNotNull(w.optString("kind"), w.optString("steamEditionName").takeIf { it.isNotBlank() },
@@ -1882,7 +1883,7 @@ class MainActivity : ComponentActivity() {
                                 val productUrl=offerJson.optString("url").ifBlank {
                                     if(marketplace=="GGSEL") "https://ggsel.net/" else "https://plati.market/itm/$id"
                                 }
-                                ElevatedCard(Modifier.fillMaxWidth()) {
+                                OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
                                     Column(Modifier.padding(10.dp)) {
                                         Text(title, style = MaterialTheme.typography.bodyMedium)
                                         Text("$marketplace · $type · " + String.format(Locale("ru", "RU"), "%.2f ₽", price))
@@ -1963,7 +1964,7 @@ class MainActivity : ComponentActivity() {
                     val alertUrl=alert.optString("url").ifBlank { "https://plati.market/itm/$id" }
                     val stamp = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("ru", "RU"))
                         .format(java.util.Date(alert.optLong("at")))
-                    ElevatedCard(Modifier.fillMaxWidth()) {
+                    OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
                         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(alert.optString("game"), style = MaterialTheme.typography.titleMedium)
                             Text(alert.optString("name"), style = MaterialTheme.typography.bodySmall)
@@ -2026,7 +2027,7 @@ class MainActivity : ComponentActivity() {
                 if (visibleCount == 0) Text("По выбранным фильтрам предложений нет. Уточните название или проверьте регион в заголовках.", style = MaterialTheme.typography.bodySmall)
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     filteredOffers.take(visibleOfferLimit).forEach { offer ->
-                        ElevatedCard(Modifier.fillMaxWidth()) {
+                        OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
                             Column(Modifier.padding(horizontal = 9.dp, vertical = 7.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(offer.marketplace, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                                 Text(offer.name, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
@@ -2756,7 +2757,7 @@ class MainActivity : ComponentActivity() {
         BatchSelectionControls(visibleGames.count { it.appId in selectedIds },
             selectionEnabled && searchEnabled && !filterInput.hasInvalidInput, onSelectFive, onCheckSelected)
         visibleGames.take(visibleLimit).forEach { game ->
-            ElevatedCard(Modifier.fillMaxWidth()) {
+            OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     TextButton(
                         onClick = { onOpenSearch(game) },
