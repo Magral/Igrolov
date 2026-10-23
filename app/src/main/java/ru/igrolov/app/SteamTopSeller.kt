@@ -97,6 +97,12 @@ data class SteamLeaderFilters(
 
 /** Applies optional Steam RU price, discount, and review filters to a loaded Leaders list. */
 object SteamLeaderFilter {
+    fun shouldLoadMoreMatching(section: SteamLeaderSection, matchingCount: Int, hasMore: Boolean): Boolean =
+        hasMore && matchingCount < 10 && section in setOf(
+            SteamLeaderSection.POPULAR_NEW_RELEASES,
+            SteamLeaderSection.DISCOUNTED_TOP_SELLERS
+        )
+
     fun apply(games: List<SteamTopSeller>, filters: SteamLeaderFilters): List<SteamTopSeller> {
         val maximumPrice = filters.maxPriceRub?.takeIf { it > 0.0 }
         val minimumDiscount = filters.minimumDiscountPercent?.takeIf { it > 0 }?.coerceIn(1, 100)

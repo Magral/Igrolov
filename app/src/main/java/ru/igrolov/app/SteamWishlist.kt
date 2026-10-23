@@ -189,6 +189,40 @@ object SteamWishlist {
         } finally { connection.disconnect() }
     }
 
+    /** Backfills genres for stored wishlist entries created before genre metadata was saved. */
+    fun enrichMissingGenres(games: List<WishlistGame>): List<WishlistGame> {
+        val enrichedGames = games.toMutableList()
+        val pool = Executors.newFixedThreadPool(4)
+        return try {
+            games.filter { it.genres.isEmpty() }.chunked(4).forEach { batch ->
+                pool.invokeAll(batch.map { game -> Callable { runCatching { fetchGenres(game) }.getOrDefault(game) } })
+                    .mapNotNull { task -> runCatching { task.get() }.getOrNull() }
+                    .forEach { enriched ->
+                        val index = enrichedGames.indexOfFirst { it.appId == enriched.appId }
+                        if (index >= 0) enrichedGames[index] = enriched
+                    }
+            }
+            enrichedGames
+        } finally { pool.shutdownNow() }
+    }
+
+    internal fun applyGenres(game: WishlistGame, appDetailsJson: String): WishlistGame {
+        val genres = runCatching {
+            val data = JSONObject(appDetailsJson).optJSONObject(game.appId.toString())
+                ?.takeIf { it.optBoolean("success") }?.optJSONObject("data")
+            data?.let(SteamTopSellerParser::parseGenres).orEmpty()
+        }.getOrDefault(emptyList())
+        return if (game.genres.isNotEmpty() || genres.isEmpty()) game else game.copy(genres = genres)
+    }
+
+    private fun fetchGenres(game: WishlistGame): WishlistGame {
+        val regional = runCatching { fetchAppDetailsJson(game.appId, "ru", "russian") }.getOrNull()
+        val withRegional = regional?.let { applyGenres(game, it) } ?: game
+        if (withRegional.genres.isNotEmpty()) return withRegional
+        val global = runCatching { fetchAppDetailsJson(game.appId, "us", "english") }.getOrNull() ?: return game
+        return applyGenres(game, global)
+    }
+
     private fun fetchAppDetails(game: WishlistGame): WishlistGame {
         val regional = fetchAppDetailsJson(game.appId, "ru", "russian") ?: run {
             val global = runCatching { fetchAppDetailsJson(game.appId, "us", "english") }.getOrNull()

@@ -75,6 +75,15 @@ class SteamWishlistTest {
         assertEquals(SteamRussianLocalization.SUPPORTED, merged.features.russianLocalization)
     }
 
+    @Test fun fillsMissingStoredGenresWithoutReplacingExistingGenres() {
+        val existing = WishlistGame(1, "Existing", "500 руб.", genres = listOf("RPG"))
+        val legacy = WishlistGame(2, "Legacy", "700 руб.")
+        val filled = SteamWishlist.applyGenres(legacy, """{"2":{"success":true,"data":{"genres":[{"description":"Стратегии"}]}}}""")
+        assertEquals(listOf("Стратегии"), filled.genres)
+        assertEquals(existing, SteamWishlist.applyGenres(existing, """{"1":{"success":true,"data":{"genres":[{"description":"Экшены"}]}}}"""))
+        assertEquals("700 руб.", filled.steamPrice)
+    }
+
     @Test fun storesMultipleNamedProfilesAndWishlistPrices() {
         val profiles = listOf(
             WishlistProfile("76561198000000000", "Alex", "https://steamcommunity.com/profiles/76561198000000000", listOf(

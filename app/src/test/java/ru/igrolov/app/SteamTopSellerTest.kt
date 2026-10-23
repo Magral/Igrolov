@@ -136,6 +136,14 @@ class SteamTopSellerTest {
         )).isEmpty())
     }
 
+    @Test fun newReleaseAndDiscountSectionsLoadUntilTenMatchesButRespectEndOfList() {
+        assertTrue(SteamLeaderFilter.shouldLoadMoreMatching(SteamLeaderSection.POPULAR_NEW_RELEASES, 4, true))
+        assertTrue(SteamLeaderFilter.shouldLoadMoreMatching(SteamLeaderSection.DISCOUNTED_TOP_SELLERS, 9, true))
+        assertFalse(SteamLeaderFilter.shouldLoadMoreMatching(SteamLeaderSection.DISCOUNTED_TOP_SELLERS, 10, true))
+        assertFalse(SteamLeaderFilter.shouldLoadMoreMatching(SteamLeaderSection.POPULAR_NEW_RELEASES, 2, false))
+        assertFalse(SteamLeaderFilter.shouldLoadMoreMatching(SteamLeaderSection.TOP_SELLERS, 2, true))
+    }
+
     @Test fun leaderGenreFilterMatchesAnySelectedGenreAndLeavesUnknownOut() {
         val games = listOf(
             SteamTopSeller(1, "Space RPG", genres = listOf("RPG", "Симуляторы")),

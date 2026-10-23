@@ -870,6 +870,7 @@ class MainActivity : ComponentActivity() {
         var wishlistGames by mutableStateOf(wishlistProfiles.firstOrNull { it.steamId64 == selectedWishlistId }?.games
             ?: SteamWishlist.decode(prefs.getString("wishlist_games", null)))
         var wishlistBusy by mutableStateOf(false)
+        var wishlistGenresLoading by mutableStateOf(false)
         var wishlistMessage by mutableStateOf("")
         var wishlistImportedAt by mutableLongStateOf(prefs.getLong("wishlist_imported_at", 0L))
         var wishlistVisibleLimit by mutableIntStateOf(50)
@@ -1122,8 +1123,10 @@ class MainActivity : ComponentActivity() {
         var discountedExtraGames by remember { mutableStateOf<List<SteamTopSeller>>(emptyList()) }
         var newReleaseNextStart by remember { mutableStateOf(0) }
         var newReleaseHasMore by remember { mutableStateOf(true) }
+        var newReleaseInitialLoaded by remember { mutableStateOf(false) }
         var discountedNextStart by remember { mutableStateOf(100) }
         var discountedHasMore by remember { mutableStateOf(true) }
+        var discountedInitialLoaded by remember { mutableStateOf(false) }
         var loadMoreBusy by remember { mutableStateOf(false) }
         var leaderDetailsGame by remember { mutableStateOf<SteamTopSeller?>(null) }
         var leaderDetailsLoading by remember { mutableStateOf(false) }
@@ -1150,6 +1153,7 @@ class MainActivity : ComponentActivity() {
         var topAvailabilityFilter by remember { mutableStateOf("Все игры") }
         var leaderFilterInput by remember { mutableStateOf(SteamLeaderFilterInput()) }
         var wishlistFilterInput by remember { mutableStateOf(SteamLeaderFilterInput()) }
+        var wishlistGenreBackfillAttempt by remember { mutableStateOf("") }
         var leaderOfferPrices by remember { mutableStateOf<Map<Int, LeaderOfferPrices>>(emptyMap()) }
         fun refreshTop() {
             if (topBusy || loadMoreBusy) return
@@ -1160,24 +1164,28 @@ class MainActivity : ComponentActivity() {
                     newReleaseGames = emptyList()
                     newReleaseNextStart = 0
                     newReleaseHasMore = true
+                    newReleaseInitialLoaded = false
                     loadPopularNewReleasePage(0, 30) { page, error, isFinal ->
                         newReleaseGames = page.games
                         newReleaseNextStart = page.nextStart
-                        newReleaseHasMore = page.hasMore
+                        newReleaseHasMore = page.hasMore && page.nextStart > 0
                         topError = error
                         topBusy = !isFinal
+                        if (isFinal) newReleaseInitialLoaded = true
                     }
                 }
                 SteamLeaderSection.TOP_SELLERS, SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> {
                     discountedExtraGames = emptyList()
                     discountedNextStart = 100
                     discountedHasMore = true
+                    discountedInitialLoaded = false
                     loadPaidTopSellers { games, error, nextStart, hasMore, isFinal ->
                         topGames = games
                         discountedNextStart = nextStart
                         discountedHasMore = hasMore
                         topError = error
                         topBusy = !isFinal
+                        if (isFinal) discountedInitialLoaded = true
                     }
                 }
             }
@@ -1187,23 +1195,27 @@ class MainActivity : ComponentActivity() {
             loadMoreBusy = true
             topError = ""
             when (leaderSection) {
-                SteamLeaderSection.POPULAR_NEW_RELEASES ->
-                    loadPopularNewReleasePage(newReleaseNextStart, 30) { page, error, isFinal ->
+                SteamLeaderSection.POPULAR_NEW_RELEASES -> {
+                    val requestedStart = newReleaseNextStart
+                    loadPopularNewReleasePage(requestedStart, 30) { page, error, isFinal ->
                         newReleaseGames = (newReleaseGames + page.games).distinctBy { it.appId }
                         newReleaseNextStart = page.nextStart
-                        newReleaseHasMore = page.hasMore
+                        newReleaseHasMore = page.hasMore && page.nextStart > requestedStart
                         topError = error
                         loadMoreBusy = !isFinal
                     }
-                SteamLeaderSection.DISCOUNTED_TOP_SELLERS ->
-                    loadDiscountedTopSellerPage(discountedNextStart) { page, error, isFinal ->
+                }
+                SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> {
+                    val requestedStart = discountedNextStart
+                    loadDiscountedTopSellerPage(requestedStart) { page, error, isFinal ->
                         discountedExtraGames = (discountedExtraGames + page.games.filter { it.discountPercent > 0 })
                             .distinctBy { it.appId }
                         discountedNextStart = page.nextStart
-                        discountedHasMore = page.hasMore
+                        discountedHasMore = page.hasMore && page.nextStart > requestedStart
                         topError = error
                         loadMoreBusy = !isFinal
                     }
+                }
                 SteamLeaderSection.TOP_SELLERS -> loadMoreBusy = false
             }
         }
@@ -1215,6 +1227,37 @@ class MainActivity : ComponentActivity() {
                 }
                 if (needsLoad) refreshTop()
             }
+        }
+        fun backfillWishlistGenres() {
+            val profileId = catalogueUi.selectedWishlistId ?: return
+            val games = catalogueUi.wishlistGames
+            val missing = games.filter { it.genres.isEmpty() }
+            if (missing.isEmpty()) return
+            val attemptKey = "$profileId:${missing.joinToString(",") { it.appId.toString() }}"
+            if (wishlistGenreBackfillAttempt == attemptKey || catalogueUi.wishlistGenresLoading) return
+            wishlistGenreBackfillAttempt = attemptKey
+            catalogueUi.wishlistGenresLoading = true
+            ioExecutor.execute {
+                val enriched = SteamWishlist.enrichMissingGenres(games)
+                runOnUiThread {
+                    val genresById = enriched.associate { it.appId to it.genres }
+                    val profiles = catalogueUi.wishlistProfiles.map { profile ->
+                        if (profile.steamId64 == profileId) profile.copy(games = profile.games.map { game ->
+                            if (game.genres.isEmpty()) game.copy(genres = genresById[game.appId].orEmpty()) else game
+                        }) else profile
+                    }
+                    if (profiles.any { it.steamId64 == profileId }) persistWishlistProfiles(profiles)
+                    if (catalogueUi.selectedWishlistId == profileId) {
+                        val latestGames = profiles.firstOrNull { it.steamId64 == profileId }?.games.orEmpty()
+                        catalogueUi.wishlistGames = latestGames
+                        prefs.edit().putString("wishlist_games", SteamWishlist.encode(latestGames)).apply()
+                    }
+                    catalogueUi.wishlistGenresLoading = false
+                }
+            }
+        }
+        LaunchedEffect(activeTab, settingsOpen, catalogueUi.selectedWishlistId, catalogueUi.wishlistGenresLoading) {
+            if (activeTab == 3 && !settingsOpen) backfillWishlistGenres()
         }
         fun importWishlist() {
             if (catalogueUi.wishlistBusy) return
@@ -2118,6 +2161,7 @@ class MainActivity : ComponentActivity() {
                     filterInput = wishlistFilterInput, onFilterInput = { wishlistFilterInput = it },
                     input = catalogueUi.wishlistProfile, busy = catalogueUi.wishlistBusy, message = catalogueUi.wishlistMessage,
                     importedAt = catalogueUi.wishlistImportedAt, visibleLimit = catalogueUi.wishlistVisibleLimit,
+                    genresLoading = catalogueUi.wishlistGenresLoading,
                     searchingKeys = catalogueUi.wishlistSearchingKeys, searchStatuses = catalogueUi.wishlistSearchStatuses,
                     searchEnabled = manualFilters.valid && !catalogueUi.priceBatch.running,
                     onInput = { catalogueUi.wishlistProfile = it }, onImport = { importWishlist() },
@@ -2275,6 +2319,24 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 val visibleTopGames = SteamLeaderFilter.apply(availabilityFilteredGames, leaderFilterInput.toFilters())
+                val leaderHasMore = when (leaderSection) {
+                    SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseHasMore
+                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedHasMore
+                    SteamLeaderSection.TOP_SELLERS -> false
+                }
+                val leaderInitialLoaded = when (leaderSection) {
+                    SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseInitialLoaded
+                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedInitialLoaded
+                    SteamLeaderSection.TOP_SELLERS -> false
+                }
+                LaunchedEffect(activeTab, settingsOpen, leaderSection, leaderFilterInput, topAvailabilityFilter,
+                    visibleTopGames.size, newReleaseNextStart, discountedNextStart, leaderHasMore,
+                    leaderInitialLoaded, topBusy, loadMoreBusy) {
+                    if (activeTab == 4 && !settingsOpen && leaderInitialLoaded && !topBusy && !loadMoreBusy &&
+                        SteamLeaderFilter.shouldLoadMoreMatching(leaderSection, visibleTopGames.size, leaderHasMore)) {
+                        loadMoreLeaderGames()
+                    }
+                }
                 Text("Показано: ${visibleTopGames.size}", style = MaterialTheme.typography.labelMedium)
                 if (!topBusy && topError.isBlank() && visibleTopGames.isEmpty()) {
                     Text(
@@ -2699,6 +2761,7 @@ class MainActivity : ComponentActivity() {
         message: String,
         importedAt: Long,
         visibleLimit: Int,
+        genresLoading: Boolean = false,
         searchingKeys: Set<String>,
         searchStatuses: Map<String, String>,
         searchEnabled: Boolean,
@@ -2754,6 +2817,11 @@ class MainActivity : ComponentActivity() {
         }
         if (message.isNotBlank()) Text(message, style = MaterialTheme.typography.bodySmall,
             color = if (message.startsWith("Не удалось")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+        if (genresLoading) {
+            LinearProgressIndicator(Modifier.fillMaxWidth())
+            Text("Загружаем жанры для сохранённых игр…", style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         Spacer(Modifier.height(8.dp))
         SteamLeaderFiltersPanel(filterInput, onFilterInput, includeReviewFilters = false,
             availableGenres = games.flatMap { it.genres }.distinct().sorted())
