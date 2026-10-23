@@ -22,7 +22,8 @@ object GgselBuyerApi {
         game: ManualGameReference.Game,
         active: () -> Boolean = { true },
         post: (String, JSONObject) -> JSONObject = ::postJson,
-        getCategoryPage: (String) -> String = ::getCategoryPageHtml
+        getCategoryPage: (String) -> String = ::getCategoryPageHtml,
+        editionSearchTerms: List<String> = emptyList()
     ): List<Offer> {
         if (game.appId <= 0) throw IOException("Steam не подтвердил основную игру для поиска GGSEL")
         if (!active()) return emptyList()
@@ -70,29 +71,42 @@ object GgselBuyerApi {
         }
         if (!active()) return emptyList()
         val catalogOffers = GgselCatalog.offers(catalogProducts, game)
-        if (catalogOffers.isNotEmpty()) return catalogOffers
+        if (catalogOffers.isNotEmpty() && editionSearchTerms.isEmpty()) return catalogOffers
 
         // The public category endpoint can return an empty items array even when the page
-        // advertises active goods. Use the same exact category and game title in the site's
-        // public query endpoint, then run every row through the identical strict classifier.
-        val searchProducts = post(CATEGORY_SEARCH_URL, JSONObject()
-            .put("search_term", game.canonical)
-            .put("digi_catalog", categoryId)
-            .put("url", category.url)
-            .put("limit", 100)
-            .put("search_after", JSONArray())
-            .put("is_preorders", false)
-            .put("with_filters", true)
-            .put("with_categories", false)
-            .put("sort", "sortByPriceUp")
-            .put("content_type_ids", JSONArray().put(48).put(2))
-            .put("with_forbidden", false)
-            .put("min_price", "")
-            .put("max_price", "")
-            .put("currency", "wmr")
-            .put("lang", "en")
-            .put("platforms", JSONArray().put("Steam")))
-        return if (active()) GgselCatalog.offers(searchProducts, game) else emptyList()
+        // advertises active goods. For edition searches, also query each exact edition
+        // variant and merge it with category results before the strict classifier runs.
+        val searchTerms = editionSearchTerms.ifEmpty { listOf(game.canonical) }.distinct()
+        val searchedOffers = mutableListOf<Offer>()
+        var lastSearchFailure: Exception? = null
+        for (term in searchTerms) {
+            if (!active()) return (catalogOffers + searchedOffers).distinctBy { it.id }.sortedBy { it.price }
+            try {
+                val searchProducts = post(CATEGORY_SEARCH_URL, JSONObject()
+                    .put("search_term", term)
+                    .put("digi_catalog", categoryId)
+                    .put("url", category.url)
+                    .put("limit", 100)
+                    .put("search_after", JSONArray())
+                    .put("is_preorders", false)
+                    .put("with_filters", true)
+                    .put("with_categories", false)
+                    .put("sort", "sortByPriceUp")
+                    .put("content_type_ids", JSONArray().put(48).put(2))
+                    .put("with_forbidden", false)
+                    .put("min_price", "")
+                    .put("max_price", "")
+                    .put("currency", "wmr")
+                    .put("lang", "en")
+                    .put("platforms", JSONArray().put("Steam")))
+                searchedOffers.addAll(GgselCatalog.offers(searchProducts, game))
+            } catch (e: Exception) {
+                lastSearchFailure = e
+            }
+        }
+        if (!active()) return (catalogOffers + searchedOffers).distinctBy { it.id }.sortedBy { it.price }
+        if (catalogOffers.isEmpty() && searchedOffers.isEmpty() && lastSearchFailure != null) throw lastSearchFailure
+        return (catalogOffers + searchedOffers).distinctBy { it.id }.sortedBy { it.price }
     }
 
     private fun getCategoryPageHtml(endpoint: String): String {

@@ -81,6 +81,18 @@ class SteamEditionReferenceTest {
         ))
     }
 
+    @Test fun marketplaceQueriesIncludeEnglishAndLocalizedEditionNamesWithoutBroadBaseQuery() {
+        val base = "Kingdom Come: Deliverance II"
+        val queries = ManualContentRules.marketplaceEditionSearchQueries(base, "$base Royal Edition")
+        assertEquals("$base Royal Edition", queries.first())
+        assertTrue(queries.any { GameSearchResolver.normalized(it) == GameSearchResolver.normalized("$base Королевское издание") })
+        assertFalse(queries.any { GameSearchResolver.normalized(it) == GameSearchResolver.normalized(base) })
+        assertEquals(queries.size, queries.distinctBy(GameSearchResolver::normalized).size)
+        assertEquals(listOf("Example Game Founder Edition"), ManualContentRules.marketplaceEditionSearchQueries(
+            "Example Game", "Example Game Founder Edition"
+        ))
+    }
+
     @Test fun selectedVerifiedPackageNameConfirmsUnknownEditionSuffixOnlyForThatSearch() {
         val base = "Example Game"
         val royal = "$base Anniversary Edition"

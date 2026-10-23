@@ -123,6 +123,12 @@ object ManualContentRules {
         return editionPhraseVariants(suffix).filter { it != suffix }
             .map { (canonicalWords + it).joinToString(" ") }.distinct()
     }
+
+    fun marketplaceEditionSearchQueries(canonical: String, editionName: String): List<String> =
+        (listOf(editionName) + localizedEditionAliases(canonical, editionName))
+            .map(String::trim).filter(String::isNotBlank)
+            .distinctBy(GameSearchResolver::normalized)
+
     fun visible(offer: Offer, edition: String, type: String, rules: JSONObject = JSONObject()): Boolean {
         if (!offer.detailsChecked || offer.available != true || !offer.priceVerified || offer.variablePrice) return false
         if (offer.rfStatus=="РФ исключена" || (type!="Все" && offer.type!=type)) return false

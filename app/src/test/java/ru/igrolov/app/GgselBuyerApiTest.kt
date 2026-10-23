@@ -123,6 +123,30 @@ class GgselBuyerApiTest {
         assertEquals(listOf(GgselBuyerApi.CATEGORY_QUERY_URL,GgselBuyerApi.CATEGORY_GOODS_URL,GgselBuyerApi.CATEGORY_SEARCH_URL),requested)
     }
 
+    @Test fun editionSearchMergesCatalogAndEnglishAndLocalizedVariantQueries() {
+        val game=ManualGameReference.Game("Example Game",123456,aliases=listOf(
+            "Example Game Royal Edition", "Example Game Королевское издание"))
+        val searchTerms=mutableListOf<String>()
+        val offers=GgselBuyerApi.find(game,post={url,body->
+            when(url) {
+                GgselBuyerApi.CATEGORY_QUERY_URL -> JSONObject("""{"data":[{"digi_catalog":37770,"name":"Example Game","url":"example-game"}]}""")
+                GgselBuyerApi.CATEGORY_GOODS_URL -> JSONObject("""{"data":{"items":[
+                    {"id_goods":223300,"name":"Example Game Royal Edition Steam Key РФ","forbidden_type":0,"price_for_one_wmr":"699","is_preorder":false,"options_check":false,"options":[]}
+                ]}}""")
+                GgselBuyerApi.CATEGORY_SEARCH_URL -> {
+                    searchTerms += body.getString("search_term")
+                    val id=if(body.getString("search_term").contains("Королевское")) 223302 else 223301
+                    val title=if(id==223302) "Example Game Королевское издание Steam Key РФ" else "Example Game Royal Edition Steam Key РФ"
+                    JSONObject("""{"data":{"items":[{"id_goods":$id,"name":"$title","forbidden_type":0,"price_for_one_wmr":"599","is_preorder":false,"options_check":false,"options":[]}]}}""")
+                }
+                else -> error("Unexpected GGSEL endpoint: " + url)
+            }
+        },editionSearchTerms=listOf("Example Game Royal Edition","Example Game Королевское издание"))
+
+        assertEquals(listOf("Example Game Royal Edition","Example Game Королевское издание"),searchTerms)
+        assertEquals(setOf("ggsel:223300","ggsel:223301","ggsel:223302"),offers.map { it.id }.toSet())
+    }
+
     @Test fun fallsBackToQueryWhenApi4Returns404() {
         val game=ManualGameReference.Game("Stellaris",281990)
         val requested=mutableListOf<String>()
