@@ -27,7 +27,8 @@ data class SteamTopSeller(
     val isFree: Boolean = false,
     val headerImageUrl: String = "",
     val description: String = "",
-    val reviewSummary: SteamReviewSummary? = null
+    val reviewSummary: SteamReviewSummary? = null,
+    val features: SteamGameFeatures = SteamGameFeatures()
 )
 
 data class SteamRankingPage(
@@ -196,7 +197,8 @@ object SteamTopSellerParser {
             headerImageUrl = game.headerImageUrl.ifBlank { data.optString("header_image").trim() },
             description = game.description.ifBlank {
                 data.optString("short_description").ifBlank { data.optString("about_the_game") }.trim()
-            }
+            },
+            features = game.features.withFallback(SteamGameFeatures.fromDetails(data))
         )
     }
 
@@ -227,7 +229,8 @@ object SteamTopSellerParser {
             availability = if (available) SteamRuAvailability.AVAILABLE else SteamRuAvailability.UNKNOWN,
             isFree = isFree,
             headerImageUrl = data.optString("header_image").trim(),
-            description = data.optString("short_description").ifBlank { data.optString("about_the_game") }.trim()
+            description = data.optString("short_description").ifBlank { data.optString("about_the_game") }.trim(),
+            features = game.features.withFallback(SteamGameFeatures.fromDetails(data))
         )
     }
 }

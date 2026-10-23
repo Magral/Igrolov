@@ -623,6 +623,42 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun SteamFeatureBadges(features: SteamGameFeatures) {
+        val localization = when (features.russianLocalization) {
+            SteamRussianLocalization.SUPPORTED -> "Русский язык"
+            SteamRussianLocalization.NOT_SUPPORTED -> "Без русского"
+            SteamRussianLocalization.UNKNOWN -> "Язык: —"
+        }
+        val localizationColor = when (features.russianLocalization) {
+            SteamRussianLocalization.SUPPORTED -> MaterialTheme.colorScheme.primaryContainer
+            SteamRussianLocalization.NOT_SUPPORTED -> MaterialTheme.colorScheme.surfaceVariant
+            SteamRussianLocalization.UNKNOWN -> MaterialTheme.colorScheme.tertiaryContainer
+        }
+        val controller = when (features.controllerSupport) {
+            SteamControllerSupport.FULL -> "Геймпад ✓"
+            SteamControllerSupport.PARTIAL -> "Геймпад частично"
+            SteamControllerSupport.NONE -> "Без геймпада"
+            SteamControllerSupport.UNKNOWN -> "Геймпад: —"
+        }
+        val controllerColor = when (features.controllerSupport) {
+            SteamControllerSupport.FULL -> MaterialTheme.colorScheme.primaryContainer
+            SteamControllerSupport.PARTIAL -> MaterialTheme.colorScheme.tertiaryContainer
+            SteamControllerSupport.NONE -> MaterialTheme.colorScheme.surfaceVariant
+            SteamControllerSupport.UNKNOWN -> MaterialTheme.colorScheme.tertiaryContainer
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Surface(color = localizationColor, shape = MaterialTheme.shapes.small) {
+                Text(localization, Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    style = MaterialTheme.typography.labelSmall, maxLines = 1)
+            }
+            Surface(color = controllerColor, shape = MaterialTheme.shapes.small) {
+                Text(controller, Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    style = MaterialTheme.typography.labelSmall, maxLines = 1)
+            }
+        }
+    }
+
+    @Composable
     private fun SteamLeaderCard(
         index: Int, game: SteamTopSeller, marketplacePrices: LeaderOfferPrices?,
         monitored: Boolean, searchEnabled: Boolean,
@@ -642,6 +678,7 @@ class MainActivity : ComponentActivity() {
                         Text("Подробнее", style = MaterialTheme.typography.labelSmall)
                     }
                 }
+                SteamFeatureBadges(game.features)
                 val availabilityLabel = when (game.availability) {
                     SteamRuAvailability.AVAILABLE -> "Доступна в Steam RU"
                     SteamRuAvailability.UNAVAILABLE -> "Не продаётся в Steam RU"
@@ -791,7 +828,7 @@ class MainActivity : ComponentActivity() {
                                  onSettings: () -> Unit, onTab: (Int) -> Unit) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Игролов 1.4.0", style = MaterialTheme.typography.headlineSmall)
+            Text("Игролов 1.4.1", style = MaterialTheme.typography.headlineSmall)
             IconButton(onClick = onSettings) {
                 Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                     color = MaterialTheme.colorScheme.onSurface)
@@ -2569,6 +2606,7 @@ class MainActivity : ComponentActivity() {
                             maxLines = 2
                         )
                     }
+                    SteamFeatureBadges(game.features)
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Column(Modifier.width(116.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                             SteamArtwork(

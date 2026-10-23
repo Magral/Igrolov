@@ -101,6 +101,15 @@ class SteamTopSellerTest {
         assertEquals("A strategy game.", result.description)
     }
 
+    @Test fun regionalDetailsPopulateLanguageAndControllerBadges() {
+        val result = SteamTopSellerParser.applyRuDetails(SteamTopSeller(281990, "Stellaris"), """
+            {"281990":{"success":true,"data":{"type":"game","name":"Stellaris",
+              "supported_languages":"English, Russian <strong>*</strong>","controller_support":"partial"}}}
+        """.trimIndent(), null)
+        assertEquals(SteamRussianLocalization.SUPPORTED, result.features.russianLocalization)
+        assertEquals(SteamControllerSupport.PARTIAL, result.features.controllerSupport)
+    }
+
     @Test fun globalMetadataFillsArtworkAndDescriptionWithoutChangingRuEvidence() {
         val game = SteamTopSeller(
             123456, "Original title", steamPrice = "", availability = SteamRuAvailability.UNAVAILABLE
@@ -108,12 +117,15 @@ class SteamTopSellerTest {
         val result = SteamTopSellerParser.applyGlobalMetadata(game, """
             {"123456":{"success":true,"data":{"type":"game","name":"Global title",
               "header_image":"https://cdn.example/header.jpg","short_description":"Global description.",
+              "supported_languages":"English","controller_support":"full",
               "price_overview":{"final_formatted":"$19.99"}}}}
         """.trimIndent())
 
         assertEquals("Original title", result.title)
         assertEquals("https://cdn.example/header.jpg", result.headerImageUrl)
         assertEquals("Global description.", result.description)
+        assertEquals(SteamRussianLocalization.NOT_SUPPORTED, result.features.russianLocalization)
+        assertEquals(SteamControllerSupport.FULL, result.features.controllerSupport)
         assertEquals("", result.steamPrice)
         assertEquals(SteamRuAvailability.UNAVAILABLE, result.availability)
     }

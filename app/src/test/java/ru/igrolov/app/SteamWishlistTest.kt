@@ -42,6 +42,17 @@ class SteamWishlistTest {
         assertEquals("Steam #281990", titled[1].title)
     }
 
+    @Test fun enrichesWishlistFeaturesAndPersistsThemInCache() {
+        val game = WishlistGame(281990)
+        val enriched = SteamWishlist.applyTitles(listOf(game), """
+            {"281990":{"success":true,"data":{"name":"Stellaris",
+              "supported_languages":"English, Russian <strong>*</strong>","controller_support":"full"}}}
+        """.trimIndent()).single()
+        assertEquals(SteamRussianLocalization.SUPPORTED, enriched.features.russianLocalization)
+        assertEquals(SteamControllerSupport.FULL, enriched.features.controllerSupport)
+        assertEquals(enriched, SteamWishlist.decode(SteamWishlist.encode(listOf(enriched))).single())
+    }
+
     @Test fun storesMultipleNamedProfilesAndWishlistPrices() {
         val profiles = listOf(
             WishlistProfile("76561198000000000", "Alex", "https://steamcommunity.com/profiles/76561198000000000", listOf(

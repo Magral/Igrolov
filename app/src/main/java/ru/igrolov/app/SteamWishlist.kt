@@ -15,7 +15,8 @@ data class WishlistGame(
     val steamInitialPrice: String = "",
     val discountPercent: Int = 0,
     val lowestPlatiPrice: Double? = null,
-    val lowestGgselPrice: Double? = null
+    val lowestGgselPrice: Double? = null,
+    val features: SteamGameFeatures = SteamGameFeatures()
 )
 
 data class WishlistProfile(
@@ -105,7 +106,8 @@ object SteamWishlist {
                 steamPrice = if (data?.optBoolean("is_free", false) == true) "Бесплатно"
                     else price?.optString("final_formatted", "")?.takeIf { it.isNotBlank() } ?: game.steamPrice,
                 steamInitialPrice = price?.optString("initial_formatted", "")?.takeIf { it.isNotBlank() } ?: game.steamInitialPrice,
-                discountPercent = price?.optInt("discount_percent", game.discountPercent)?.coerceIn(0, 100) ?: game.discountPercent
+                discountPercent = price?.optInt("discount_percent", game.discountPercent)?.coerceIn(0, 100) ?: game.discountPercent,
+                features = data?.let { game.features.withFallback(SteamGameFeatures.fromDetails(it)) } ?: game.features
             )
         }
     }
@@ -115,7 +117,9 @@ object SteamWishlist {
             put(JSONObject().put("appId", game.appId).put("title", game.title)
                 .put("steamPrice", game.steamPrice).put("steamInitialPrice", game.steamInitialPrice)
                 .put("discountPercent", game.discountPercent).put("lowestPlatiPrice", game.lowestPlatiPrice)
-                .put("lowestGgselPrice", game.lowestGgselPrice))
+                .put("lowestGgselPrice", game.lowestGgselPrice)
+                .put("russianLocalization", game.features.russianLocalization.name)
+                .put("controllerSupport", game.features.controllerSupport.name))
         }
     }.toString()
 
@@ -127,7 +131,11 @@ object SteamWishlist {
             WishlistGame(appId, item.optString("title", ""), item.optString("steamPrice", ""),
                 item.optString("steamInitialPrice", ""), item.optInt("discountPercent", 0).coerceIn(0, 100),
                 item.optDouble("lowestPlatiPrice").takeIf { item.has("lowestPlatiPrice") && it > 0.0 },
-                item.optDouble("lowestGgselPrice").takeIf { item.has("lowestGgselPrice") && it > 0.0 })
+                item.optDouble("lowestGgselPrice").takeIf { item.has("lowestGgselPrice") && it > 0.0 },
+                SteamGameFeatures(
+                    runCatching { SteamRussianLocalization.valueOf(item.optString("russianLocalization")) }.getOrDefault(SteamRussianLocalization.UNKNOWN),
+                    runCatching { SteamControllerSupport.valueOf(item.optString("controllerSupport")) }.getOrDefault(SteamControllerSupport.UNKNOWN)
+                ))
         }.distinctBy { it.appId }.take(500)
     } catch (_: Exception) { emptyList() }
 
