@@ -155,6 +155,13 @@ class SteamTopSellerTest {
         assertEquals(listOf("RPG", "Стратегии"), game.genres)
     }
 
+    @Test fun genreLineShowsThreeDistinctGenresAndCountForTheRest() {
+        assertEquals("Жанры: RPG · Инди · Стратегии · +1", SteamTopSellerParser.formatGenreLine(
+            listOf("RPG", "Инди", "Стратегии", "Экшены", "rpg")
+        ))
+        assertEquals("", SteamTopSellerParser.formatGenreLine(emptyList()))
+    }
+
     @Test fun leaderReviewFiltersParseAndCountReviewThreshold() {
         val input = SteamLeaderFilterInput(minimumReviewText = "85", minimumReviewCountText = "1000")
         assertEquals(2, input.activeFilterCount)

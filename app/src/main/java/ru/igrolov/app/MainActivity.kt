@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.text.Html
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import android.Manifest
 import android.os.Build
 import androidx.activity.result.contract.ActivityResultContracts
@@ -674,6 +675,15 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun SteamGenreLine(genres: List<String>) {
+        val label = SteamTopSellerParser.formatGenreLine(genres)
+        if (label.isNotBlank()) {
+            Text(label, style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+
+    @Composable
     private fun SteamLeaderCard(
         index: Int, game: SteamTopSeller, marketplacePrices: LeaderOfferPrices?,
         monitored: Boolean, searchEnabled: Boolean,
@@ -694,6 +704,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 SteamFeatureBadges(game.features)
+                SteamGenreLine(game.genres)
                 val availabilityLabel = when (game.availability) {
                     SteamRuAvailability.AVAILABLE -> "Доступна в Steam RU"
                     SteamRuAvailability.UNAVAILABLE -> "Не продаётся в Steam RU"
@@ -875,7 +886,7 @@ class MainActivity : ComponentActivity() {
                                  onSettings: () -> Unit, onTab: (Int) -> Unit) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Игролов 1.4.3", style = MaterialTheme.typography.headlineSmall)
+            Text("Игролов 1.4.4", style = MaterialTheme.typography.headlineSmall)
             IconButton(onClick = onSettings) {
                 Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                     color = MaterialTheme.colorScheme.onSurface)
@@ -2773,6 +2784,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     SteamFeatureBadges(game.features)
+                    SteamGenreLine(game.genres)
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Column(Modifier.width(116.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                             SteamArtwork(

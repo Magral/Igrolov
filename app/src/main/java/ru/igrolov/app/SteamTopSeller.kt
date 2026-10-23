@@ -193,6 +193,14 @@ object SteamTopSellerParser {
         }.distinctBy { it.lowercase() }.sortedBy { it.lowercase() }
     }
 
+    fun formatGenreLine(genres: List<String>, maxVisible: Int = 3): String {
+        val distinct = genres.map { it.trim() }.filter { it.isNotBlank() }.distinctBy { it.lowercase() }
+        if (distinct.isEmpty()) return ""
+        val visible = distinct.take(maxVisible.coerceAtLeast(1)).joinToString(" · ")
+        val remaining = distinct.size - maxVisible.coerceAtLeast(1)
+        return "Жанры: $visible" + if (remaining > 0) " · +$remaining" else ""
+    }
+
     fun parseRankingHtml(html: String): List<SteamTopSeller> {
         val result = linkedMapOf<Int, SteamTopSeller>()
         row.findAll(html).forEach { match ->
