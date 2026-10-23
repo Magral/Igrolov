@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-23T18:37:25.781Z
+- Обновлено (UTC): 2026-10-23T18:39:13.806Z
 - Ветка: `main`.
-- HEAD: [`0360a98f6667`](https://github.com/Magral/Igrolov/commit/0360a98f6667f82afc35394ec3db71d4814af2b2).
+- HEAD: [`8ce2162b9379`](https://github.com/Magral/Igrolov/commit/8ce2162b93796bd1b3ea28e126e5cbd89793fa38).
 - Последний опубликованный стабильный GitHub Release: [v1.4.3](https://github.com/Magral/Igrolov/releases/tag/v1.4.3); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [8ce2162](https://github.com/Magral/Igrolov/commit/8ce2162b93796bd1b3ea28e126e5cbd89793fa38) — fix: complete monitor edition loading
 - [0360a98](https://github.com/Magral/Igrolov/commit/0360a98f6667f82afc35394ec3db71d4814af2b2) — feat: add Steam edition monitoring and filters
 - [0c3b669](https://github.com/Magral/Igrolov/commit/0c3b6694ec4d551b7550e2895647ea54a540250b) — test: align compact count rounding expectation
 - [cf1c54e](https://github.com/Magral/Igrolov/commit/cf1c54e043b9425d448b932e64264984b46e8961) — test: correct compact review count expectation
-- [90ac65a](https://github.com/Magral/Igrolov/commit/90ac65a21b5d1ce3fb154fa4c440338cd6b77d23) — test: import review filter assertion
 <!-- AUTO_CONTEXT_END -->
