@@ -37,7 +37,7 @@ class ManualSearchPreferencesTest {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         )
         assertTrue(UiTestScroll.await(compose, 15000) {
-            device.hasObject(By.text("Игролов 1.4.2"))
+            device.hasObject(By.text("Игролов 1.4.3"))
         })
         return device
     }

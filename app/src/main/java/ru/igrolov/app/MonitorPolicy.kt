@@ -10,6 +10,16 @@ object MonitorPolicy {
             ManualSearchFilter.rejection(offer,ManualSearchFilters(type=kind,confirmedRf=true),rules,ignored)==null
 
     data class Alerts(val offers:List<Offer>,val prices:JSONObject)
+    /** Return each marketplace's own lowest confirmed Russian offer. */
+    fun minimumsByMarketplace(offers:List<Offer>):JSONObject {
+        val minima=JSONObject()
+        offers.asSequence()
+            .filter { it.marketplace in setOf("Plati", "GGSEL") && eligible(it, "Все") }
+            .groupBy { it.marketplace }
+            .forEach { (marketplace, rows) -> minima.put(marketplace, rows.minOf { it.price }) }
+        return minima
+    }
+
     fun alerts(offers:List<Offer>,limit:Double,previous:JSONObject,legacy:JSONArray):Alerts {
         val prices=JSONObject(previous.toString())
         val legacyIds=(0 until legacy.length()).map {legacy.optString(it)}.toSet()

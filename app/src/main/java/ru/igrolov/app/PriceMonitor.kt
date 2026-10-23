@@ -594,6 +594,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 current.put("sourceCounts",JSONObject()
                     .put("Plati",verified.count {it.marketplace=="Plati"})
                     .put("GGSEL",verified.count {it.marketplace=="GGSEL"}))
+                current.put("sourceMinimums",MonitorPolicy.minimumsByMarketplace(verified))
                 val topOffers = JSONArray()
                 reliableOffers.take(3).forEach { offer ->
                     topOffers.put(JSONObject().put("id", offer.id).put("name", offer.name)

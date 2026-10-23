@@ -828,7 +828,7 @@ class MainActivity : ComponentActivity() {
                                  onSettings: () -> Unit, onTab: (Int) -> Unit) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Игролов 1.4.2", style = MaterialTheme.typography.headlineSmall)
+            Text("Игролов 1.4.3", style = MaterialTheme.typography.headlineSmall)
             IconButton(onClick = onSettings) {
                 Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                     color = MaterialTheme.colorScheme.onSurface)
@@ -1808,6 +1808,13 @@ class MainActivity : ComponentActivity() {
                         }
                         val sourceCounts=w.optJSONObject("sourceCounts")
                         if(sourceCounts!=null) Text("Источники · Plati: ${sourceCounts.optInt("Plati")} · GGSEL: ${sourceCounts.optInt("GGSEL")}",style=MaterialTheme.typography.bodySmall)
+                        val sourceMinimums=w.optJSONObject("sourceMinimums")
+                        if(sourceMinimums!=null) {
+                            val platiMinimum=if(sourceMinimums.has("Plati")) String.format(Locale("ru", "RU"), "%.2f ₽", sourceMinimums.optDouble("Plati")) else "—"
+                            val ggselMinimum=if(sourceMinimums.has("GGSEL")) String.format(Locale("ru", "RU"), "%.2f ₽", sourceMinimums.optDouble("GGSEL")) else "—"
+                            Text("Минимумы · Plati: $platiMinimum · GGSEL: $ggselMinimum",
+                                style=MaterialTheme.typography.bodySmall)
+                        }
                         var resultsExpanded by remember(w.optString("name")) { mutableStateOf(false) }
                         val bestOffers = w.optJSONArray("topOffers") ?: JSONArray()
                         TextButton(onClick = { resultsExpanded = !resultsExpanded }) {

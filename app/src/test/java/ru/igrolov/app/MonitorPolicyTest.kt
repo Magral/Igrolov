@@ -7,6 +7,18 @@ import org.junit.Test
 
 class MonitorPolicyTest {
     private fun offer(price:Double=100.0)=Offer("123456","Stellaris Steam Key РФ",price,"Key","РФ указана в названии","Игра",detailsChecked=true,available=true,priceVerified=true)
+    @Test fun keepsPlatiAndGgselMinimumsSeparate() {
+        val minima=MonitorPolicy.minimumsByMarketplace(listOf(
+            offer(510.0).copy(marketplace="Plati"),
+            offer(475.5).copy(id="ggsel:1",marketplace="GGSEL"),
+            offer(480.0).copy(id="p2",marketplace="Plati"),
+            offer(50.0).copy(id="unverified",marketplace="Plati",priceVerified=false),
+            offer(5.0).copy(id="unavailable",marketplace="GGSEL",available=false)
+        ))
+        assertEquals(480.0,minima.getDouble("Plati"),0.0)
+        assertEquals(475.5,minima.getDouble("GGSEL"),0.0)
+    }
+
     @Test fun expectedNextCheckUsesLatestSuccessfulOrFailedAttempt() {
         assertNull(MonitorSchedule.expectedNextCheck(0L, 0L))
         assertEquals(4600000L, MonitorSchedule.expectedNextCheck(1000000L, 100000L))
