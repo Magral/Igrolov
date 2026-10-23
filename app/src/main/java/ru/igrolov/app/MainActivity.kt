@@ -786,7 +786,7 @@ class MainActivity : ComponentActivity() {
                                  onSettings: () -> Unit, onTab: (Int) -> Unit) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Игролов 1.3.3", style = MaterialTheme.typography.headlineSmall)
+            Text("Игролов 1.3.4", style = MaterialTheme.typography.headlineSmall)
             IconButton(onClick = onSettings) {
                 Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                     color = MaterialTheme.colorScheme.onSurface)
