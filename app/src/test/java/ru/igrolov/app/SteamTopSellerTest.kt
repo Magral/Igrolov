@@ -108,7 +108,7 @@ class SteamTopSellerTest {
     @Test fun wishlistCanFilterByTitlePriceDiscountLanguageAndController() {
         val games = listOf(
             WishlistGame(1, "Alpha", "500 руб.", discountPercent = 30, features = SteamGameFeatures(
-                SteamRussianLocalization.SUPPORTED, SteamControllerSupport.FULL)),
+                SteamRussianLocalization.SUPPORTED, SteamControllerSupport.FULL), genres = listOf("RPG")),
             WishlistGame(2, "Beta", "900 руб.", discountPercent = 50, features = SteamGameFeatures(
                 SteamRussianLocalization.SUPPORTED, SteamControllerSupport.PARTIAL), genres = listOf("Стратегии")),
             WishlistGame(3, "Gamma", "300 руб.", discountPercent = 40, features = SteamGameFeatures(), genres = listOf("RPG"))
