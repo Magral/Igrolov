@@ -5,7 +5,7 @@
 - [x] Неизвестная локализация не выдаётся за отсутствие русского языка.
 - [x] Данные берутся из существующих ответов Steam без дополнительных запросов.
 - [x] Добавлены unit-тесты распознавания, fallback и сохранения данных.
-- [ ] Unit-тесты и APK прошли в GitHub Actions.
-- [ ] Instrumentation APK собран; UI-сценарии Android API 26 и 29 прошли.
-- [ ] Live smoke прошёл.
+- [x] Unit-тесты и Debug APK прошли в GitHub Actions.
+- [x] Instrumentation APK собран; UI-сценарии Android API 26 и 29 прошли.
+- [x] Live smoke прошёл.
 - [ ] GitHub Release опубликован с APK.
