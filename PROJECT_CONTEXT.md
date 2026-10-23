@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-23T18:44:29.028Z
+- Обновлено (UTC): 2026-10-23T19:30:58.366Z
 - Ветка: `main`.
-- HEAD: [`bde15dcc79e0`](https://github.com/Magral/Igrolov/commit/bde15dcc79e05407671d18b52d2261c28cd5b6b3).
+- HEAD: [`d5b06a6234bb`](https://github.com/Magral/Igrolov/commit/d5b06a6234bba07387f1d59dfcaa75d45bceef6e).
 - Последний опубликованный стабильный GitHub Release: [v1.4.3](https://github.com/Magral/Igrolov/releases/tag/v1.4.3); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [d5b06a6](https://github.com/Magral/Igrolov/commit/d5b06a6234bba07387f1d59dfcaa75d45bceef6e) — feat: add Steam genre filters to leaders and wishlist
 - [bde15dc](https://github.com/Magral/Igrolov/commit/bde15dcc79e05407671d18b52d2261c28cd5b6b3) — test: update edition monitoring actions
 - [8ce2162](https://github.com/Magral/Igrolov/commit/8ce2162b93796bd1b3ea28e126e5cbd89793fa38) — fix: complete monitor edition loading
 - [0360a98](https://github.com/Magral/Igrolov/commit/0360a98f6667f82afc35394ec3db71d4814af2b2) — feat: add Steam edition monitoring and filters
-- [0c3b669](https://github.com/Magral/Igrolov/commit/0c3b6694ec4d551b7550e2895647ea54a540250b) — test: align compact count rounding expectation
 <!-- AUTO_CONTEXT_END -->
