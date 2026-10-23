@@ -55,8 +55,11 @@ class SteamEditionReferenceTest {
     @Test fun selectedVerifiedPackageNameConfirmsUnknownEditionSuffixOnlyForThatSearch() {
         val base = "Example Game"
         val royal = "$base Anniversary Edition"
-        val game = ManualGameReference.Game(base, 123, aliases = listOf(royal))
+        val localizedAliases = ManualContentRules.localizedEditionAliases(base, royal)
+        val game = ManualGameReference.Game(base, 123, aliases = listOf(royal) + localizedAliases)
         assertEquals("Игра", ManualContentRules.classify("Example Game Anniversary Edition Steam Key РФ", "", game))
+        assertEquals("Игра", ManualContentRules.classify("Example Game Юбилейное издание Steam Key РФ", "", game))
         assertNotEquals("Игра", ManualContentRules.classify("Example Game Anniversary Edition Steam Key РФ", "", ManualGameReference.Game(base, 123)))
+        assertNotEquals("Игра", ManualContentRules.classify("Example Game Юбилейное издание Steam Key РФ", "", ManualGameReference.Game(base, 123)))
     }
 }

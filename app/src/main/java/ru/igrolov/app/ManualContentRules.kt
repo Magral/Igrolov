@@ -21,9 +21,12 @@ object ManualGameReference {
             val entry = root.optJSONObject(selected.id.toString())
             val data = entry?.takeIf { it.optBoolean("success") }?.optJSONObject("data")
             if (data?.optString("type") != "game") return Game(query)
+            val canonical = data.optString("name", query)
             val dlc = data.optJSONArray("dlc")
-            Game(data.optString("name", query), selected.id,
-                if (dlc == null) emptySet() else (0 until dlc.length()).map { dlc.optInt(it) }.filter { it > 0 }.toSet(), (additionalAliases+GameSearchResolver.aliases(selected.id,data.optString("name",query))).distinct())
+            val localizedEditions = additionalAliases.flatMap { ManualContentRules.localizedEditionAliases(canonical, it) }
+            Game(canonical, selected.id,
+                if (dlc == null) emptySet() else (0 until dlc.length()).map { dlc.optInt(it) }.filter { it > 0 }.toSet(),
+                (additionalAliases + localizedEditions + GameSearchResolver.aliases(selected.id, canonical)).distinct())
         }.getOrElse { Game(query,selectedAppId ?: 0,aliases=additionalAliases) }
     }
 }
@@ -42,7 +45,7 @@ object ManualContentRules {
         "подарок", "подарки", "bonus", "бонус", "бонусы", "акция", "карты", "картой", "карта", "карт", "cards", "card", "моментально", "мгновенно", "сразу", "лицензия", "лицензия", "лицензионный", "доставка",
         "пк", "pc", "для", "всех", "все", "регионы", "мир", "мира", "руб", "rub", "стандарт", "стандартное", "standard", "edition", "издание", "версия",
         "royal", "роял", "королевское", "королевский", "deluxe", "делюкс", "расширенное", "улучшенное", "ultimate", "ультимативное", "максимальное",
-        "complete", "полное", "definitive", "окончательное", "anniversary", "юбилейное", "galaxy", "галактическое", "gold", "золотое", "золотой",
+        "complete", "полное", "definitive", "окончательное", "galaxy", "галактическое", "gold", "золотое", "золотой",
         "premium", "премиум", "goty", "digital", "collector", "collectors", "коллекционное", "издания", "edition")
     private val editionTranslations: Map<String, List<String>> = mapOf(
         "royal" to listOf("royal edition", "королевское издание", "королевское", "роял эдишн"),
@@ -110,6 +113,15 @@ object ManualContentRules {
         val mapped = editionTranslations.entries.firstOrNull { (key, _) -> key in suffix }
             ?.value.orEmpty().map(::words)
         return (listOf(suffix) + mapped).distinct().filter { it.isNotEmpty() }
+    }
+
+    fun localizedEditionAliases(canonical: String, editionName: String): List<String> {
+        val canonicalWords = words(canonical)
+        if (canonicalWords.isEmpty()) return emptyList()
+        val suffix = editionSuffix(editionName, canonicalWords)
+        if (suffix.isEmpty()) return emptyList()
+        return editionPhraseVariants(suffix).filter { it != suffix }
+            .map { (canonicalWords + it).joinToString(" ") }.distinct()
     }
     fun visible(offer: Offer, edition: String, type: String, rules: JSONObject = JSONObject()): Boolean {
         if (!offer.detailsChecked || offer.available != true || !offer.priceVerified || offer.variablePrice) return false
