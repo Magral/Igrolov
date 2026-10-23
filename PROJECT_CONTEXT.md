@@ -66,14 +66,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-23T09:46:32.373Z
+- Обновлено (UTC): 2026-10-23T09:51:09.184Z
 - Ветка: `main`.
-- HEAD: [`7be22805ade3`](https://github.com/Magral/Igrolov/commit/7be22805ade36dcb5a2feee7ae43b7d184ac0f46).
+- HEAD: [`1c2b532caabb`](https://github.com/Magral/Igrolov/commit/1c2b532caabba1e5ad80bf7c3c73babbe5fd1c4b).
 - Последний опубликованный стабильный GitHub Release: [v1.4.0](https://github.com/Magral/Igrolov/releases/tag/v1.4.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [1c2b532](https://github.com/Magral/Igrolov/commit/1c2b532caabba1e5ad80bf7c3c73babbe5fd1c4b) — test: update Igrolov version code assertion
 - [7be2280](https://github.com/Magral/Igrolov/commit/7be22805ade36dcb5a2feee7ae43b7d184ac0f46) — release: prepare Igrolov 1.4.1
 - [909418b](https://github.com/Magral/Igrolov/commit/909418bffbe5efa6654148da35b68881f498ec8e) — docs: record published Игролов 1.4.0
 - [c0797ef](https://github.com/Magral/Igrolov/commit/c0797ef7fc76ebdc3aa7deec7d2003463193c59d) — release: prepare Igrolov 1.4.0
-- [38ed7d4](https://github.com/Magral/Igrolov/commit/38ed7d4027d9695c7c23400d8f528dab568313f5) — release: prepare Igrolov 1.3.5
 <!-- AUTO_CONTEXT_END -->
