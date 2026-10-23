@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-23T17:20:39.475Z
+- Обновлено (UTC): 2026-10-23T18:00:22.739Z
 - Ветка: `main`.
-- HEAD: [`4088c22efe78`](https://github.com/Magral/Igrolov/commit/4088c22efe788f4fdf3f6ba2ff00e83c12e42121).
+- HEAD: [`30280e484cf1`](https://github.com/Magral/Igrolov/commit/30280e484cf130572b5b928e21feee8680655961).
 - Последний опубликованный стабильный GitHub Release: [v1.4.3](https://github.com/Magral/Igrolov/releases/tag/v1.4.3); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [30280e4](https://github.com/Magral/Igrolov/commit/30280e484cf130572b5b928e21feee8680655961) — feat: add review volume to Steam leaders
 - [4088c22](https://github.com/Magral/Igrolov/commit/4088c22efe788f4fdf3f6ba2ff00e83c12e42121) — fix: improve Steam language and controller data accuracy
 - [09494df](https://github.com/Magral/Igrolov/commit/09494df536ed9bf6cf26c8d8a28d55d89da59b8c) — fix: restore complete MainActivity source
 - [b2463e9](https://github.com/Magral/Igrolov/commit/b2463e937ec4f0179d44038a6c28a3245b00127e) — feat: search selected Steam editions across marketplaces
-- [c59a4b6](https://github.com/Magral/Igrolov/commit/c59a4b639cbb32ea2047295edf3f0d36c8e48432) — perf: parallelize Steam edition discovery
 <!-- AUTO_CONTEXT_END -->
