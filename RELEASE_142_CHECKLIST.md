@@ -3,6 +3,6 @@
 - [x] Исправлено распознавание локализованного названия «Русский» в данных Steam.
 - [x] Сохранена поддержка англоязычного значения `Russian` и HTML-разметки Steam.
 - [x] Добавлен regression-тест на список языков, возвращённый на русском языке.
-- [ ] Unit-тесты, APK и instrumentation APK прошли в GitHub Actions.
-- [ ] Live smoke и UI-сценарии Android API 26 и 29 прошли.
+- [x] Unit-тесты, APK и instrumentation APK прошли в GitHub Actions.
+- [x] Live smoke и UI-сценарии Android API 26 и 29 прошли.
 - [ ] GitHub Release опубликован с APK.
