@@ -761,11 +761,9 @@ class MainActivity : ComponentActivity() {
             editionExecutor.execute {
                 val found = runCatching { SteamEditionReference.discover(game.appId) }.getOrDefault(emptyList())
                 runOnUiThread {
-                    if (pendingWatchGame?.appId == game.appId) {
-                        pendingEditions = found
-                        pendingEdition = found.firstOrNull { it.isBase }
-                        editionsLoading = false
-                    }
+                    pendingEditions = found
+                    pendingEdition = found.firstOrNull { it.isBase }
+                    editionsLoading = false
                 }
             }
         }
