@@ -40,6 +40,28 @@ class VerifiedMonitorCheckTest {
             fail("An incomplete check must fail")
         }catch(expected:IOException) {assertTrue(calls.get() in 1..4)}
     }
+    @Test fun selectedSteamEditionOnlyReturnsThatEditionFromAutomaticMonitoring() {
+        val canonical = "Kingdom Come: Deliverance II"
+        val edition = "$canonical Royal Edition"
+        val reference = ManualGameReference.Game(canonical, 1771300, aliases = listOf(edition))
+        val names = listOf("$canonical Steam Key РФ", "$edition Steam Key РФ")
+        val candidates = names.mapIndexed { index, title ->
+            Offer("${11000 + index}", title, 100.0 + index, "Key", "РФ указана в названии", "Игра")
+        }
+        val result = VerifiedMonitorCheck.run(
+            CatalogCheck.Snapshot(candidates, emptyMap()), reference, "Все", JSONObject(), emptySet(), { true },
+            selectedEdition = edition,
+            allEditions = listOf(canonical, edition),
+            request = { path ->
+                val id = path.substringAfter("/products/").substringBefore('/').toInt().toString()
+                JSONObject().put("retval", 0).put("product", JSONObject()
+                    .put("id", id).put("name", names[id.toInt() - 11000])
+                    .put("is_available", 1)
+                    .put("prices", JSONObject().put("default", JSONObject().put("RUB", 350.0))))
+            }
+        )
+        assertEquals(listOf("11001"), result.verified.map { it.id })
+    }
     @Test(expected=IOException::class) fun partialCardNetworkFailureIsNotAConfirmedEmptyMarketplace() {
         VerifiedMonitorCheck.run(CatalogCheck.Snapshot(listOf(offer(10000)),emptyMap()),reference,"Все",JSONObject(),emptySet(),{true}) {throw IOException("HTTP 503")}
     }

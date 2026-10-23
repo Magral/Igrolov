@@ -734,9 +734,9 @@ class MainActivity : ComponentActivity() {
                     Checkbox(selected, { onToggle() }, enabled = selectionEnabled, modifier = Modifier.size(32.dp))
                     Text("Выбрать", style = MaterialTheme.typography.labelSmall)
                     Spacer(Modifier.weight(1f))
-                    OutlinedButton(onClick = onMonitor, enabled = !monitored,
+                    OutlinedButton(onClick = onMonitor,
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
-                        Text(if (monitored) "В мониторинге" else "В мониторинг", style = MaterialTheme.typography.labelSmall)
+                        Text(if (monitored) "Ещё издание" else "В мониторинг", style = MaterialTheme.typography.labelSmall)
                     }
                 }
             }
@@ -751,14 +751,46 @@ class MainActivity : ComponentActivity() {
     ) {
         var pendingWatchPrice by remember(game.appId) { mutableStateOf("") }
         var pendingWatchKind by remember(game.appId) { mutableStateOf("Все") }
+        var pendingEditions by remember(game.appId) { mutableStateOf<List<SteamEditionReference.Edition>>(emptyList()) }
+        var pendingEdition by remember(game.appId) { mutableStateOf<SteamEditionReference.Edition?>(null) }
+        var editionMenu by remember(game.appId) { mutableStateOf(false) }
+        var editionsLoading by remember(game.appId) { mutableStateOf(true) }
         var pendingWatchSaving by remember(game.appId) { mutableStateOf(false) }
         var pendingWatchError by remember(game.appId) { mutableStateOf("") }
+        LaunchedEffect(game.appId) {
+            editionExecutor.execute {
+                val found = runCatching { SteamEditionReference.discover(game.appId) }.getOrDefault(emptyList())
+                runOnUiThread {
+                    if (pendingWatchGame?.appId == game.appId) {
+                        pendingEditions = found
+                        pendingEdition = found.firstOrNull { it.isBase }
+                        editionsLoading = false
+                    }
+                }
+            }
+        }
         AlertDialog(
             onDismissRequest = { if (!pendingWatchSaving) onDismiss() },
             title = { Text("В мониторинг") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(game.name, style = MaterialTheme.typography.titleSmall)
+                    Box {
+                        OutlinedButton(onClick = { editionMenu = true }, enabled = !pendingWatchSaving) {
+                            Text(pendingEdition?.name ?: "Основная игра", maxLines = 1)
+                        }
+                        DropdownMenu(expanded = editionMenu, onDismissRequest = { editionMenu = false }) {
+                            DropdownMenuItem(text = { Text("Основная игра") }, onClick = {
+                                pendingEdition = null; editionMenu = false
+                            })
+                            pendingEditions.filterNot { it.isBase }.forEach { edition ->
+                                DropdownMenuItem(text = { Text(edition.name) }, onClick = {
+                                    pendingEdition = edition; editionMenu = false
+                                })
+                            }
+                        }
+                    }
+                    if (editionsLoading) Text("Загружаем издания Steam…", style = MaterialTheme.typography.bodySmall)
                     OutlinedTextField(pendingWatchPrice, { pendingWatchPrice = it; pendingWatchError = "" },
                         label = { Text("Желаемая цена, ₽") }, singleLine = true,
                         modifier = Modifier.fillMaxWidth(), enabled = !pendingWatchSaving)
@@ -781,9 +813,11 @@ class MainActivity : ComponentActivity() {
                     } else {
                         pendingWatchSaving = true
                         val kind = pendingWatchKind
+                        val selectedEdition = pendingEdition?.takeUnless { it.isBase }
                         ioExecutor.execute {
                             val result = runCatching {
-                                WatchStore.add(this@MainActivity, game.name, kind, amount, true, game.appId)
+                                WatchStore.add(this@MainActivity, game.name, kind, amount, true, game.appId,
+                                    selectedEdition?.name, selectedEdition?.packageId)
                                 WatchStore.read(this@MainActivity).toString()
                             }
                             runOnUiThread {
@@ -1097,7 +1131,7 @@ class MainActivity : ComponentActivity() {
         }
         fun isGameWatched(appId: Int, name: String) = watchEntries.any { WatchGameIdentity.matches(it, appId, name) }
         fun openGameMonitoring(appId: Int, name: String) {
-            if (appId <= 0 || name.isBlank() || isGameWatched(appId, name)) return
+            if (appId <= 0 || name.isBlank()) return
             pendingWatchGame = GameSearchResolver.Candidate(appId, name)
         }
         var leaderSection by remember { mutableStateOf(SteamLeaderSection.TOP_SELLERS) }
@@ -1105,6 +1139,7 @@ class MainActivity : ComponentActivity() {
         var topError by remember { mutableStateOf("") }
         var topAvailabilityFilter by remember { mutableStateOf("Все игры") }
         var leaderFilterInput by remember { mutableStateOf(SteamLeaderFilterInput()) }
+        var wishlistFilterInput by remember { mutableStateOf(SteamLeaderFilterInput()) }
         var leaderOfferPrices by remember { mutableStateOf<Map<Int, LeaderOfferPrices>>(emptyMap()) }
         fun refreshTop() {
             if (topBusy || loadMoreBusy) return
@@ -1782,7 +1817,8 @@ class MainActivity : ComponentActivity() {
                 ElevatedCard(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(10.dp)) {
                         Text(w.optString("name"), style = MaterialTheme.typography.titleMedium)
-                        Text("${w.optString("kind")} · цель: ${w.optDouble("limit").toInt()} ₽ · РФ: ${if (w.optBoolean("rf",true)) "да" else "не обязательно"}")
+                        Text(listOfNotNull(w.optString("kind"), w.optString("steamEditionName").takeIf { it.isNotBlank() },
+                            "цель: ${w.optDouble("limit").toInt()} ₽", "РФ: ${if (w.optBoolean("rf",true)) "да" else "не обязательно"}").joinToString(" · "))
                         Text(if (w.optDouble("last", -1.0) > 0) "Последний найденный минимум: ${w.optDouble("last").toInt()} ₽" else "Проверка ещё не завершена или подходящих товаров нет")
                         val checkedAt = w.optLong("checked", 0L)
                         val failedAt = w.optLong("failedAt", 0L)
@@ -2069,6 +2105,7 @@ class MainActivity : ComponentActivity() {
                 }
                 WishlistPanel(
                     profiles = catalogueUi.wishlistProfiles, selectedId = catalogueUi.selectedWishlistId, games = catalogueUi.wishlistGames,
+                    filterInput = wishlistFilterInput, onFilterInput = { wishlistFilterInput = it },
                     input = catalogueUi.wishlistProfile, busy = catalogueUi.wishlistBusy, message = catalogueUi.wishlistMessage,
                     importedAt = catalogueUi.wishlistImportedAt, visibleLimit = catalogueUi.wishlistVisibleLimit,
                     searchingKeys = catalogueUi.wishlistSearchingKeys, searchStatuses = catalogueUi.wishlistSearchStatuses,
@@ -2126,9 +2163,10 @@ class MainActivity : ComponentActivity() {
                         catalogueUi.selectedWishlistIds = if (game.appId in catalogueUi.selectedWishlistIds) catalogueUi.selectedWishlistIds - game.appId
                             else if (catalogueUi.selectedWishlistIds.size < 10) catalogueUi.selectedWishlistIds + game.appId else catalogueUi.selectedWishlistIds
                     },
-                    onSelectFive = { catalogueUi.selectedWishlistIds = catalogueUi.wishlistGames.take(5).map { it.appId }.toSet() },
+                    onSelectFive = { catalogueUi.selectedWishlistIds = SteamLeaderFilter.applyWishlist(catalogueUi.wishlistGames, wishlistFilterInput.toFilters()).take(5).map { it.appId }.toSet() },
                     onCheckSelected = {
-                        catalogueUi.priceBatch = PriceCheckBatch.start(catalogueUi.wishlistGames.filter { it.appId in catalogueUi.selectedWishlistIds }
+                        val visibleIds = SteamLeaderFilter.applyWishlist(catalogueUi.wishlistGames, wishlistFilterInput.toFilters()).map { it.appId }.toSet()
+                        catalogueUi.priceBatch = PriceCheckBatch.start(catalogueUi.wishlistGames.filter { it.appId in catalogueUi.selectedWishlistIds && it.appId in visibleIds }
                             .map { PriceCheckTarget(it.appId, it.title, catalogueUi.selectedWishlistId) }, manualFilters, searchTotalPages)
                     },
                     cachedPrices = { game -> wishlistCacheKeys[game.appId]?.let { catalogueUi.priceCache[it] } },
@@ -2243,7 +2281,7 @@ class MainActivity : ComponentActivity() {
                     SteamLeaderSection.TOP_SELLERS -> false
                 }
                 BatchSelectionControls(visibleTopGames.count { it.appId in catalogueUi.selectedLeaderIds },
-                    enabled = !searching && !catalogueUi.priceBatch.running && manualFilters.valid,
+                    enabled = !searching && !catalogueUi.priceBatch.running && manualFilters.valid && !leaderFilterInput.hasInvalidInput,
                     onSelectFive = { catalogueUi.selectedLeaderIds = visibleTopGames.take(5).map { it.appId }.toSet() },
                     onStart = { catalogueUi.priceBatch = PriceCheckBatch.start(visibleTopGames.filter { it.appId in catalogueUi.selectedLeaderIds }
                         .map { PriceCheckTarget(it.appId, it.title) }, manualFilters, searchTotalPages) })
@@ -2479,13 +2517,14 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun SteamLeaderFiltersPanel(
         input: SteamLeaderFilterInput,
-        onInput: (SteamLeaderFilterInput) -> Unit
+        onInput: (SteamLeaderFilterInput) -> Unit,
+        includeReviewFilters: Boolean = true
     ) {
         OutlinedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Фильтры Steam RU", modifier = Modifier.weight(1f),
+                    Text("Фильтры игр", modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleSmall)
                     TextButton(onClick = { onInput(input.copy(expanded = !input.expanded)) },
                         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)) {
@@ -2494,6 +2533,13 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 if (input.expanded) {
+                    OutlinedTextField(
+                        value = input.titleQuery,
+                        onValueChange = { onInput(input.copy(titleQuery = it)) },
+                        label = { Text("Название содержит") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(
                             value = input.maxPriceText,
@@ -2516,34 +2562,37 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.weight(1f)
                         )
                     }
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = input.minimumReviewText,
-                            onValueChange = { onInput(input.copy(minimumReviewText = it)) },
-                            label = { Text("Рейтинг от, %", maxLines = 1) },
-                            singleLine = true,
-                            isError = input.minimumReviewText.isNotBlank() &&
-                                input.minimumReviewText.toIntOrNull()?.let { it in 0..100 } != true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = input.minimumReviewCountText,
-                            onValueChange = { onInput(input.copy(minimumReviewCountText = it)) },
-                            label = { Text("Отзывов от, шт.", maxLines = 1) },
-                            singleLine = true,
-                            isError = input.minimumReviewCountText.isNotBlank() &&
-                                input.minimumReviewCountText.trim().toLongOrNull()?.let { it > 0 } != true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
+                    if (includeReviewFilters) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = input.minimumReviewText,
+                                onValueChange = { onInput(input.copy(minimumReviewText = it)) },
+                                label = { Text("Рейтинг от, %", maxLines = 1) },
+                                singleLine = true,
+                                isError = input.minimumReviewText.isNotBlank() &&
+                                    input.minimumReviewText.toIntOrNull()?.let { it in 0..100 } != true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = input.minimumReviewCountText,
+                                onValueChange = { onInput(input.copy(minimumReviewCountText = it)) },
+                                label = { Text("Отзывов от, шт.", maxLines = 1) },
+                                singleLine = true,
+                                isError = input.minimumReviewCountText.isNotBlank() &&
+                                    input.minimumReviewCountText.trim().toLongOrNull()?.let { it > 0 } != true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
+                    SteamFeatureFilterChoices(input, onInput)
                     if (input.hasInvalidInput) {
                         Text("Цена и число отзывов должны быть больше 0, проценты — от 0 до 100.",
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        TextButton(onClick = { onInput(input.copy(maxPriceText = "", minimumDiscountText = "", minimumReviewText = "", minimumReviewCountText = "")) },
+                        TextButton(onClick = { onInput(SteamLeaderFilterInput(expanded = true)) },
                             contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)) {
                             Text("Сбросить фильтры")
                         }
@@ -2554,10 +2603,41 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun SteamFeatureFilterChoices(input: SteamLeaderFilterInput, onInput: (SteamLeaderFilterInput) -> Unit) {
+        Text("Русский язык", style = MaterialTheme.typography.labelMedium)
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf(
+                null to "Любой",
+                SteamRussianLocalization.SUPPORTED to "Русский есть",
+                SteamRussianLocalization.NOT_SUPPORTED to "Русский не найден в списке Steam",
+                SteamRussianLocalization.UNKNOWN to "Не указано"
+            ).forEach { (value, label) ->
+                FilterChip(selected = input.russianLocalization == value,
+                    onClick = { onInput(input.copy(russianLocalization = value)) }, label = { Text(label, maxLines = 1) })
+            }
+        }
+        Text("Поддержка геймпада", style = MaterialTheme.typography.labelMedium)
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf(
+                null to "Любая",
+                SteamControllerSupport.FULL to "Полная",
+                SteamControllerSupport.PARTIAL to "Частичная",
+                SteamControllerSupport.NONE to "Нет",
+                SteamControllerSupport.UNKNOWN to "Не указано"
+            ).forEach { (value, label) ->
+                FilterChip(selected = input.controllerSupport == value,
+                    onClick = { onInput(input.copy(controllerSupport = value)) }, label = { Text(label, maxLines = 1) })
+            }
+        }
+    }
+
+    @Composable
     private fun WishlistPanel(
         profiles: List<WishlistProfile>,
         selectedId: String?,
         games: List<WishlistGame>,
+        filterInput: SteamLeaderFilterInput,
+        onFilterInput: (SteamLeaderFilterInput) -> Unit,
         input: String,
         busy: Boolean,
         message: String,
@@ -2619,11 +2699,18 @@ class MainActivity : ComponentActivity() {
         if (message.isNotBlank()) Text(message, style = MaterialTheme.typography.bodySmall,
             color = if (message.startsWith("Не удалось")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(8.dp))
+        SteamLeaderFiltersPanel(filterInput, onFilterInput, includeReviewFilters = false)
+        val visibleGames = SteamLeaderFilter.applyWishlist(games, filterInput.toFilters())
+        Text("Показано: ${visibleGames.size} из ${games.size}", style = MaterialTheme.typography.labelMedium)
         if (games.isEmpty() && importedAt == 0L) {
             Text("Вставьте открытый профиль Steam и загрузите его, чтобы закрепить в списке профилей.", style = MaterialTheme.typography.bodyMedium)
+        } else if (games.isNotEmpty() && visibleGames.isEmpty()) {
+            Text("По выбранным фильтрам игр нет.", style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        BatchSelectionControls(games.count { it.appId in selectedIds }, selectionEnabled && searchEnabled, onSelectFive, onCheckSelected)
-        games.take(visibleLimit).forEach { game ->
+        BatchSelectionControls(visibleGames.count { it.appId in selectedIds },
+            selectionEnabled && searchEnabled && !filterInput.hasInvalidInput, onSelectFive, onCheckSelected)
+        visibleGames.take(visibleLimit).forEach { game ->
             ElevatedCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     TextButton(
@@ -2674,9 +2761,9 @@ class MainActivity : ComponentActivity() {
                                 contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
                                 Text(if (searchKey != null && searchKey in searchingKeys) "Ищем…" else "Искать")
                             }
-                            OutlinedButton(onClick = { onMonitor(game) }, enabled = game.appId > 0 && !isMonitored(game),
+                            OutlinedButton(onClick = { onMonitor(game) }, enabled = game.appId > 0,
                                 contentPadding = PaddingValues(horizontal = 7.dp, vertical = 0.dp)) {
-                                Text(if (isMonitored(game)) "В мониторинге" else "В мониторинг",
+                                Text(if (isMonitored(game)) "Ещё издание" else "В мониторинг",
                                     style = MaterialTheme.typography.labelSmall)
                             }
                         }
@@ -2690,9 +2777,9 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        if (games.size > visibleLimit) {
+        if (visibleGames.size > visibleLimit) {
             OutlinedButton(onClick = onShowMore, modifier = Modifier.fillMaxWidth()) {
-                Text("Показать ещё · ${minOf(visibleLimit, games.size)} из ${games.size}")
+                Text("Показать ещё · ${minOf(visibleLimit, visibleGames.size)} из ${visibleGames.size}")
             }
         }
     }

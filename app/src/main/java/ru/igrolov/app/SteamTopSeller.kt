@@ -41,20 +41,26 @@ data class SteamRankingPage(
 
 data class SteamLeaderFilterInput(
     val expanded: Boolean = false,
+    val titleQuery: String = "",
     val maxPriceText: String = "",
     val minimumDiscountText: String = "",
     val minimumReviewText: String = "",
-    val minimumReviewCountText: String = ""
+    val minimumReviewCountText: String = "",
+    val russianLocalization: SteamRussianLocalization? = null,
+    val controllerSupport: SteamControllerSupport? = null
 ) {
     private fun parsedPrice(): Double? = maxPriceText.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it > 0.0 }
     private fun parsedPercent(value: String): Int? = value.trim().toIntOrNull()?.takeIf { it in 0..100 }
     private fun parsedReviewCount(): Long? = minimumReviewCountText.trim().toLongOrNull()?.takeIf { it > 0 }
 
     val activeFilterCount: Int get() = listOf(
+        titleQuery.isNotBlank(),
         parsedPrice() != null,
         (parsedPercent(minimumDiscountText) ?: 0) > 0,
         (parsedPercent(minimumReviewText) ?: 0) > 0,
-        parsedReviewCount() != null
+        parsedReviewCount() != null,
+        russianLocalization != null,
+        controllerSupport != null
     ).count { it }
 
     val hasInvalidInput: Boolean get() =
@@ -64,18 +70,24 @@ data class SteamLeaderFilterInput(
             (minimumReviewCountText.isNotBlank() && parsedReviewCount() == null)
 
     fun toFilters() = SteamLeaderFilters(
+        titleQuery = titleQuery.trim(),
         maxPriceRub = parsedPrice(),
         minimumDiscountPercent = parsedPercent(minimumDiscountText)?.takeIf { it > 0 },
         minimumReviewPercent = parsedPercent(minimumReviewText)?.takeIf { it > 0 },
-        minimumReviewCount = parsedReviewCount()
+        minimumReviewCount = parsedReviewCount(),
+        russianLocalization = russianLocalization,
+        controllerSupport = controllerSupport
     )
 }
 
 data class SteamLeaderFilters(
+    val titleQuery: String = "",
     val maxPriceRub: Double? = null,
     val minimumDiscountPercent: Int? = null,
     val minimumReviewPercent: Int? = null,
-    val minimumReviewCount: Long? = null
+    val minimumReviewCount: Long? = null,
+    val russianLocalization: SteamRussianLocalization? = null,
+    val controllerSupport: SteamControllerSupport? = null
 )
 
 /** Applies optional Steam RU price, discount, and review filters to a loaded Leaders list. */
@@ -86,11 +98,28 @@ object SteamLeaderFilter {
         val minimumReview = filters.minimumReviewPercent?.takeIf { it > 0 }?.coerceIn(1, 100)
         val minimumReviewCount = filters.minimumReviewCount?.takeIf { it > 0 }
         return games.filter { game ->
+            val queryMatches = filters.titleQuery.isBlank() || game.title.contains(filters.titleQuery.trim(), ignoreCase = true)
             val priceMatches = maximumPrice == null || parsePriceRub(game.steamPrice)?.let { it <= maximumPrice } == true
             val discountMatches = minimumDiscount == null || game.discountPercent >= minimumDiscount
             val reviewMatches = minimumReview == null || (game.reviewSummary?.percent ?: -1) >= minimumReview
             val reviewCountMatches = minimumReviewCount == null || (game.reviewSummary?.total ?: -1L) >= minimumReviewCount
-            priceMatches && discountMatches && reviewMatches && reviewCountMatches
+            val languageMatches = filters.russianLocalization == null || game.features.russianLocalization == filters.russianLocalization
+            val controllerMatches = filters.controllerSupport == null || game.features.controllerSupport == filters.controllerSupport
+            queryMatches && priceMatches && discountMatches && reviewMatches && reviewCountMatches && languageMatches && controllerMatches
+        }
+    }
+
+    fun applyWishlist(games: List<WishlistGame>, filters: SteamLeaderFilters): List<WishlistGame> {
+        val maximumPrice = filters.maxPriceRub?.takeIf { it > 0.0 }
+        val minimumDiscount = filters.minimumDiscountPercent?.takeIf { it > 0 }?.coerceIn(1, 100)
+        return games.filter { game ->
+            val titleMatches = filters.titleQuery.isBlank() || game.title.contains(filters.titleQuery.trim(), ignoreCase = true)
+            val priceMatches = maximumPrice == null || game.steamPrice.equals("Бесплатно", ignoreCase = true) ||
+                parsePriceRub(game.steamPrice)?.let { it <= maximumPrice } == true
+            val discountMatches = minimumDiscount == null || game.discountPercent >= minimumDiscount
+            val languageMatches = filters.russianLocalization == null || game.features.russianLocalization == filters.russianLocalization
+            val controllerMatches = filters.controllerSupport == null || game.features.controllerSupport == filters.controllerSupport
+            titleMatches && priceMatches && discountMatches && languageMatches && controllerMatches
         }
     }
 

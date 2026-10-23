@@ -247,25 +247,29 @@ object WatchStore {
     val lock = Any()
     fun read(context: Context): JSONArray = MonitorRoomStore.read(context)
     fun write(context: Context, array: JSONArray) = MonitorRoomStore.write(context, array)
-    fun add(context: Context, name: String, kind: String, limit: Double, rf: Boolean = true, appId:Int?=null) = synchronized(lock) {
+    fun add(context: Context, name: String, kind: String, limit: Double, rf: Boolean = true, appId:Int?=null,
+            editionName:String?=null, packageId:Int?=null) = synchronized(lock) {
         val arr = read(context)
         for (i in 0 until arr.length()) {
             val obj = arr.optJSONObject(i) ?: continue
-            if (WatchGameIdentity.matches(obj, appId ?: 0, name) && obj.optString("kind") == kind) {
+            if (WatchGameIdentity.matches(obj, appId ?: 0, name) && obj.optString("kind") == kind &&
+                obj.optString("steamEditionName") == editionName.orEmpty()) {
                 obj.put("name", name).put("limit", limit).put("rf", rf)
                 if(appId!=null && appId>0)obj.put("steamAppId",appId)
+                if(!editionName.isNullOrBlank())obj.put("steamEditionName",editionName).put("steamPackageId",packageId ?: 0)
                 write(context, arr); return
             }
         }
         val watch=JSONObject().put("watchId",java.util.UUID.randomUUID().toString()).put("name", name).put("kind", kind).put("limit", limit).put("rf", rf).put("last", -1.0).put("notified", JSONArray())
         if(appId!=null && appId>0)watch.put("steamAppId",appId)
+        if(!editionName.isNullOrBlank())watch.put("steamEditionName",editionName).put("steamPackageId",packageId ?: 0)
         arr.put(watch)
         write(context, arr)
     }
     private fun identity(w:JSONObject)=w.optString("watchId").ifBlank {
         java.util.UUID.nameUUIDFromBytes((w.optString("name").lowercase(Locale.ROOT)+"|"+w.optString("kind")).toByteArray(Charsets.UTF_8)).toString()
     }
-    private fun config(w:JSONObject)=listOf(w.optString("name"),w.optString("kind"),w.optDouble("limit"),w.optBoolean("rf",true),w.optInt("steamAppId"))
+    private fun config(w:JSONObject)=listOf(w.optString("name"),w.optString("kind"),w.optDouble("limit"),w.optBoolean("rf",true),w.optInt("steamAppId"),w.optString("steamEditionName"),w.optInt("steamPackageId"))
     /** Only the short local merge is locked. Deleted/edited watches cannot be resurrected by a slow request. */
     fun updateIfCurrent(context:Context,snapshot:JSONObject,update:(JSONObject)->Unit):Boolean = synchronized(lock) {
         val watches=read(context)
@@ -558,29 +562,41 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 val selectedId=watch.optInt("steamAppId").takeIf {it>0}
                     ?: GameSearchResolver.exact(name,ManualSearchSettings.games(applicationContext)+GameSearchResolver.seeds)?.appId
                 val savedAliases=ManualSearchSettings.games(applicationContext).firstOrNull {it.appId==selectedId}?.aliases.orEmpty()
-                val reference=ManualGameReference.lookup(name,selectedId,savedAliases)
+                val baseReference=ManualGameReference.lookup(name,selectedId,savedAliases)
+                val savedEdition=watch.optString("steamEditionName").takeIf { it.isNotBlank() }
+                val editions=if(savedEdition!=null) SteamEditionReference.discover(baseReference.appId) else emptyList()
+                val packageId=watch.optInt("steamPackageId").takeIf { it>0 }
+                val selectedEdition=savedEdition?.let { title -> editions.firstOrNull { it.packageId==packageId }?.name ?: title }
+                val editionReference=selectedEdition?.let { edition ->
+                    baseReference.copy(aliases=(listOf(edition)+ManualContentRules.localizedEditionAliases(baseReference.canonical,edition)+baseReference.aliases).distinct())
+                } ?: baseReference
+                val reference=editionReference
                 if(reference.appId<=0) error("Steam не подтвердил основную игру; предыдущий результат сохранён")
                 val catalogPages=CatalogPageSettings.pages(applicationContext)
                 val catalog=CatalogCheck.find(name,catalogPages,reference)
                 val rules=GameRuleStore.read(applicationContext,name)
-                val result=VerifiedMonitorCheck.run(catalog,reference,kind,rules,ignored,{!isStopped})
+                val result=VerifiedMonitorCheck.run(catalog,reference,kind,rules,ignored,{!isStopped},selectedEdition=selectedEdition,allEditions=editions.map { it.name })
                 // GGSEL catalog rows already carry a confirmed active one-copy RUB price.
                 // A provider error aborts the complete snapshot, preserving prior minima/history.
-                val ggselOffers=GgselBuyerApi.find(reference,{!isStopped})
+                val ggselOffers=GgselBuyerApi.find(reference,{!isStopped},editionSearchTerms=selectedEdition?.let { listOf(it)+ManualContentRules.localizedEditionAliases(reference.canonical,it) }.orEmpty())
                 if(isStopped)return Result.success()
                 WatchStore.updateIfCurrent(applicationContext,watch) {current ->
                 if(current.optLong("checked",0L)>checkStarted)return@updateIfCurrent
                 val latestRules=GameRuleStore.read(applicationContext,name)
                 val latestIgnored=IgnoredStore.ids(applicationContext)
                 val sourceOffers=result.verified+ggselOffers
-                val verified=sourceOffers.filter {MonitorPolicy.eligible(it,kind,latestRules,latestIgnored)}.distinctBy {"${it.marketplace}:${it.id}"}.sortedBy {it.price}
+                val verified=sourceOffers.filter { offer ->
+                    MonitorPolicy.eligible(offer,kind,latestRules,latestIgnored) &&
+                        (selectedEdition == null || ManualContentRules.matchesSelectedSteamEdition(offer.name,reference.canonical,selectedEdition,editions.map { it.name }))
+                }.distinctBy {"${it.marketplace}:${it.id}"}.sortedBy {it.price}
                 val reliableOffers=verified.take(3)
                 current.put("steamAppId",reference.appId)
                 val cheapest = reliableOffers.minByOrNull { it.price }
                 val checkedAt = System.currentTimeMillis()
                 if (latestRules.toString()==rules.toString() && latestIgnored==ignored) {
                     val cacheFilters=ManualSearchFilters(type=kind,edition="Игра",confirmedRf=true)
-                    val cacheKey=OfferPriceCache.key(reference.appId,cacheFilters,rules,ignored,catalogPages,savedAliases)
+                    val cacheAliases=if(selectedEdition==null) savedAliases else reference.aliases
+                    val cacheKey=OfferPriceCache.key(reference.appId,cacheFilters,rules,ignored,catalogPages,cacheAliases)
                     val minima=verified.groupBy {it.marketplace}.mapValues {(_,offers)->offers.minOf {it.price}}
                     runCatching { OfferPriceCacheStore.update(applicationContext,cacheKey,minima,emptySet(),checkStarted,checkedAt,"") }
                 }

@@ -8,7 +8,12 @@ import java.util.concurrent.atomic.AtomicInteger
 object VerifiedMonitorCheck {
     data class Result(val verified:List<Offer>,val checked:Int,val rejected:Int)
     fun run(catalog:CatalogCheck.Snapshot,reference:ManualGameReference.Game,kind:String,rules:JSONObject,
-            ignored:Set<String>,active:()->Boolean,request:(String)->JSONObject? = {CatalogApi.get(it,true)}):Result {
+            ignored:Set<String>,active:()->Boolean,request:(String)->JSONObject? = {CatalogApi.get(it,true)}):Result =
+        run(catalog,reference,kind,rules,ignored,active,null,emptyList(),request)
+
+    fun run(catalog:CatalogCheck.Snapshot,reference:ManualGameReference.Game,kind:String,rules:JSONObject,
+            ignored:Set<String>,active:()->Boolean,selectedEdition:String?,allEditions:List<String> = emptyList(),
+            request:(String)->JSONObject? = {CatalogApi.get(it,true)}):Result {
         require(reference.appId>0) {"Основная игра не подтверждена Steam"}
         val failures=AtomicInteger()
         val enriched=ManualCatalogEnricher {path->
@@ -20,7 +25,11 @@ object VerifiedMonitorCheck {
         }.enrich(catalog.offers.filterNot {it.id in ignored},catalog.sellers,{active() && failures.get()==0},reference)
         if(!active())throw java.util.concurrent.CancellationException()
         if(failures.get()>0)throw IOException("Не удалось проверить ${failures.get()} карточек/расчётов; предыдущий результат сохранён")
-        val valid=enriched.filter {MonitorPolicy.eligible(it,kind,rules,ignored)}.sortedBy {it.price}
+        val valid=enriched.filter { offer ->
+            MonitorPolicy.eligible(offer,kind,rules,ignored) &&
+                (selectedEdition == null || ManualContentRules.matchesSelectedSteamEdition(
+                    offer.name, reference.canonical, selectedEdition, allEditions))
+        }.sortedBy {it.price}
         return Result(valid,catalog.offers.size,catalog.offers.size-valid.size)
     }
 }

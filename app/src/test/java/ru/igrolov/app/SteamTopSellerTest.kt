@@ -82,6 +82,45 @@ class SteamTopSellerTest {
         assertEquals(listOf(1), filtered.map { it.appId })
     }
 
+    @Test fun languageAndControllerFiltersKeepUnknownSeparateFromUnsupported() {
+        val games = listOf(
+            SteamTopSeller(1, "Russian full", features = SteamGameFeatures(
+                SteamRussianLocalization.SUPPORTED, SteamControllerSupport.FULL)),
+            SteamTopSeller(2, "Unknown", features = SteamGameFeatures()),
+            SteamTopSeller(3, "No Russian partial", features = SteamGameFeatures(
+                SteamRussianLocalization.NOT_SUPPORTED, SteamControllerSupport.PARTIAL)),
+            SteamTopSeller(4, "No controller", features = SteamGameFeatures(
+                SteamRussianLocalization.SUPPORTED, SteamControllerSupport.NONE))
+        )
+        assertEquals(listOf(1, 4), SteamLeaderFilter.apply(games, SteamLeaderFilters(
+            russianLocalization = SteamRussianLocalization.SUPPORTED
+        )).map { it.appId })
+        assertEquals(listOf(3), SteamLeaderFilter.apply(games, SteamLeaderFilters(
+            russianLocalization = SteamRussianLocalization.NOT_SUPPORTED,
+            controllerSupport = SteamControllerSupport.PARTIAL
+        )).map { it.appId })
+        assertEquals(listOf(2), SteamLeaderFilter.apply(games, SteamLeaderFilters(
+            russianLocalization = SteamRussianLocalization.UNKNOWN,
+            controllerSupport = SteamControllerSupport.UNKNOWN
+        )).map { it.appId })
+    }
+
+    @Test fun wishlistCanFilterByTitlePriceDiscountLanguageAndController() {
+        val games = listOf(
+            WishlistGame(1, "Alpha", "500 руб.", discountPercent = 30, features = SteamGameFeatures(
+                SteamRussianLocalization.SUPPORTED, SteamControllerSupport.FULL)),
+            WishlistGame(2, "Beta", "900 руб.", discountPercent = 50, features = SteamGameFeatures(
+                SteamRussianLocalization.SUPPORTED, SteamControllerSupport.PARTIAL)),
+            WishlistGame(3, "Gamma", "300 руб.", discountPercent = 40, features = SteamGameFeatures())
+        )
+        val filtered = SteamLeaderFilter.applyWishlist(games, SteamLeaderFilters(
+            titleQuery = "a", maxPriceRub = 600.0, minimumDiscountPercent = 30,
+            russianLocalization = SteamRussianLocalization.SUPPORTED,
+            controllerSupport = SteamControllerSupport.FULL
+        ))
+        assertEquals(listOf(1), filtered.map { it.appId })
+    }
+
     @Test fun leaderReviewFiltersParseAndCountReviewThreshold() {
         val input = SteamLeaderFilterInput(minimumReviewText = "85", minimumReviewCountText = "1000")
         assertEquals(2, input.activeFilterCount)
