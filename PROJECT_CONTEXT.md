@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-23T22:44:20.110Z
+- Обновлено (UTC): 2026-10-23T23:51:09.999Z
 - Ветка: `main`.
-- HEAD: [`7df6d0828966`](https://github.com/Magral/Igrolov/commit/7df6d08289669b8191c512fb726eed1c509f1347).
+- HEAD: [`595aca5a3c1b`](https://github.com/Magral/Igrolov/commit/595aca5a3c1b6a117f943cfe45bf73955f6d3b15).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [595aca5](https://github.com/Magral/Igrolov/commit/595aca5a3c1b6a117f943cfe45bf73955f6d3b15) — perf: cache wishlist and leader filter results
 - [7df6d08](https://github.com/Magral/Igrolov/commit/7df6d08289669b8191c512fb726eed1c509f1347) — ui: explain filtered leader pagination
 - [3582063](https://github.com/Magral/Igrolov/commit/35820635f291f7d3fbd9eb49ede9b753c03dc284) — ui: explain filtered leader pagination
 - [94412a5](https://github.com/Magral/Igrolov/commit/94412a5382936d59ba5edb9e93db8ee21a773e8a) — test: isolate wishlist UI smoke state
-- [8abdf62](https://github.com/Magral/Igrolov/commit/8abdf625481bbbcc545e1b837bc70db4c8ab9ba8) — fix: backfill wishlist genres and load filtered leaders
 <!-- AUTO_CONTEXT_END -->
