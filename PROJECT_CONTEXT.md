@@ -69,15 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-23T16:07:42.220Z
+- Обновлено (UTC): 2026-10-23T16:09:00.282Z
 - Ветка: `main`.
-- HEAD: [`b2463e937ec4`](https://github.com/Magral/Igrolov/commit/b2463e937ec4f0179d44038a6c28a3245b00127e).
+- HEAD: [`09494df536ed`](https://github.com/Magral/Igrolov/commit/09494df536ed9bf6cf26c8d8a28d55d89da59b8c).
 - Последний опубликованный стабильный GitHub Release: [v1.4.3](https://github.com/Magral/Igrolov/releases/tag/v1.4.3); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [09494df](https://github.com/Magral/Igrolov/commit/09494df536ed9bf6cf26c8d8a28d55d89da59b8c) — fix: restore complete MainActivity source
 - [b2463e9](https://github.com/Magral/Igrolov/commit/b2463e937ec4f0179d44038a6c28a3245b00127e) — feat: search selected Steam editions across marketplaces
 - [c59a4b6](https://github.com/Magral/Igrolov/commit/c59a4b639cbb32ea2047295edf3f0d36c8e48432) — perf: parallelize Steam edition discovery
 - [709bfff](https://github.com/Magral/Igrolov/commit/709bfffebb6d5931660b13aead94c6f82cd516dd) — fix: validate translated editions against Steam packages
-- [ab4d321](https://github.com/Magral/Igrolov/commit/ab4d321dbd5aeb55467eafad93d6d62c2877e6e5) — fix: restore exact edition matcher source
-- [238bbf2](https://github.com/Magral/Igrolov/commit/238bbf257c3f3d609f463c424048f005b0dce9ba) — fix: match localized Steam edition names
 <!-- AUTO_CONTEXT_END -->
