@@ -1,16 +1,29 @@
 package ru.igrolov.app
 
 import java.net.URLEncoder
+import java.text.NumberFormat
+import java.util.Locale
 import org.json.JSONObject
 
 enum class SteamReviewTone { POSITIVE, NEGATIVE, NEUTRAL }
 
 data class SteamReviewSummary(val positive: Long, val total: Long) {
     val percent: Int? get() = if (total > 0) ((positive * 100L) / total).toInt().coerceIn(0, 100) else null
+    val compactTotal: String get() = when {
+        total >= 1_000_000 -> "${compact(total / 1_000_000.0)} млн"
+        total >= 1_000 -> "${compact(total / 1_000.0)} тыс."
+        else -> NumberFormat.getIntegerInstance(Locale("ru", "RU")).format(total.coerceAtLeast(0))
+    }
     val tone: SteamReviewTone get() = when {
         (percent ?: 60) > 60 -> SteamReviewTone.POSITIVE
         (percent ?: 60) < 60 -> SteamReviewTone.NEGATIVE
         else -> SteamReviewTone.NEUTRAL
+    }
+
+    private fun compact(value: Double): String = if (value >= 10.0) {
+        String.format(Locale("ru", "RU"), "%.0f", value)
+    } else {
+        String.format(Locale("ru", "RU"), "%.1f", value).removeSuffix(",0")
     }
 }
 

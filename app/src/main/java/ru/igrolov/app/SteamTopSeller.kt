@@ -43,33 +43,39 @@ data class SteamLeaderFilterInput(
     val expanded: Boolean = false,
     val maxPriceText: String = "",
     val minimumDiscountText: String = "",
-    val minimumReviewText: String = ""
+    val minimumReviewText: String = "",
+    val minimumReviewCountText: String = ""
 ) {
     private fun parsedPrice(): Double? = maxPriceText.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it > 0.0 }
     private fun parsedPercent(value: String): Int? = value.trim().toIntOrNull()?.takeIf { it in 0..100 }
+    private fun parsedReviewCount(): Long? = minimumReviewCountText.trim().toLongOrNull()?.takeIf { it > 0 }
 
     val activeFilterCount: Int get() = listOf(
         parsedPrice() != null,
         (parsedPercent(minimumDiscountText) ?: 0) > 0,
-        (parsedPercent(minimumReviewText) ?: 0) > 0
+        (parsedPercent(minimumReviewText) ?: 0) > 0,
+        parsedReviewCount() != null
     ).count { it }
 
     val hasInvalidInput: Boolean get() =
         (maxPriceText.isNotBlank() && parsedPrice() == null) ||
             (minimumDiscountText.isNotBlank() && parsedPercent(minimumDiscountText) == null) ||
-            (minimumReviewText.isNotBlank() && parsedPercent(minimumReviewText) == null)
+            (minimumReviewText.isNotBlank() && parsedPercent(minimumReviewText) == null) ||
+            (minimumReviewCountText.isNotBlank() && parsedReviewCount() == null)
 
     fun toFilters() = SteamLeaderFilters(
         maxPriceRub = parsedPrice(),
         minimumDiscountPercent = parsedPercent(minimumDiscountText)?.takeIf { it > 0 },
-        minimumReviewPercent = parsedPercent(minimumReviewText)?.takeIf { it > 0 }
+        minimumReviewPercent = parsedPercent(minimumReviewText)?.takeIf { it > 0 },
+        minimumReviewCount = parsedReviewCount()
     )
 }
 
 data class SteamLeaderFilters(
     val maxPriceRub: Double? = null,
     val minimumDiscountPercent: Int? = null,
-    val minimumReviewPercent: Int? = null
+    val minimumReviewPercent: Int? = null,
+    val minimumReviewCount: Long? = null
 )
 
 /** Applies optional Steam RU price, discount, and review filters to a loaded Leaders list. */
@@ -78,11 +84,13 @@ object SteamLeaderFilter {
         val maximumPrice = filters.maxPriceRub?.takeIf { it > 0.0 }
         val minimumDiscount = filters.minimumDiscountPercent?.takeIf { it > 0 }?.coerceIn(1, 100)
         val minimumReview = filters.minimumReviewPercent?.takeIf { it > 0 }?.coerceIn(1, 100)
+        val minimumReviewCount = filters.minimumReviewCount?.takeIf { it > 0 }
         return games.filter { game ->
             val priceMatches = maximumPrice == null || parsePriceRub(game.steamPrice)?.let { it <= maximumPrice } == true
             val discountMatches = minimumDiscount == null || game.discountPercent >= minimumDiscount
             val reviewMatches = minimumReview == null || (game.reviewSummary?.percent ?: -1) >= minimumReview
-            priceMatches && discountMatches && reviewMatches
+            val reviewCountMatches = minimumReviewCount == null || (game.reviewSummary?.total ?: -1L) >= minimumReviewCount
+            priceMatches && discountMatches && reviewMatches && reviewCountMatches
         }
     }
 

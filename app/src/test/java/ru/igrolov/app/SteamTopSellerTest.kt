@@ -69,6 +69,34 @@ class SteamTopSellerTest {
         assertEquals(listOf(1), filtered.map { it.appId })
     }
 
+    @Test fun minimumReviewCountAvoidsHighlyRatedGamesWithTooFewReviews() {
+        val games = listOf(
+            SteamTopSeller(1, "Established", reviewSummary = SteamReviewSummary(920, 1000)),
+            SteamTopSeller(2, "Small sample", reviewSummary = SteamReviewSummary(99, 100)),
+            SteamTopSeller(3, "No review data")
+        )
+        val filtered = SteamLeaderFilter.apply(games, SteamLeaderFilters(
+            minimumReviewPercent = 90, minimumReviewCount = 500
+        ))
+        assertEquals(listOf(1), filtered.map { it.appId })
+    }
+
+    @Test fun leaderReviewFiltersParseAndCountReviewThreshold() {
+        val input = SteamLeaderFilterInput(minimumReviewText = "85", minimumReviewCountText = "1000")
+        assertEquals(2, input.activeFilterCount)
+        assertFalse(input.hasInvalidInput)
+        assertEquals(1000L, input.toFilters().minimumReviewCount)
+        assertTrue(SteamLeaderFilterInput(minimumReviewCountText = "0").hasInvalidInput)
+        assertTrue(SteamLeaderFilterInput(minimumReviewCountText = "many").hasInvalidInput)
+    }
+
+    @Test fun reviewSummaryShowsCompactTotalReviewVolume() {
+        assertEquals("950", SteamReviewSummary(900, 950).compactTotal)
+        assertEquals("1,2 тыс.", SteamReviewSummary(900, 1200).compactTotal)
+        assertEquals("24 тыс.", SteamReviewSummary(24000, 25000).compactTotal)
+        assertEquals("1,2 млн", SteamReviewSummary(1_200_000, 1_250_000).compactTotal)
+    }
+
     @Test fun russianSteamPriceParserHandlesGroupedAndDecimalValues() {
         assertEquals(1599.0, SteamLeaderFilter.parsePriceRub("1 599 руб.")!!, 0.0)
         assertEquals(1299.0, SteamLeaderFilter.parsePriceRub("1 299 ₽")!!, 0.0)

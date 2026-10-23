@@ -434,6 +434,8 @@ class MainActivity : ComponentActivity() {
                     tint = if (summary.tone == SteamReviewTone.POSITIVE) Color(0xFF218739) else Color(0xFFC62828),
                     modifier = Modifier.size(14.dp).rotate(if (summary.tone == SteamReviewTone.NEGATIVE) 180f else 0f))
             }
+            Text("· ${summary.compactTotal} отзывов", style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
         }
     }
 
@@ -2514,22 +2516,34 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.weight(1f)
                         )
                     }
-                    OutlinedTextField(
-                        value = input.minimumReviewText,
-                        onValueChange = { onInput(input.copy(minimumReviewText = it)) },
-                        label = { Text("Отзывы от, %") },
-                        singleLine = true,
-                        isError = input.minimumReviewText.isNotBlank() &&
-                            input.minimumReviewText.toIntOrNull()?.let { it in 0..100 } != true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = input.minimumReviewText,
+                            onValueChange = { onInput(input.copy(minimumReviewText = it)) },
+                            label = { Text("Рейтинг от, %", maxLines = 1) },
+                            singleLine = true,
+                            isError = input.minimumReviewText.isNotBlank() &&
+                                input.minimumReviewText.toIntOrNull()?.let { it in 0..100 } != true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = input.minimumReviewCountText,
+                            onValueChange = { onInput(input.copy(minimumReviewCountText = it)) },
+                            label = { Text("Отзывов от, шт.", maxLines = 1) },
+                            singleLine = true,
+                            isError = input.minimumReviewCountText.isNotBlank() &&
+                                input.minimumReviewCountText.trim().toLongOrNull()?.let { it > 0 } != true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                     if (input.hasInvalidInput) {
-                        Text("Цена должна быть больше 0 ₽, проценты — от 0 до 100.",
+                        Text("Цена и число отзывов должны быть больше 0, проценты — от 0 до 100.",
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        TextButton(onClick = { onInput(input.copy(maxPriceText = "", minimumDiscountText = "", minimumReviewText = "")) },
+                        TextButton(onClick = { onInput(input.copy(maxPriceText = "", minimumDiscountText = "", minimumReviewText = "", minimumReviewCountText = "")) },
                             contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)) {
                             Text("Сбросить фильтры")
                         }
