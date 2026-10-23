@@ -2152,7 +2152,7 @@ class MainActivity : ComponentActivity() {
             }
             ScreenSection {
             if (activeTab == 3 && !settingsOpen) {
-                val wishlistCacheKeys = remember(catalogueUi.wishlistGames.map { it.appId to it.title }, manualFilters, rulesRevision,
+                val wishlistCacheKeys = remember(catalogueUi.wishlistGames, manualFilters, rulesRevision,
                     ignoredIds, searchTotalPages, comparisonSavedAliases) {
                     catalogueUi.wishlistGames.associate { it.appId to comparisonKey(it.appId, it.title, false) }
                 }
@@ -2305,20 +2305,29 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-                val sectionGames = when (leaderSection) {
-                    SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseGames
-                    SteamLeaderSection.TOP_SELLERS -> topGames
-                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> topGames + discountedExtraGames
-                }
-                SteamLeaderFiltersPanel(leaderFilterInput, { leaderFilterInput = it }, availableGenres = sectionGames.flatMap { it.genres }.distinct().sorted())
-                val availabilityFilteredGames = leaderSection.filter(sectionGames).filter { game ->
-                    game.isGame && when (topAvailabilityFilter) {
-                        "Доступны в Steam RU" -> game.availability == SteamRuAvailability.AVAILABLE
-                        "Недоступны в Steam RU" -> game.availability == SteamRuAvailability.UNAVAILABLE
-                        else -> true
+                val sectionGames = remember(leaderSection, newReleaseGames, topGames, discountedExtraGames) {
+                    when (leaderSection) {
+                        SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseGames
+                        SteamLeaderSection.TOP_SELLERS -> topGames
+                        SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> topGames + discountedExtraGames
                     }
                 }
-                val visibleTopGames = SteamLeaderFilter.apply(availabilityFilteredGames, leaderFilterInput.toFilters())
+                val availableLeaderGenres = remember(sectionGames) {
+                    sectionGames.asSequence().flatMap { it.genres.asSequence() }.distinct().sorted().toList()
+                }
+                SteamLeaderFiltersPanel(leaderFilterInput, { leaderFilterInput = it }, availableGenres = availableLeaderGenres)
+                val availabilityFilteredGames = remember(sectionGames, leaderSection, topAvailabilityFilter) {
+                    leaderSection.filter(sectionGames).filter { game ->
+                        game.isGame && when (topAvailabilityFilter) {
+                            "Доступны в Steam RU" -> game.availability == SteamRuAvailability.AVAILABLE
+                            "Недоступны в Steam RU" -> game.availability == SteamRuAvailability.UNAVAILABLE
+                            else -> true
+                        }
+                    }
+                }
+                val visibleTopGames = remember(availabilityFilteredGames, leaderFilterInput) {
+                    SteamLeaderFilter.apply(availabilityFilteredGames, leaderFilterInput.toFilters())
+                }
                 val leaderHasMore = when (leaderSection) {
                     SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseHasMore
                     SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedHasMore
@@ -2834,9 +2843,14 @@ class MainActivity : ComponentActivity() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Spacer(Modifier.height(8.dp))
+        val availableGenres = remember(games) {
+            games.asSequence().flatMap { it.genres.asSequence() }.distinct().sorted().toList()
+        }
         SteamLeaderFiltersPanel(filterInput, onFilterInput, includeReviewFilters = false,
-            availableGenres = games.flatMap { it.genres }.distinct().sorted())
-        val visibleGames = SteamLeaderFilter.applyWishlist(games, filterInput.toFilters())
+            availableGenres = availableGenres)
+        val visibleGames = remember(games, filterInput) {
+            SteamLeaderFilter.applyWishlist(games, filterInput.toFilters())
+        }
         Text("Показано: ${visibleGames.size} из ${games.size}", style = MaterialTheme.typography.labelMedium)
         if (games.isEmpty() && importedAt == 0L) {
             Text("Вставьте открытый профиль Steam и загрузите его, чтобы закрепить в списке профилей.", style = MaterialTheme.typography.bodyMedium)
