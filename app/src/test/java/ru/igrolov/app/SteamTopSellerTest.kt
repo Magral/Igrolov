@@ -94,7 +94,7 @@ class SteamTopSellerTest {
     @Test fun reviewSummaryShowsCompactTotalReviewVolume() {
         assertEquals("950", SteamReviewSummary(900, 950).compactTotal)
         assertEquals("1,2 тыс.", SteamReviewSummary(900, 1200).compactTotal)
-        assertEquals("24 тыс.", SteamReviewSummary(24000, 25000).compactTotal)
+        assertEquals("25 тыс.", SteamReviewSummary(24000, 25000).compactTotal)
         assertEquals("1,2 млн", SteamReviewSummary(1_200_000, 1_250_000).compactTotal)
     }
 
