@@ -383,9 +383,10 @@ class MainActivity : ComponentActivity() {
 
         // The global store supplies artwork and description for games without a Russian store page.
         // Its price and availability are deliberately ignored: only cc=ru can establish RU status.
-        return if (regional.headerImageUrl.isBlank() || regional.description.isBlank()) {
+        return if (regional.headerImageUrl.isBlank() || regional.description.isBlank() ||
+            regional.features.needsRussianLocalizationFallback) {
             runCatching {
-                val global = steamGet("https://store.steampowered.com/api/appdetails?appids=${game.appId}&cc=us&l=russian")
+                val global = steamGet("https://store.steampowered.com/api/appdetails?appids=${game.appId}&cc=us&l=english")
                 SteamTopSellerParser.applyGlobalMetadata(regional, global)
             }.getOrDefault(regional)
         } else regional
@@ -638,7 +639,7 @@ class MainActivity : ComponentActivity() {
         val localization = when (features.russianLocalization) {
             SteamRussianLocalization.SUPPORTED -> "Русский язык"
             SteamRussianLocalization.NOT_SUPPORTED -> "Без русского"
-            SteamRussianLocalization.UNKNOWN -> "Язык: —"
+            SteamRussianLocalization.UNKNOWN -> "Язык не указан"
         }
         val localizationColor = when (features.russianLocalization) {
             SteamRussianLocalization.SUPPORTED -> MaterialTheme.colorScheme.primaryContainer
@@ -649,7 +650,7 @@ class MainActivity : ComponentActivity() {
             SteamControllerSupport.FULL -> "Геймпад ✓"
             SteamControllerSupport.PARTIAL -> "Геймпад частично"
             SteamControllerSupport.NONE -> "Без геймпада"
-            SteamControllerSupport.UNKNOWN -> "Геймпад: —"
+            SteamControllerSupport.UNKNOWN -> "Геймпад не указан"
         }
         val controllerColor = when (features.controllerSupport) {
             SteamControllerSupport.FULL -> MaterialTheme.colorScheme.primaryContainer

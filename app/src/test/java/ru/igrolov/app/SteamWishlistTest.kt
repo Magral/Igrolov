@@ -53,6 +53,28 @@ class SteamWishlistTest {
         assertEquals(enriched, SteamWishlist.decode(SteamWishlist.encode(listOf(enriched))).single())
     }
 
+    @Test fun globalFallbackFillsOnlyUnknownFeaturesAndKeepsRegionalGameData() {
+        val regional = WishlistGame(281990, "Русское название", "499 руб.", features = SteamGameFeatures(
+            SteamRussianLocalization.SUPPORTED, SteamControllerSupport.UNKNOWN
+        ))
+        val merged = SteamWishlist.fillUnknownFeatures(regional, """
+            {"281990":{"success":true,"data":{"name":"Stellaris","supported_languages":"English",
+              "controller_support":"full","price_overview":{"final_formatted":"USD 9.99"}}}}
+        """.trimIndent())
+        assertEquals("Русское название", merged.title)
+        assertEquals("499 руб.", merged.steamPrice)
+        assertEquals(SteamRussianLocalization.SUPPORTED, merged.features.russianLocalization)
+        assertEquals(SteamControllerSupport.FULL, merged.features.controllerSupport)
+    }
+
+    @Test fun globalFallbackConfirmsRussianWhenRegionalMetadataOmitsLanguageList() {
+        val regional = WishlistGame(281990, features = SteamGameFeatures())
+        val merged = SteamWishlist.fillUnknownFeatures(regional, """
+            {"281990":{"success":true,"data":{"supported_languages":"English, Russian <strong>*</strong>"}}}
+        """.trimIndent())
+        assertEquals(SteamRussianLocalization.SUPPORTED, merged.features.russianLocalization)
+    }
+
     @Test fun storesMultipleNamedProfilesAndWishlistPrices() {
         val profiles = listOf(
             WishlistProfile("76561198000000000", "Alex", "https://steamcommunity.com/profiles/76561198000000000", listOf(

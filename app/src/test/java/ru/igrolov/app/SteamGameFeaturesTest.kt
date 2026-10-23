@@ -31,10 +31,23 @@ class SteamGameFeaturesTest {
         assertEquals(SteamRussianLocalization.SUPPORTED, features.russianLocalization)
     }
 
-    @Test fun missingDataIsUnknownAndMissingControllerFieldMeansNoSupport() {
+    @Test fun recognizesEntityEncodedRussianAndIgnoresRussianInUnrelatedWords() {
+        val encoded = SteamGameFeatures.fromDetails(JSONObject("""{
+            "supported_languages":"English, &#1056;&#1091;&#1089;&#1089;&#1082;&#1080;&#1081; <strong>*</strong>"
+        }"""))
+        val unrelated = SteamGameFeatures.fromDetails(JSONObject("""{
+            "supported_languages":"English, French (Russian subtitle font support)"
+        }"""))
+        assertEquals(SteamRussianLocalization.SUPPORTED, encoded.russianLocalization)
+        assertEquals(SteamRussianLocalization.NOT_SUPPORTED, unrelated.russianLocalization)
+    }
+
+    @Test fun missingDataAndMissingControllerFieldRemainUnknown() {
         assertEquals(SteamGameFeatures(), SteamGameFeatures.fromDetails(JSONObject("{}")))
-        assertEquals(SteamControllerSupport.NONE,
+        assertEquals(SteamControllerSupport.UNKNOWN,
             SteamGameFeatures.fromDetails(JSONObject("""{"name":"A game","supported_languages":"English"}""")).controllerSupport)
+        assertEquals(SteamControllerSupport.NONE,
+            SteamGameFeatures.fromDetails(JSONObject("""{"controller_support":"none"}""")).controllerSupport)
     }
 
     @Test fun fallbackOnlyFillsUnknownValues() {

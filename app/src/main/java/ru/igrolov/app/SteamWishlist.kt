@@ -185,16 +185,34 @@ object SteamWishlist {
     }
 
     private fun fetchAppDetails(game: WishlistGame): WishlistGame {
-        val connection = URL("https://store.steampowered.com/api/appdetails?appids=" + game.appId + "&cc=ru&l=russian")
+        val regional = fetchAppDetailsJson(game.appId, "ru", "russian") ?: return game
+        val enriched = runCatching { applyTitles(listOf(game), regional).first() }.getOrDefault(game)
+        if (!enriched.features.needsRussianLocalizationFallback) return enriched
+
+        // A regional response can omit the language list. Fetch global metadata only in that
+        // case, and use it solely to fill unknown badges without replacing RU price/title data.
+        val global = runCatching { fetchAppDetailsJson(game.appId, "us", "english") }.getOrNull() ?: return enriched
+        return fillUnknownFeatures(enriched, global)
+    }
+
+    internal fun fillUnknownFeatures(game: WishlistGame, appDetailsJson: String): WishlistGame {
+        val data = runCatching {
+            JSONObject(appDetailsJson).optJSONObject(game.appId.toString())
+                ?.takeIf { it.optBoolean("success") }?.optJSONObject("data")
+        }.getOrNull() ?: return game
+        return game.copy(features = game.features.withFallback(SteamGameFeatures.fromDetails(data)))
+    }
+
+    private fun fetchAppDetailsJson(appId: Int, country: String, language: String): String? {
+        val connection = URL("https://store.steampowered.com/api/appdetails?appids=$appId&cc=$country&l=$language")
             .openConnection() as HttpURLConnection
         connection.connectTimeout = 10000
         connection.readTimeout = 15000
         connection.setRequestProperty("Accept", "application/json")
         connection.setRequestProperty("User-Agent", "Igrolov Android")
-        try {
-            if (connection.responseCode !in 200..299) return game
-            val body = connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-            return runCatching { applyTitles(listOf(game), body).first() }.getOrDefault(game)
+        return try {
+            if (connection.responseCode !in 200..299) null
+            else connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
         } finally { connection.disconnect() }
     }
 
