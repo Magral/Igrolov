@@ -61,14 +61,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-23T00:00:58.566Z
+- Обновлено (UTC): 2026-10-23T00:03:29.116Z
 - Ветка: `main`.
-- HEAD: [`44b322da0ce2`](https://github.com/Magral/Igrolov/commit/44b322da0ce22d0d4056e5c8db6ba151d4c420e8).
+- HEAD: [`78e563c7d2f7`](https://github.com/Magral/Igrolov/commit/78e563c7d2f7aa63f20f97b3f8a28b2865aaf42f).
 - Последний опубликованный стабильный GitHub Release: [v1.3.2](https://github.com/Magral/Igrolov/releases/tag/v1.3.2); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [78e563c](https://github.com/Magral/Igrolov/commit/78e563c7d2f7aa63f20f97b3f8a28b2865aaf42f) — release: import Coil request crossfade extension
 - [44b322d](https://github.com/Magral/Igrolov/commit/44b322da0ce22d0d4056e5c8db6ba151d4c420e8) — release: pin Coil to Kotlin-compatible 3.0.4
 - [a84c8c5](https://github.com/Magral/Igrolov/commit/a84c8c54491bd17874db0119aced5fc3a09fdc28) — release: prepare Игролов 1.3.3
 - [611ef8b](https://github.com/Magral/Igrolov/commit/611ef8be09b610fc2e4e9efc8259d3fb67757ab4) — docs: record published Игролов 1.3.2
-- [360d043](https://github.com/Magral/Igrolov/commit/360d043db29fb10703ed50b37eb858a4d1c570df) — release: fix wishlist thumbnail app ID call for Игролов 1.3.2
 <!-- AUTO_CONTEXT_END -->
