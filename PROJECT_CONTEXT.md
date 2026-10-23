@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-23T22:06:35.374Z
+- Обновлено (UTC): 2026-10-23T22:13:39.589Z
 - Ветка: `main`.
-- HEAD: [`8abdf625481b`](https://github.com/Magral/Igrolov/commit/8abdf625481bbbcc545e1b837bc70db4c8ab9ba8).
+- HEAD: [`94412a538293`](https://github.com/Magral/Igrolov/commit/94412a5382936d59ba5edb9e93db8ee21a773e8a).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [94412a5](https://github.com/Magral/Igrolov/commit/94412a5382936d59ba5edb9e93db8ee21a773e8a) — test: isolate wishlist UI smoke state
 - [8abdf62](https://github.com/Magral/Igrolov/commit/8abdf625481bbbcc545e1b837bc70db4c8ab9ba8) — fix: backfill wishlist genres and load filtered leaders
 - [4bc994a](https://github.com/Magral/Igrolov/commit/4bc994ab87f9cc0d67f138c532dafe2ad2bdcee7) — release: v1.4.4
 - [53874f0](https://github.com/Magral/Igrolov/commit/53874f0cb83b730e5cb117a5a2a6d7e7e168097e) — ui: add clear borders to product cards
-- [ea8e613](https://github.com/Magral/Igrolov/commit/ea8e61319e2ba4c36990a0b5061c1ed3f9a4b25b) — test: include genre in wishlist filter fixture
 <!-- AUTO_CONTEXT_END -->
