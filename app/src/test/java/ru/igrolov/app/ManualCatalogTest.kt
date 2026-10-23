@@ -99,4 +99,16 @@ class ManualCatalogTest {
             else assertEquals(title, sample.getString("expected"), result?.type)
         }
     }
+
+    @Test fun royalEditionIsKeptAsBaseGameWhileStandaloneDlcIsRejected() {
+        val game = ManualGameReference.Game("Kingdom Come: Deliverance II", 1771300)
+        assertEquals("Игра", ManualContentRules.classify(
+            "Kingdom Come: Deliverance II Royal Edition Steam Key РФ",
+            "Ключ Steam, активация в РФ", game
+        ))
+        assertEquals("DLC", ManualContentRules.classify(
+            "Kingdom Come: Deliverance II Mysteria Ecclesiae DLC Steam Key РФ",
+            "Для запуска требуется базовая игра", game
+        ))
+    }
 }

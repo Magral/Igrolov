@@ -41,7 +41,7 @@ object ManualContentRules {
         "регион", "регионов", "регионов", "region", "free", "активация", "активации", "activation", "авто", "автодоставка", "autodelivery", "auto", "delivery",
         "подарок", "подарки", "bonus", "бонус", "бонусы", "акция", "карты", "картой", "карта", "карт", "cards", "card", "моментально", "мгновенно", "сразу", "лицензия", "лицензия", "лицензионный", "доставка",
         "пк", "pc", "для", "всех", "все", "регионы", "мир", "мира", "руб", "rub", "стандарт", "стандартное", "standard", "edition", "издание", "версия",
-        "deluxe", "делюкс", "ultimate", "complete", "definitive", "galaxy", "галактическое", "gold", "premium", "goty", "digital", "collector", "collectors")
+        "royal", "deluxe", "делюкс", "ultimate", "complete", "definitive", "galaxy", "галактическое", "gold", "premium", "goty", "digital", "collector", "collectors")
     fun classify(title: String, info: String, game: ManualGameReference.Game): String {
         // These describe add-on ownership, rather than a passing mention of extra content.
         if (listOf("для запуска требуется базовая игра", "требуется базовая версия игры", "требуется оригинальная игра",

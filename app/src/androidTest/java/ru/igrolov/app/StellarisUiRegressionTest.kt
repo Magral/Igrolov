@@ -64,7 +64,7 @@ class StellarisUiRegressionTest {
         ManualSearchSettings.save(context,ManualSearchFilters())
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Игролов 1.3.4")) })
+        assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Игролов 1.3.5")) })
         compose.onAllNodes(hasSetTextAction()).onFirst().performTextReplacement("Stelaris")
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Stellaris · Steam #281990")) })
