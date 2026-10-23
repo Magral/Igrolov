@@ -191,16 +191,32 @@ object SteamWishlist {
 
     /** Backfills genres for stored wishlist entries created before genre metadata was saved. */
     fun enrichMissingGenres(games: List<WishlistGame>): List<WishlistGame> {
+        val missingGenres = games.filter { it.genres.isEmpty() }
+        if (missingGenres.isEmpty()) return games
         val enrichedGames = games.toMutableList()
         val pool = Executors.newFixedThreadPool(4)
         return try {
-            games.filter { it.genres.isEmpty() }.chunked(4).forEach { batch ->
-                pool.invokeAll(batch.map { game -> Callable { runCatching { fetchGenres(game) }.getOrDefault(game) } })
-                    .mapNotNull { task -> runCatching { task.get() }.getOrNull() }
-                    .forEach { enriched ->
+            missingGenres.chunked(4).forEach { batch ->
+                val tasks = try {
+                    pool.invokeAll(batch.map { game -> Callable { runCatching { fetchGenres(game) }.getOrDefault(game) } })
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    return enrichedGames
+                }
+                tasks.forEach { task ->
+                    val enriched = try {
+                        task.get()
+                    } catch (_: InterruptedException) {
+                        Thread.currentThread().interrupt()
+                        return enrichedGames
+                    } catch (_: java.util.concurrent.ExecutionException) {
+                        null
+                    }
+                    if (enriched != null) {
                         val index = enrichedGames.indexOfFirst { it.appId == enriched.appId }
                         if (index >= 0) enrichedGames[index] = enriched
                     }
+                }
             }
             enrichedGames
         } finally { pool.shutdownNow() }
