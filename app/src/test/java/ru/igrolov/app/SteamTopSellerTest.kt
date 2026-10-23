@@ -110,15 +110,49 @@ class SteamTopSellerTest {
             WishlistGame(1, "Alpha", "500 руб.", discountPercent = 30, features = SteamGameFeatures(
                 SteamRussianLocalization.SUPPORTED, SteamControllerSupport.FULL)),
             WishlistGame(2, "Beta", "900 руб.", discountPercent = 50, features = SteamGameFeatures(
-                SteamRussianLocalization.SUPPORTED, SteamControllerSupport.PARTIAL)),
-            WishlistGame(3, "Gamma", "300 руб.", discountPercent = 40, features = SteamGameFeatures())
+                SteamRussianLocalization.SUPPORTED, SteamControllerSupport.PARTIAL), genres = listOf("Стратегии")),
+            WishlistGame(3, "Gamma", "300 руб.", discountPercent = 40, features = SteamGameFeatures(), genres = listOf("RPG"))
         )
         val filtered = SteamLeaderFilter.applyWishlist(games, SteamLeaderFilters(
             titleQuery = "a", maxPriceRub = 600.0, minimumDiscountPercent = 30,
             russianLocalization = SteamRussianLocalization.SUPPORTED,
-            controllerSupport = SteamControllerSupport.FULL
+            controllerSupport = SteamControllerSupport.FULL, selectedGenres = setOf("RPG")
         ))
         assertEquals(listOf(1), filtered.map { it.appId })
+    }
+
+    @Test fun wishlistGenreFilterUsesSteamDetailsAndCanBePersisted() {
+        val game = SteamWishlist.applyTitles(listOf(WishlistGame(281990)), """
+            {"281990":{"success":true,"data":{"name":"Stellaris","genres":[
+              {"description":"Стратегии"},{"description":"Космические симуляторы"}]}}}
+        """.trimIndent()).single()
+        assertEquals(listOf("Космические симуляторы", "Стратегии"), game.genres)
+        assertEquals(game, SteamWishlist.decode(SteamWishlist.encode(listOf(game))).single())
+        assertEquals(listOf(281990), SteamLeaderFilter.applyWishlist(listOf(game), SteamLeaderFilters(
+            selectedGenres = setOf("Стратегии")
+        )).map { it.appId })
+        assertTrue(SteamLeaderFilter.applyWishlist(listOf(game), SteamLeaderFilters(
+            selectedGenres = setOf("Экшены")
+        )).isEmpty())
+    }
+
+    @Test fun leaderGenreFilterMatchesAnySelectedGenreAndLeavesUnknownOut() {
+        val games = listOf(
+            SteamTopSeller(1, "Space RPG", genres = listOf("RPG", "Симуляторы")),
+            SteamTopSeller(2, "Strategy", genres = listOf("Стратегии")),
+            SteamTopSeller(3, "No genre metadata")
+        )
+        val filtered = SteamLeaderFilter.apply(games, SteamLeaderFilters(selectedGenres = setOf("RPG", "Стратегии")))
+        assertEquals(listOf(1, 2), filtered.map { it.appId })
+        assertEquals(games, SteamLeaderFilter.apply(games, SteamLeaderFilters()))
+    }
+
+    @Test fun parsesSteamGenreLabelsFromAppDetails() {
+        val game = SteamTopSellerParser.applyRuDetails(SteamTopSeller(1, "Game"), """
+            {"1":{"success":true,"data":{"type":"game","name":"Game","genres":[
+              {"id":"1","description":"RPG"},{"id":"2","description":"Стратегии"},{"id":"3","description":"RPG"}]}}}
+        """.trimIndent(), null)
+        assertEquals(listOf("RPG", "Стратегии"), game.genres)
     }
 
     @Test fun leaderReviewFiltersParseAndCountReviewThreshold() {

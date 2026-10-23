@@ -28,7 +28,8 @@ data class SteamTopSeller(
     val headerImageUrl: String = "",
     val description: String = "",
     val reviewSummary: SteamReviewSummary? = null,
-    val features: SteamGameFeatures = SteamGameFeatures()
+    val features: SteamGameFeatures = SteamGameFeatures(),
+    val genres: List<String> = emptyList()
 )
 
 data class SteamRankingPage(
@@ -47,7 +48,8 @@ data class SteamLeaderFilterInput(
     val minimumReviewText: String = "",
     val minimumReviewCountText: String = "",
     val russianLocalization: SteamRussianLocalization? = null,
-    val controllerSupport: SteamControllerSupport? = null
+    val controllerSupport: SteamControllerSupport? = null,
+    val selectedGenres: Set<String> = emptySet()
 ) {
     private fun parsedPrice(): Double? = maxPriceText.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it > 0.0 }
     private fun parsedPercent(value: String): Int? = value.trim().toIntOrNull()?.takeIf { it in 0..100 }
@@ -60,7 +62,8 @@ data class SteamLeaderFilterInput(
         (parsedPercent(minimumReviewText) ?: 0) > 0,
         parsedReviewCount() != null,
         russianLocalization != null,
-        controllerSupport != null
+        controllerSupport != null,
+        selectedGenres.isNotEmpty()
     ).count { it }
 
     val hasInvalidInput: Boolean get() =
@@ -76,7 +79,8 @@ data class SteamLeaderFilterInput(
         minimumReviewPercent = parsedPercent(minimumReviewText)?.takeIf { it > 0 },
         minimumReviewCount = parsedReviewCount(),
         russianLocalization = russianLocalization,
-        controllerSupport = controllerSupport
+        controllerSupport = controllerSupport,
+        selectedGenres = selectedGenres
     )
 }
 
@@ -87,7 +91,8 @@ data class SteamLeaderFilters(
     val minimumReviewPercent: Int? = null,
     val minimumReviewCount: Long? = null,
     val russianLocalization: SteamRussianLocalization? = null,
-    val controllerSupport: SteamControllerSupport? = null
+    val controllerSupport: SteamControllerSupport? = null,
+    val selectedGenres: Set<String> = emptySet()
 )
 
 /** Applies optional Steam RU price, discount, and review filters to a loaded Leaders list. */
@@ -105,7 +110,8 @@ object SteamLeaderFilter {
             val reviewCountMatches = minimumReviewCount == null || (game.reviewSummary?.total ?: -1L) >= minimumReviewCount
             val languageMatches = filters.russianLocalization == null || game.features.russianLocalization == filters.russianLocalization
             val controllerMatches = filters.controllerSupport == null || game.features.controllerSupport == filters.controllerSupport
-            queryMatches && priceMatches && discountMatches && reviewMatches && reviewCountMatches && languageMatches && controllerMatches
+            val genreMatches = filters.selectedGenres.isEmpty() || game.genres.any { it in filters.selectedGenres }
+            queryMatches && priceMatches && discountMatches && reviewMatches && reviewCountMatches && languageMatches && controllerMatches && genreMatches
         }
     }
 
@@ -119,7 +125,8 @@ object SteamLeaderFilter {
             val discountMatches = minimumDiscount == null || game.discountPercent >= minimumDiscount
             val languageMatches = filters.russianLocalization == null || game.features.russianLocalization == filters.russianLocalization
             val controllerMatches = filters.controllerSupport == null || game.features.controllerSupport == filters.controllerSupport
-            titleMatches && priceMatches && discountMatches && languageMatches && controllerMatches
+            val genreMatches = filters.selectedGenres.isEmpty() || game.genres.any { it in filters.selectedGenres }
+            titleMatches && priceMatches && discountMatches && languageMatches && controllerMatches && genreMatches
         }
     }
 
@@ -179,6 +186,13 @@ object SteamTopSellerParser {
     private val appId = Regex("(?i)data-ds-appid=[\"']([0-9]{1,10})[\"']")
     private val title = Regex("(?is)<span\\b[^>]*class=[\"'][^\"']*title[^\"']*[\"'][^>]*>(.*?)</span>")
 
+    fun parseGenres(data: JSONObject): List<String> {
+        val genres = data.optJSONArray("genres") ?: return emptyList()
+        return (0 until genres.length()).mapNotNull { index ->
+            genres.optJSONObject(index)?.optString("description")?.trim()?.takeIf { it.isNotBlank() }
+        }.distinctBy { it.lowercase() }.sortedBy { it.lowercase() }
+    }
+
     fun parseRankingHtml(html: String): List<SteamTopSeller> {
         val result = linkedMapOf<Int, SteamTopSeller>()
         row.findAll(html).forEach { match ->
@@ -235,7 +249,8 @@ object SteamTopSellerParser {
             description = game.description.ifBlank {
                 data.optString("short_description").ifBlank { data.optString("about_the_game") }.trim()
             },
-            features = game.features.withFallback(SteamGameFeatures.fromDetails(data))
+            features = game.features.withFallback(SteamGameFeatures.fromDetails(data)),
+            genres = game.genres.ifEmpty { parseGenres(data) }
         )
     }
 
@@ -267,7 +282,8 @@ object SteamTopSellerParser {
             isFree = isFree,
             headerImageUrl = data.optString("header_image").trim(),
             description = data.optString("short_description").ifBlank { data.optString("about_the_game") }.trim(),
-            features = game.features.withFallback(SteamGameFeatures.fromDetails(data))
+            features = game.features.withFallback(SteamGameFeatures.fromDetails(data)),
+            genres = game.genres.ifEmpty { parseGenres(data) }
         )
     }
 }

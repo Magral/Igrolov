@@ -384,7 +384,7 @@ class MainActivity : ComponentActivity() {
         // The global store supplies artwork and description for games without a Russian store page.
         // Its price and availability are deliberately ignored: only cc=ru can establish RU status.
         return if (regional.headerImageUrl.isBlank() || regional.description.isBlank() ||
-            regional.features.needsRussianLocalizationFallback) {
+            regional.features.needsRussianLocalizationFallback || regional.genres.isEmpty()) {
             runCatching {
                 val global = steamGet("https://store.steampowered.com/api/appdetails?appids=${game.appId}&cc=us&l=english")
                 SteamTopSellerParser.applyGlobalMetadata(regional, global)
@@ -2249,12 +2249,12 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-                SteamLeaderFiltersPanel(leaderFilterInput, { leaderFilterInput = it })
                 val sectionGames = when (leaderSection) {
                     SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseGames
                     SteamLeaderSection.TOP_SELLERS -> topGames
                     SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> topGames + discountedExtraGames
                 }
+                SteamLeaderFiltersPanel(leaderFilterInput, { leaderFilterInput = it }, availableGenres = sectionGames.flatMap { it.genres }.distinct().sorted())
                 val availabilityFilteredGames = leaderSection.filter(sectionGames).filter { game ->
                     game.isGame && when (topAvailabilityFilter) {
                         "Доступны в Steam RU" -> game.availability == SteamRuAvailability.AVAILABLE
@@ -2516,7 +2516,8 @@ class MainActivity : ComponentActivity() {
     private fun SteamLeaderFiltersPanel(
         input: SteamLeaderFilterInput,
         onInput: (SteamLeaderFilterInput) -> Unit,
-        includeReviewFilters: Boolean = true
+        includeReviewFilters: Boolean = true,
+        availableGenres: List<String> = emptyList()
     ) {
         OutlinedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
@@ -2585,6 +2586,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     SteamFeatureFilterChoices(input, onInput)
+                    SteamGenreFilterChoices(input, onInput, availableGenres)
                     if (input.hasInvalidInput) {
                         Text("Цена и число отзывов должны быть больше 0, проценты — от 0 до 100.",
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
@@ -2595,6 +2597,50 @@ class MainActivity : ComponentActivity() {
                             Text("Сбросить фильтры")
                         }
                     }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun SteamGenreFilterChoices(
+        input: SteamLeaderFilterInput,
+        onInput: (SteamLeaderFilterInput) -> Unit,
+        availableGenres: List<String>
+    ) {
+        var menuExpanded by remember { mutableStateOf(false) }
+        Text("Жанры Steam · выберите один или несколько", style = MaterialTheme.typography.labelMedium)
+        Box {
+            OutlinedButton(onClick = { menuExpanded = true }, enabled = availableGenres.isNotEmpty()) {
+                Text(when {
+                    input.selectedGenres.isNotEmpty() -> "Выбрано жанров: ${input.selectedGenres.size}"
+                    availableGenres.isNotEmpty() -> "Выбрать жанры (${availableGenres.size})"
+                    else -> "Жанры загружаются из Steam"
+                })
+            }
+            DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false },
+                modifier = Modifier.heightIn(max = 360.dp)
+            ) {
+                availableGenres.forEach { genre ->
+                    DropdownMenuItem(
+                        text = { Text(genre) },
+                        onClick = {
+                            val next = input.selectedGenres.toMutableSet().apply {
+                                if (!add(genre)) remove(genre)
+                            }
+                            onInput(input.copy(selectedGenres = next))
+                        },
+                        leadingIcon = { Checkbox(checked = genre in input.selectedGenres, onCheckedChange = null) }
+                    )
+                }
+                if (input.selectedGenres.isNotEmpty()) {
+                    HorizontalDivider()
+                    DropdownMenuItem(text = { Text("Очистить выбор") }, onClick = {
+                        onInput(input.copy(selectedGenres = emptySet()))
+                        menuExpanded = false
+                    })
                 }
             }
         }
@@ -2697,7 +2743,8 @@ class MainActivity : ComponentActivity() {
         if (message.isNotBlank()) Text(message, style = MaterialTheme.typography.bodySmall,
             color = if (message.startsWith("Не удалось")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(8.dp))
-        SteamLeaderFiltersPanel(filterInput, onFilterInput, includeReviewFilters = false)
+        SteamLeaderFiltersPanel(filterInput, onFilterInput, includeReviewFilters = false,
+            availableGenres = games.flatMap { it.genres }.distinct().sorted())
         val visibleGames = SteamLeaderFilter.applyWishlist(games, filterInput.toFilters())
         Text("Показано: ${visibleGames.size} из ${games.size}", style = MaterialTheme.typography.labelMedium)
         if (games.isEmpty() && importedAt == 0L) {

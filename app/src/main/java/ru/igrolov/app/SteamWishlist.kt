@@ -16,7 +16,8 @@ data class WishlistGame(
     val discountPercent: Int = 0,
     val lowestPlatiPrice: Double? = null,
     val lowestGgselPrice: Double? = null,
-    val features: SteamGameFeatures = SteamGameFeatures()
+    val features: SteamGameFeatures = SteamGameFeatures(),
+    val genres: List<String> = emptyList()
 )
 
 data class WishlistProfile(
@@ -107,7 +108,8 @@ object SteamWishlist {
                     else price?.optString("final_formatted", "")?.takeIf { it.isNotBlank() } ?: game.steamPrice,
                 steamInitialPrice = price?.optString("initial_formatted", "")?.takeIf { it.isNotBlank() } ?: game.steamInitialPrice,
                 discountPercent = price?.optInt("discount_percent", game.discountPercent)?.coerceIn(0, 100) ?: game.discountPercent,
-                features = data?.let { game.features.withFallback(SteamGameFeatures.fromDetails(it)) } ?: game.features
+                features = data?.let { game.features.withFallback(SteamGameFeatures.fromDetails(it)) } ?: game.features,
+                genres = if (game.genres.isNotEmpty()) game.genres else data?.let(SteamTopSellerParser::parseGenres) ?: emptyList()
             )
         }
     }
@@ -119,7 +121,8 @@ object SteamWishlist {
                 .put("discountPercent", game.discountPercent).put("lowestPlatiPrice", game.lowestPlatiPrice)
                 .put("lowestGgselPrice", game.lowestGgselPrice)
                 .put("russianLocalization", game.features.russianLocalization.name)
-                .put("controllerSupport", game.features.controllerSupport.name))
+                .put("controllerSupport", game.features.controllerSupport.name)
+                .put("genres", JSONArray(game.genres)))
         }
     }.toString()
 
@@ -135,7 +138,9 @@ object SteamWishlist {
                 SteamGameFeatures(
                     runCatching { SteamRussianLocalization.valueOf(item.optString("russianLocalization")) }.getOrDefault(SteamRussianLocalization.UNKNOWN),
                     runCatching { SteamControllerSupport.valueOf(item.optString("controllerSupport")) }.getOrDefault(SteamControllerSupport.UNKNOWN)
-                ))
+                ),
+                (item.optJSONArray("genres")?.let { genres -> (0 until genres.length()).map { genres.optString(it) }.filter { it.isNotBlank() } } ?: emptyList())
+            )
         }.distinctBy { it.appId }.take(500)
     } catch (_: Exception) { emptyList() }
 
@@ -185,12 +190,15 @@ object SteamWishlist {
     }
 
     private fun fetchAppDetails(game: WishlistGame): WishlistGame {
-        val regional = fetchAppDetailsJson(game.appId, "ru", "russian") ?: return game
+        val regional = fetchAppDetailsJson(game.appId, "ru", "russian") ?: run {
+            val global = runCatching { fetchAppDetailsJson(game.appId, "us", "english") }.getOrNull()
+            return global?.let { fillUnknownFeatures(game, it) } ?: game
+        }
         val enriched = runCatching { applyTitles(listOf(game), regional).first() }.getOrDefault(game)
-        if (!enriched.features.needsRussianLocalizationFallback) return enriched
+        if (!enriched.features.needsRussianLocalizationFallback && enriched.genres.isNotEmpty()) return enriched
 
-        // A regional response can omit the language list. Fetch global metadata only in that
-        // case, and use it solely to fill unknown badges without replacing RU price/title data.
+        // Regional details can omit languages or genres. Fill only those missing fields from
+        // global metadata without replacing RU price/title data.
         val global = runCatching { fetchAppDetailsJson(game.appId, "us", "english") }.getOrNull() ?: return enriched
         return fillUnknownFeatures(enriched, global)
     }
@@ -200,7 +208,10 @@ object SteamWishlist {
             JSONObject(appDetailsJson).optJSONObject(game.appId.toString())
                 ?.takeIf { it.optBoolean("success") }?.optJSONObject("data")
         }.getOrNull() ?: return game
-        return game.copy(features = game.features.withFallback(SteamGameFeatures.fromDetails(data)))
+        return game.copy(
+            features = game.features.withFallback(SteamGameFeatures.fromDetails(data)),
+            genres = if (game.genres.isNotEmpty()) game.genres else SteamTopSellerParser.parseGenres(data)
+        )
     }
 
     private fun fetchAppDetailsJson(appId: Int, country: String, language: String): String? {
