@@ -171,16 +171,19 @@ class MainActivity : ComponentActivity() {
     private fun getCatalogJson(url: String): JSONObject {
         var last: Exception? = null
         repeat(3) { attempt ->
+            var statusCode = 0
+            var retryAfter: String? = null
             try {
                 val conn = URL(url).openConnection() as HttpURLConnection
                 conn.connectTimeout = 15000
                 conn.readTimeout = 20000
                 conn.setRequestProperty("Accept", "application/json")
                 try {
-                    val status = conn.responseCode
-                    if (status !in 200..299) {
-                        if (status == 429 || status in 500..599) throw java.io.IOException("HTTP $status")
-                        error("HTTP $status: поиск каталога недоступен")
+                    statusCode = conn.responseCode
+                    if (statusCode !in 200..299) {
+                        retryAfter = conn.getHeaderField("Retry-After")
+                        if (statusCode == 429 || statusCode in 500..599) throw java.io.IOException("HTTP $statusCode")
+                        error("HTTP $statusCode: поиск каталога недоступен")
                     }
                     return JSONObject(conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
                 } finally { conn.disconnect() }
@@ -191,7 +194,7 @@ class MainActivity : ComponentActivity() {
                     (e is java.io.IOException && (e.message?.startsWith("HTTP 5") == true || e.message == "HTTP 429"))
                 if (!retryable || attempt == 2) throw e
                 last = e
-                Thread.sleep(400L * (attempt + 1))
+                Thread.sleep(CatalogRetryPolicy.delayMillis(statusCode, retryAfter, attempt))
             }
         }
         throw last ?: java.io.IOException("Нет соединения")
@@ -270,12 +273,9 @@ class MainActivity : ComponentActivity() {
             val detailFailures = java.util.concurrent.atomic.AtomicInteger(0)
             val enriched = runCatching { ManualCatalogEnricher { path ->
                 try {
-                    val result = CatalogApi.get(path, true)
-                    if (!path.startsWith("/api/categories") && (result == null ||
-                        (path.startsWith("/api/products/") && result.optInt("retval", -1) != 0))) detailFailures.incrementAndGet()
-                    result
+                    CatalogApi.get(path, true)
                 } catch (_: Exception) {
-                    if (!path.startsWith("/api/categories")) detailFailures.incrementAndGet()
+                    if (CatalogRetryPolicy.isSourceTransportFailure(path, requestFailed = true)) detailFailures.incrementAndGet()
                     null
                 }
             }.enrich(sorted, sellerIds, reference = reference,
