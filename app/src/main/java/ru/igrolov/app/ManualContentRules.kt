@@ -65,6 +65,24 @@ object ManualContentRules {
         if (suffix.all { it in deliveryWords || it.all(Char::isDigit) }) return "Игра"
         return "Не подтверждено"
     }
+    fun matchesSelectedSteamEdition(title: String, canonical: String, editionName: String, allEditionNames: List<String> = emptyList()): Boolean {
+        val titleWords = words(title)
+        val canonicalWords = words(canonical)
+        if (canonicalWords.isEmpty()) return false
+        val start = titleWords.windowed(canonicalWords.size).indexOfFirst { it == canonicalWords }
+        if (start < 0) return false
+        val suffix = titleWords.drop(start + canonicalWords.size)
+        val editionWords = words(editionName)
+        val selectedSuffix = if (editionWords.take(canonicalWords.size) == canonicalWords) editionWords.drop(canonicalWords.size) else editionWords
+        if (selectedSuffix.isNotEmpty()) return titleWords.windowed(selectedSuffix.size).any { it == selectedSuffix }
+        val otherEditionSuffixes = allEditionNames.map(::words)
+            .filter { it.take(canonicalWords.size) == canonicalWords }
+            .map { it.drop(canonicalWords.size) }
+            .filter { it.isNotEmpty() }
+        if (otherEditionSuffixes.any { other -> titleWords.windowed(other.size).any { it == other } }) return false
+        val premiumEditionWords = setOf("deluxe", "gold", "royal", "ultimate", "complete", "definitive", "premium", "goty", "collector", "collectors", "digital", "galaxy")
+        return suffix.none { it in premiumEditionWords }
+    }
     fun visible(offer: Offer, edition: String, type: String, rules: JSONObject = JSONObject()): Boolean {
         if (!offer.detailsChecked || offer.available != true || !offer.priceVerified || offer.variablePrice) return false
         if (offer.rfStatus=="РФ исключена" || (type!="Все" && offer.type!=type)) return false

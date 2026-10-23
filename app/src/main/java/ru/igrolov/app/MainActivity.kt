@@ -64,6 +64,7 @@ class MainActivity : ComponentActivity() {
     private val wishlistExecutor = Executors.newSingleThreadExecutor()
     private val catalogExecutor = Executors.newSingleThreadExecutor()
     private val suggestionExecutor = Executors.newSingleThreadExecutor()
+    private val editionExecutor = Executors.newSingleThreadExecutor()
     private val watchSuggestionGeneration=java.util.concurrent.atomic.AtomicInteger(0)
     private val suggestionGeneration = java.util.concurrent.atomic.AtomicInteger(0)
     private val activeCatalogGeneration = java.util.concurrent.atomic.AtomicInteger(0)
@@ -73,6 +74,7 @@ class MainActivity : ComponentActivity() {
         suggestionGeneration.incrementAndGet()
         watchSuggestionGeneration.incrementAndGet()
         suggestionExecutor.shutdownNow()
+        editionExecutor.shutdownNow()
         detailExecutor.shutdownNow()
         ioExecutor.shutdownNow()
         wishlistExecutor.shutdownNow()
@@ -200,20 +202,21 @@ class MainActivity : ComponentActivity() {
         throw last ?: java.io.IOException("Нет соединения")
     }
 
-    private fun searchCatalog(query: String, pageCount: Int, generation: Int, selectedAppId: Int?, additionalAliases: List<String>, progress: (Int, Int, Int) -> Unit, callback: (List<Offer>, String, List<String>, Set<String>) -> Unit) {
+    private fun searchCatalog(query: String, pageCount: Int, generation: Int, selectedAppId: Int?, additionalAliases: List<String>, selectedEdition: SteamEditionReference.Edition? = null, availableEditions: List<SteamEditionReference.Edition> = emptyList(), progress: (Int, Int, Int) -> Unit, callback: (List<Offer>, String, List<String>, Set<String>) -> Unit) {
         catalogExecutor.execute {
             val found = mutableListOf<Offer>()
             val seenIds = mutableSetOf<String>()
             val sellerIds = mutableMapOf<String, String>()
             var failure = ""
             val failedSources = mutableSetOf<String>()
-            val reference = ManualGameReference.lookup(query,selectedAppId,additionalAliases)
+            val editionAliases = selectedEdition?.let { listOf(it.searchTitle) + additionalAliases } ?: additionalAliases
+            val reference = ManualGameReference.lookup(query,selectedAppId,editionAliases.distinct())
             if (generation != activeCatalogGeneration.get()) return@execute
             if(selectedAppId != null && reference.appId != selectedAppId) {
                 runOnUiThread { if(generation == activeCatalogGeneration.get()) callback(emptyList(),"Steam не подтвердил выбранную основную игру. Повторите запрос или выберите другую игру.",emptyList(),setOf("Plati","GGSEL")) }
                 return@execute
             }
-            val marketQuery=ManualGameReference.catalogQuery(query,reference.aliases)
+            val marketQuery=selectedEdition?.searchTitle ?: ManualGameReference.catalogQuery(query,reference.aliases)
             try {
                 // Marketplace-wide search endpoint used by the Plati site ecosystem.
                 // It is not the seller-specific shop_search.asp interface.
@@ -305,11 +308,13 @@ class MainActivity : ComponentActivity() {
                     ggselFailure = "GGSEL: ${e.message ?: "каталог временно недоступен"}"
                 }
             }
-            val finalOffers = (enriched + found.filter { it.marketplace == "GGSEL" })
+            val matchedEditionOffers = (enriched + found.filter { it.marketplace == "GGSEL" })
+                .filter { selectedEdition == null || ManualContentRules.matchesSelectedSteamEdition(it.name, reference.canonical, selectedEdition.name, availableEditions.map { option -> option.name }) }
+            val finalOffers = matchedEditionOffers
                 .distinctBy { "${it.marketplace}:${it.id}" }.sortedBy { it.price }
             if (ggselFailure.isNotBlank()) failure = listOf(failure, ggselFailure).filter { it.isNotBlank() }.joinToString(" · ")
             var aliasSuggestions = emptyList<String>()
-            if (finalOffers.isEmpty() && failure.isBlank() && generation == activeCatalogGeneration.get()) {
+            if (finalOffers.isEmpty() && selectedEdition == null && failure.isBlank() && generation == activeCatalogGeneration.get()) {
                 val core = CatalogAliasResolver.fallbackQuery(reference.canonical)
                 if (core != null && !reference.aliases.any { GameSearchResolver.normalized(it) == GameSearchResolver.normalized(core) }) {
                     runCatching {
@@ -786,7 +791,7 @@ class MainActivity : ComponentActivity() {
                                  onSettings: () -> Unit, onTab: (Int) -> Unit) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Игролов 1.3.5", style = MaterialTheme.typography.headlineSmall)
+            Text("Игролов 1.4.0", style = MaterialTheme.typography.headlineSmall)
             IconButton(onClick = onSettings) {
                 Text(if (settingsOpen) "×" else "⚙", fontSize = 26.sp,
                     color = MaterialTheme.colorScheme.onSurface)
@@ -805,6 +810,10 @@ class MainActivity : ComponentActivity() {
         val savedFilters = remember {ManualSearchSettings.read(this@MainActivity)}
         var gameSuggestions by remember {mutableStateOf<List<GameSearchResolver.Candidate>>(emptyList())}
         var selectedGame by remember {mutableStateOf<GameSearchResolver.Candidate?>(null)}
+        var steamEditions by remember { mutableStateOf<List<SteamEditionReference.Edition>>(emptyList()) }
+        var selectedSteamEdition by remember { mutableStateOf<SteamEditionReference.Edition?>(null) }
+        var editionLoading by remember { mutableStateOf(false) }
+        var editionMenuExpanded by remember { mutableStateOf(false) }
         var suggestionBusy by remember {mutableStateOf(false)}
         var maxPrice by remember {mutableStateOf(savedFilters.maxPrice)}
         var confirmedRf by remember {mutableStateOf(savedFilters.confirmedRf)}
@@ -1216,12 +1225,14 @@ class MainActivity : ComponentActivity() {
             }
             val requestedGame = identity?.name?.replace(Regex("[™®©]"), "") ?: query.trim()
             if (requestedGame.isBlank()) { onFinished?.invoke(); return }
+            val requestedEdition = selectedSteamEdition?.takeIf { candidateOverride == null && leaderboardAppId == null && it.appId == identity?.appId }
             val requestedAt = System.currentTimeMillis()
             val requestRules = JSONObject(GameRuleStore.read(this@MainActivity, requestedGame).toString())
             val requestIgnored = ignoredIds.toSet()
             val requestFilters = if (leaderboardAppId != null) OfferPriceCache.leaderFilters(requestedFilters) else requestedFilters
-            val primaryCacheKey = identity?.let { OfferPriceCache.key(it.appId, requestFilters, requestRules, requestIgnored, requestedPages, comparisonAliases(it.appId, it.aliases)) }
-            val leaderCacheKey = identity?.let { OfferPriceCache.key(it.appId, OfferPriceCache.leaderFilters(requestedFilters), requestRules, requestIgnored, requestedPages, comparisonAliases(it.appId, it.aliases)) }
+            val cacheAliases = identity?.let { comparisonAliases(it.appId, it.aliases) + listOfNotNull(requestedEdition?.let { edition -> "steam-edition:${edition.name}" }) }.orEmpty()
+            val primaryCacheKey = identity?.let { OfferPriceCache.key(it.appId, requestFilters, requestRules, requestIgnored, requestedPages, cacheAliases) }
+            val leaderCacheKey = identity?.takeIf { requestedEdition == null }?.let { OfferPriceCache.key(it.appId, OfferPriceCache.leaderFilters(requestedFilters), requestRules, requestIgnored, requestedPages, comparisonAliases(it.appId, it.aliases)) }
 
             val backgroundLeaderboardSearch = leaderboardAppId != null
             val backgroundSearch = hiddenWishlistSearch || backgroundLeaderboardSearch
@@ -1260,7 +1271,7 @@ class MainActivity : ComponentActivity() {
             if (identity != null) ManualSearchSettings.rememberGame(this@MainActivity, identity)
             if (!backgroundSearch) steamGame = null
 
-            searchCatalog(requestedGame, requestedPages, generation, identity?.appId, identity?.aliases.orEmpty(), { page, _, count ->
+            searchCatalog(requestedGame, requestedPages, generation, identity?.appId, identity?.aliases.orEmpty(), requestedEdition, steamEditions, { page, _, count ->
                 if (generation == searchGeneration) {
                     searchPage = page
                     searchFound = count
@@ -1445,6 +1456,9 @@ class MainActivity : ComponentActivity() {
             OutlinedTextField(query, {
                 query = it
                 selectedGame = null
+                                steamEditions = emptyList()
+                                selectedSteamEdition = null
+                                editionLoading = false
                 gameSuggestions = emptyList()
                 searchGeneration++
                 activeCatalogGeneration.set(searchGeneration)
@@ -1453,13 +1467,47 @@ class MainActivity : ComponentActivity() {
                 steamGame = null
             }, label = { Text("Например, Cyberpunk 2077") },
                 modifier = Modifier.fillMaxWidth(), singleLine = true)
-            if(selectedGame!=null) Text("Выбрано: ${selectedGame!!.name} · Steam #${selectedGame!!.appId}",style=MaterialTheme.typography.bodySmall)
+            if(selectedGame!=null) {
+                Text("Выбрано: ${selectedGame!!.name} · Steam #${selectedGame!!.appId}",style=MaterialTheme.typography.bodySmall)
+                Text("Издания из вариантов покупки Steam. Доступность активации в РФ проверяется отдельно.", style=MaterialTheme.typography.bodySmall)
+                if (editionLoading) Text("Загружаем издания Steam…", style = MaterialTheme.typography.bodySmall)
+                else if (steamEditions.isEmpty()) Text("Steam не вернул список изданий; доступен обычный поиск по названию игры.", style = MaterialTheme.typography.bodySmall)
+                Box {
+                    OutlinedButton(onClick = { editionMenuExpanded = true }, enabled = !editionLoading) {
+                        Text("Издание: ${selectedSteamEdition?.name ?: "Все издания"}")
+                    }
+                    DropdownMenu(expanded = editionMenuExpanded, onDismissRequest = { editionMenuExpanded = false }) {
+                        DropdownMenuItem(text = { Text("Все издания") }, onClick = {
+                            selectedSteamEdition = null
+                            editionMenuExpanded = false
+                        })
+                        steamEditions.forEach { edition ->
+                            DropdownMenuItem(text = { Text(edition.name) }, onClick = {
+                                selectedSteamEdition = edition
+                                editionMenuExpanded = false
+                            })
+                        }
+                    }
+                }
+            }
             if(suggestionBusy) Text("Подбираем названия Steam…",style=MaterialTheme.typography.bodySmall)
             if(gameSuggestions.isNotEmpty() && selectedGame==null) {
                 Text("Уточните игру · название и Steam ID",style=MaterialTheme.typography.titleSmall)
                 gameSuggestions.forEach { candidate ->
                     TextButton(onClick={
                         selectedGame=candidate
+                        selectedSteamEdition=null
+                        steamEditions=emptyList()
+                        editionLoading=true
+                        editionExecutor.execute {
+                            val editions=runCatching { SteamEditionReference.discover(candidate.appId) }.getOrDefault(emptyList())
+                            runOnUiThread {
+                                if (selectedGame?.appId == candidate.appId) {
+                                    steamEditions=editions
+                                    editionLoading=false
+                                }
+                            }
+                        }
                         suggestionGeneration.incrementAndGet()
                         suggestionBusy=false
                         gameSuggestions=emptyList()
@@ -1489,6 +1537,9 @@ class MainActivity : ComponentActivity() {
                                 searching = false
                                 offers = emptyList()
                                 steamGame = null
+                                steamEditions = emptyList()
+                                selectedSteamEdition = null
+                                editionLoading = false
                                 selectedGame=null
                                 query = savedQuery
                             }, modifier = Modifier.weight(1f)) {
@@ -1528,7 +1579,7 @@ class MainActivity : ComponentActivity() {
             Text("Основная игра должна быть явно распознана до показа. Недоступные товары и неподтверждённые цены вариантов скрываются.", style = MaterialTheme.typography.bodySmall)
             Button(onClick = { startCatalogSearch() },
                 enabled = query.isNotBlank() && !searching && !suggestionBusy && manualFilters.valid) {
-                Text(if (searching) "Ищем..." else "Искать")
+                Text(if (searching) "Ищем..." else selectedSteamEdition?.let { "Искать ${it.name}" } ?: "Искать")
             }
             if (searching) {
                 LinearProgressIndicator(progress = { searchPage.toFloat() / searchTotalPages }, modifier = Modifier.fillMaxWidth())
