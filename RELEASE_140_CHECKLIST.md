@@ -5,8 +5,8 @@
 - [x] Отдельный DLC не проходит как издание основной игры.
 - [x] Выбранное издание фильтруется отдельно и сохраняет региональные проверки площадок.
 - [x] Добавлены unit-тесты списка изданий и разделения результатов.
-- [ ] Unit-тесты и Debug APK прошли.
-- [ ] Instrumentation APK собран.
-- [ ] UI-сценарии прошли на Android API 26 и 29.
-- [ ] Live smoke прошёл.
-- [ ] GitHub Release опубликован с APK.
+- [x] Unit-тесты и Debug APK прошли.
+- [x] Instrumentation APK собран.
+- [x] UI-сценарии прошли на Android API 26 и 29.
+- [x] Live smoke Steam editions и GGSEL прошёл.
+- [x] GitHub Release опубликован с APK.
