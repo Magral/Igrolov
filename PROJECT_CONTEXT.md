@@ -4,15 +4,16 @@
 
 ## Проверенный опубликованный статус
 
-- Стабильный релиз: [v1.4.2](https://github.com/Magral/Igrolov/releases/tag/v1.4.2).
-- APK: [Igrolov-1.4.2.apk](https://github.com/Magral/Igrolov/releases/download/v1.4.2/Igrolov-1.4.2.apk).
-- versionName 1.4.2, versionCode 143.
-- Release commit: `e93ed21f7e49c6a5030362b91dca4b5917c7e31f`.
-- Actions [39943583849](https://github.com/Magral/Igrolov/actions/runs/39943583849): unit-тесты, Debug APK, instrumentation APK, live smoke, UI на API 26 и 29, публикация release — успешно.
-- Чек-лист: `RELEASE_142_CHECKLIST.md`.
+- Стабильный релиз: [v1.4.3](https://github.com/Magral/Igrolov/releases/tag/v1.4.3).
+- APK: [Igrolov-1.4.3.apk](https://github.com/Magral/Igrolov/releases/download/v1.4.3/Igrolov-1.4.3.apk).
+- versionName 1.4.3, versionCode 144.
+- Release commit: `0c53dc05d399399b829bef399878193e9d663f64`.
+- Actions [39947282194](https://github.com/Magral/Igrolov/actions/runs/39947282194): unit-тесты, Debug APK, instrumentation APK, live smoke, UI на API 26 и 29, публикация release — успешно.
+- Чек-лист: `RELEASE_143_CHECKLIST.md`.
 
 ## Реализовано
 
+- В 1.4.3 мониторинг показывает отдельные минимумы Plati и GGSEL по подтверждённым предложениям; временный сбой не стирает последнее успешное значение.
 - В 1.4.2 список языков Steam разбирается с учётом английских и русских названий; русская локализация больше не ошибочно помечается как отсутствующая для русскоязычных ответов.
 - В 1.4.1 карточки «Желаемого» и всех подразделов «Лидеров» показывают статус русской локализации и геймпада по данным Steam; неизвестное состояние отмечается отдельно.
 - Общий поиск и мониторинг Plati/GGSEL проверяют основную игру Steam, Gift/Key, РФ, наличие и цену выбранного варианта; аккаунты и DLC отбрасываются.
@@ -57,7 +58,7 @@
 - Этап 1.3.2 опубликован: загрузка миниатюр «Лидеров» и «Желаемого» с резервом, повторами и локальным кэшем. Полный CI и публикация подтверждены Actions run [39863562019](https://github.com/Magral/Igrolov/actions/runs/39863562019).
 - Этап 1.3.3 опубликован: «Лидеры» показывают результаты по мере проверки, загрузка миниатюр переведена на Coil с кэшем и запасным Steam-адресом. Полный CI и релиз подтверждены Actions run [39875736042](https://github.com/Magral/Igrolov/actions/runs/39875736042).
 - Этап 1.3.4 опубликован: исправлена обработка отсутствующих товаров Plati и повторов при HTTP 429 в ценовых проверках. Полный CI и APK подтверждены Actions run [39885988740](https://github.com/Magral/Igrolov/actions/runs/39885988740), release [v1.3.4](https://github.com/Magral/Igrolov/releases/tag/v1.3.4).
-- Затем продолжить улучшать мониторинг параллельно с поиском: сравнение Plati/GGSEL и правила уведомлений по целевой цене.
+- В 1.4.3 опубликовано сравнение минимальных подтверждённых цен Plati и GGSEL прямо в карточке мониторинга. Уведомления по целевой цене уже поддерживаются.
 ## Начало нового чата
 
 Прочитать этот файл, проверить актуальные main, Releases, открытые задачи и исходники. Указанный release commit фиксирует опубликованный APK, а не обязательно текущий HEAD. Не выдавать обсуждённый план за реализованную функцию.

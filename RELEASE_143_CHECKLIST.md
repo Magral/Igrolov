@@ -4,6 +4,6 @@
 - [x] В карточке мониторинга показываются оба значения; отсутствующее значение обозначается прочерком.
 - [x] Ошибки новой проверки не стирают сохранённые последние успешные минимумы.
 - [x] Добавлен unit-тест сравнения минимумов и фильтрации неподтверждённых предложений.
-- [ ] Unit-тесты, APK и instrumentation APK прошли в GitHub Actions.
-- [ ] Live smoke и UI-сценарии Android API 26 и 29 прошли.
-- [ ] GitHub Release опубликован с APK.
+- [x] Unit-тесты, APK и instrumentation APK прошли в GitHub Actions.
+- [x] Live smoke и UI-сценарии Android API 26 и 29 прошли.
+- [x] GitHub Release v1.4.3 опубликован с APK.
