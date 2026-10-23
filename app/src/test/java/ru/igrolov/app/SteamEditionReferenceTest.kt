@@ -28,6 +28,30 @@ class SteamEditionReferenceTest {
         assertFalse(ManualContentRules.matchesSelectedSteamEdition("Kingdom Come: Deliverance II From the Ashes DLC Steam Key РФ", base, "$base Royal Edition"))
     }
 
+    @Test fun selectedSteamEditionMatchesCommonRussianSellerLabels() {
+        val base = "Kingdom Come: Deliverance II"
+        assertTrue(ManualContentRules.matchesSelectedSteamEdition(
+            "Kingdom Come Deliverance II Королевское издание Steam Key РФ", base, "$base Royal Edition"
+        ))
+        assertFalse(ManualContentRules.matchesSelectedSteamEdition(
+            "Kingdom Come Deliverance II Золотое издание Steam Key РФ", base, "$base Royal Edition"
+        ))
+        assertFalse(ManualContentRules.matchesSelectedSteamEdition(
+            "Kingdom Come Deliverance II Королевское издание Steam Key РФ", base, base,
+            listOf("$base Royal Edition")
+        ))
+        assertTrue(ManualContentRules.matchesSelectedSteamEdition(
+            "Kingdom Come Deliverance II Золотое издание Steam Key РФ", base, "$base Gold Edition"
+        ))
+        assertTrue(ManualContentRules.matchesSelectedSteamEdition(
+            "Example Game Расширенное издание Steam Key РФ", "Example Game", "Example Game Deluxe Edition"
+        ))
+        val reference = ManualGameReference.Game(base, appId = 1771300, aliases = listOf("$base Royal Edition"))
+        assertEquals("Игра", ManualContentRules.classify(
+            "Kingdom Come Deliverance II Королевское издание Steam Key РФ", "", reference
+        ))
+    }
+
     @Test fun selectedVerifiedPackageNameConfirmsUnknownEditionSuffixOnlyForThatSearch() {
         val base = "Example Game"
         val royal = "$base Anniversary Edition"
