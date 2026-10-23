@@ -4,23 +4,48 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
+import java.util.concurrent.Callable
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 /** Purchase options exposed for a Steam game, verified to include that game's app ID. */
 object SteamEditionReference {
     data class Edition(val appId: Int, val packageId: Int, val name: String, val searchTitle: String, val isBase: Boolean)
 
+    private const val MAX_PACKAGE_LOOKUPS = 24
+    private const val MAX_PARALLEL_PACKAGE_LOOKUPS = 4
+    private const val LOOKUP_TIMEOUT_SECONDS = 30L
+    private const val CACHE_TTL_MILLIS = 30 * 60 * 1000L
+    private data class CachedEditions(val savedAt: Long, val editions: List<Edition>)
+
+    private val packageLookupExecutor = Executors.newFixedThreadPool(MAX_PARALLEL_PACKAGE_LOOKUPS) { task ->
+        Thread(task, "steam-edition-lookup").apply { isDaemon = true }
+    }
+    private val cache = ConcurrentHashMap<Int, CachedEditions>()
+
     fun discover(appId: Int): List<Edition> {
         require(appId > 0)
-        val app = getJson("https://store.steampowered.com/api/appdetails?appids=$appId&l=english&cc=us")
+        val now = System.currentTimeMillis()
+        cache[appId]?.takeIf { now - it.savedAt < CACHE_TTL_MILLIS }?.let { return it.editions }
+        val editions = discover(appId, ::getJson)
+        if (editions.isNotEmpty()) cache[appId] = CachedEditions(now, editions)
+        return editions
+    }
+
+    /** Injectable, uncached path keeps package lookup behavior deterministic in tests. */
+    internal fun discover(appId: Int, fetchJson: (String) -> JSONObject): List<Edition> {
+        require(appId > 0)
+        val app = fetchJson("https://store.steampowered.com/api/appdetails?appids=$appId&l=english&cc=us")
             .optJSONObject(appId.toString())?.takeIf { it.optBoolean("success") }?.optJSONObject("data")
             ?: return emptyList()
         if (app.optString("type") != "game") return emptyList()
         val canonical = app.optString("name").trim().takeIf { it.isNotBlank() } ?: return emptyList()
-        val packageIds = packageIds(app).take(12)
+        val packageIds = packageIds(app).take(MAX_PACKAGE_LOOKUPS)
         if (packageIds.isEmpty()) return emptyList()
-        val verified = packageIds.mapNotNull { packageId ->
+        val requests = packageIds.map { packageId -> Callable {
             runCatching {
-                val detail = getJson("https://store.steampowered.com/api/packagedetails?packageids=$packageId&cc=us&l=english")
+                val detail = fetchJson("https://store.steampowered.com/api/packagedetails?packageids=$packageId&cc=us&l=english")
                     .optJSONObject(packageId.toString())?.takeIf { it.optBoolean("success") }?.optJSONObject("data")
                     ?: return@runCatching null
                 val apps = detail.optJSONArray("apps") ?: return@runCatching null
@@ -28,6 +53,15 @@ object SteamEditionReference {
                 val name = detail.optString("name").trim().takeIf { it.isNotBlank() } ?: return@runCatching null
                 Edition(appId, packageId, name, name, normalize(name) == normalize(canonical))
             }.getOrNull()
+        } }
+        val futures = try {
+            packageLookupExecutor.invokeAll(requests, LOOKUP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+            return emptyList()
+        }
+        val verified = futures.mapNotNull { future ->
+            if (future.isCancelled) null else runCatching { future.get() }.getOrNull()
         }
         return verified.distinctBy { normalize(it.name) }.sortedWith(compareByDescending<Edition> { it.isBase }.thenBy { it.name.lowercase(Locale.ROOT) })
     }

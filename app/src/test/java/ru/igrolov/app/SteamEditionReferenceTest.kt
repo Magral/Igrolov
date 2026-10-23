@@ -2,6 +2,8 @@ package ru.igrolov.app
 
 import org.junit.Assert.*
 import org.junit.Test
+import org.json.JSONObject
+import java.util.concurrent.atomic.AtomicInteger
 
 class SteamEditionReferenceTest {
     @Test fun discoversOnlyPurchasePackagesContainingSelectedGame() {
@@ -17,6 +19,33 @@ class SteamEditionReferenceTest {
         assertEquals("Kingdom Come: Deliverance II", options.first().name)
         assertEquals("Kingdom Come: Deliverance II Royal Edition", options[1].name)
         assertFalse(options[1].isBase)
+    }
+
+    @Test fun liveDiscoveryLooksUpMoreThanTwelvePackagesInParallel() {
+        val appId = 321
+        val packageIds = (1001..1016).toList()
+        val subs = packageIds.joinToString(",") { id ->
+            "{\"packageid\":$id,\"option_text\":\"Example Game Edition $id\"}"
+        }
+        val appJson = JSONObject("""{"321":{"success":true,"data":{"type":"game","name":"Example Game","package_groups":[{"subs":[$subs]}]}}}""")
+        val active = AtomicInteger()
+        val peak = AtomicInteger()
+        val options = SteamEditionReference.discover(appId) { url ->
+            if ("/api/appdetails?" in url) return@discover appJson
+            val running = active.incrementAndGet()
+            peak.updateAndGet { maxOf(it, running) }
+            try {
+                Thread.sleep(25)
+                val id = Regex("packageids=([0-9]+)").find(url)!!.groupValues[1].toInt()
+                val name = if (id == 1001) "Example Game" else "Example Game Edition $id"
+                JSONObject("""{"$id":{"success":true,"data":{"name":"$name","apps":[{"id":$appId}]}}}""")
+            } finally {
+                active.decrementAndGet()
+            }
+        }
+        assertEquals(packageIds.size, options.size)
+        assertTrue(options.first().isBase)
+        assertTrue("Expected overlapping package requests, peak was ${peak.get()}", peak.get() in 2..4)
     }
 
     @Test fun separateEditionMatcherDoesNotMixBaseRoyalAndDlc() {
