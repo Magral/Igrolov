@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-23T18:02:49.740Z
+- Обновлено (UTC): 2026-10-23T18:05:47.870Z
 - Ветка: `main`.
-- HEAD: [`90ac65a21b5d`](https://github.com/Magral/Igrolov/commit/90ac65a21b5d1ce3fb154fa4c440338cd6b77d23).
+- HEAD: [`cf1c54e043b9`](https://github.com/Magral/Igrolov/commit/cf1c54e043b9425d448b932e64264984b46e8961).
 - Последний опубликованный стабильный GitHub Release: [v1.4.3](https://github.com/Magral/Igrolov/releases/tag/v1.4.3); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [cf1c54e](https://github.com/Magral/Igrolov/commit/cf1c54e043b9425d448b932e64264984b46e8961) — test: correct compact review count expectation
 - [90ac65a](https://github.com/Magral/Igrolov/commit/90ac65a21b5d1ce3fb154fa4c440338cd6b77d23) — test: import review filter assertion
 - [30280e4](https://github.com/Magral/Igrolov/commit/30280e484cf130572b5b928e21feee8680655961) — feat: add review volume to Steam leaders
 - [4088c22](https://github.com/Magral/Igrolov/commit/4088c22efe788f4fdf3f6ba2ff00e83c12e42121) — fix: improve Steam language and controller data accuracy
-- [09494df](https://github.com/Magral/Igrolov/commit/09494df536ed9bf6cf26c8d8a28d55d89da59b8c) — fix: restore complete MainActivity source
 <!-- AUTO_CONTEXT_END -->
