@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-23T19:33:17.248Z
+- Обновлено (UTC): 2026-10-23T20:26:40.025Z
 - Ветка: `main`.
-- HEAD: [`ea8e61319e2b`](https://github.com/Magral/Igrolov/commit/ea8e61319e2ba4c36990a0b5061c1ed3f9a4b25b).
+- HEAD: [`53874f0cb83b`](https://github.com/Magral/Igrolov/commit/53874f0cb83b730e5cb117a5a2a6d7e7e168097e).
 - Последний опубликованный стабильный GitHub Release: [v1.4.3](https://github.com/Magral/Igrolov/releases/tag/v1.4.3); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [53874f0](https://github.com/Magral/Igrolov/commit/53874f0cb83b730e5cb117a5a2a6d7e7e168097e) — ui: add clear borders to product cards
 - [ea8e613](https://github.com/Magral/Igrolov/commit/ea8e61319e2ba4c36990a0b5061c1ed3f9a4b25b) — test: include genre in wishlist filter fixture
 - [d5b06a6](https://github.com/Magral/Igrolov/commit/d5b06a6234bba07387f1d59dfcaa75d45bceef6e) — feat: add Steam genre filters to leaders and wishlist
 - [bde15dc](https://github.com/Magral/Igrolov/commit/bde15dcc79e05407671d18b52d2261c28cd5b6b3) — test: update edition monitoring actions
-- [8ce2162](https://github.com/Magral/Igrolov/commit/8ce2162b93796bd1b3ea28e126e5cbd89793fa38) — fix: complete monitor edition loading
 <!-- AUTO_CONTEXT_END -->
