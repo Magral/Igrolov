@@ -8,4 +8,4 @@
 - [x] Unit-тесты и Debug APK прошли в GitHub Actions.
 - [x] Instrumentation APK собран; UI-сценарии Android API 26 и 29 прошли.
 - [x] Live smoke прошёл.
-- [ ] GitHub Release опубликован с APK.
+- [x] GitHub Release v1.4.1 опубликован с APK.

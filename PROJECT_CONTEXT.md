@@ -4,15 +4,16 @@
 
 ## Проверенный опубликованный статус
 
-- Стабильный релиз: [v1.4.0](https://github.com/Magral/Igrolov/releases/tag/v1.4.0).
-- APK: [Igrolov-1.4.0.apk](https://github.com/Magral/Igrolov/releases/download/v1.4.0/Igrolov-1.4.0.apk).
-- versionName 1.4.0, versionCode 141.
-- Release commit: `c0797ef7fc76ebdc3aa7deec7d2003463193c59d`.
-- Actions [39916128988](https://github.com/Magral/Igrolov/actions/runs/39916128988): unit-тесты, Debug APK, instrumentation APK, live smoke Steam editions/GGSEL, UI на API 26 и 29, публикация release — успешно.
-- Чек-лист: `RELEASE_140_CHECKLIST.md`.
+- Стабильный релиз: [v1.4.1](https://github.com/Magral/Igrolov/releases/tag/v1.4.1).
+- APK: [Igrolov-1.4.1.apk](https://github.com/Magral/Igrolov/releases/download/v1.4.1/Igrolov-1.4.1.apk).
+- versionName 1.4.1, versionCode 142.
+- Release commit: `5273728f697a99bed81b488a37ee0d235da4b49f`.
+- Actions [39935942126](https://github.com/Magral/Igrolov/actions/runs/39935942126): unit-тесты, Debug APK, instrumentation APK, live smoke, UI на API 26 и 29, публикация release — успешно.
+- Чек-лист: `RELEASE_141_CHECKLIST.md`.
 
 ## Реализовано
 
+- В 1.4.1 карточки «Желаемого» и всех подразделов «Лидеров» показывают статус русской локализации и геймпада по данным Steam; неизвестное состояние отмечается отдельно.
 - Общий поиск и мониторинг Plati/GGSEL проверяют основную игру Steam, Gift/Key, РФ, наличие и цену выбранного варианта; аккаунты и DLC отбрасываются.
 - В 1.4.0 после выбора игры показываются Steam-пакеты, состав которых подтверждает наличие выбранной основной игры. Можно искать все издания или выбранное; список изданий не подтверждает регион активации, наличие или цену на площадке.
 - В желаемом Steam есть несколько открытых профилей, ручное обновление, названия игр, цены Steam RU и минимумы Plati/GGSEL.
