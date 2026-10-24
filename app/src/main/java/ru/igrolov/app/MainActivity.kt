@@ -631,6 +631,67 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun DealPriceStrip(
+        steamPrice: String,
+        discountPercent: Int,
+        platiPrice: Double?,
+        ggselPrice: Double?,
+        steamAvailable: Boolean? = null
+    ) {
+        val cheapest = listOfNotNull(platiPrice?.let { "Plati" to it }, ggselPrice?.let { "GGSEL" to it })
+            .minByOrNull { it.second }
+        if (cheapest != null) {
+            Text("Лучшая цена · ${cheapest.first} · ${String.format(Locale("ru", "RU"), "%.0f ₽", cheapest.second)}",
+                style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.tertiary,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            DealPriceCell("Steam RU", if (steamAvailable == false) "Недоступна" else steamPrice.ifBlank { "—" },
+                modifier = Modifier.weight(1f), highlighted = false,
+                note = if (discountPercent > 0) "−$discountPercent% · Steam RU" else "Steam RU")
+            DealPriceCell("Plati", platiPrice?.let { String.format(Locale("ru", "RU"), "%.0f ₽", it) } ?: "—",
+                modifier = Modifier.weight(1f), highlighted = cheapest?.first == "Plati")
+            DealPriceCell("GGSEL", ggselPrice?.let { String.format(Locale("ru", "RU"), "%.0f ₽", it) } ?: "—",
+                modifier = Modifier.weight(1f), highlighted = cheapest?.first == "GGSEL")
+        }
+    }
+
+    @Composable
+    private fun PriceChecksSummary(cached: CachedGamePrices?) {
+        if (cached == null) return
+        val rows = listOf("Plati" to cached.plati, "GGSEL" to cached.ggsel)
+            .filter { (_, source) -> source.hasData }
+            .map { (name, source) ->
+                when {
+                    source.failedAt > source.checkedAt -> "$name: ошибка обновления"
+                    source.checkedAt > 0L -> "$name: проверено " +
+                        java.text.SimpleDateFormat("dd.MM HH:mm", Locale("ru", "RU")).format(java.util.Date(source.checkedAt))
+                    else -> "$name: сохранено ранее"
+                }
+            }
+        if (rows.isNotEmpty()) Text(rows.joinToString(" · "), style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+
+    @Composable
+    private fun DealPriceCell(label: String, price: String, modifier: Modifier, highlighted: Boolean, note: String? = null) {
+        Surface(
+            modifier = modifier,
+            color = if (highlighted) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+            shape = MaterialTheme.shapes.small
+        ) {
+            Column(Modifier.padding(horizontal = 6.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                Text(label, style = MaterialTheme.typography.labelSmall, maxLines = 1,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(price, style = MaterialTheme.typography.labelLarge, maxLines = 1,
+                    overflow = TextOverflow.Ellipsis)
+                if (note != null) Text(note, style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary, maxLines = 1)
+            }
+        }
+    }
+
+    @Composable
     private fun BatchSelectionControls(count: Int, enabled: Boolean, onSelectFive: () -> Unit, onStart: () -> Unit) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -732,28 +793,37 @@ class MainActivity : ComponentActivity() {
                     SteamRuAvailability.UNAVAILABLE -> "Не продаётся в Steam RU"
                     SteamRuAvailability.UNKNOWN -> "Статус Steam RU не удалось определить"
                 }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Steam RU: ${game.steamPrice.ifBlank { "цена не указана" }}" +
-                        if (game.discountPercent > 0) " · −${game.discountPercent}%" else "",
-                        style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                    SteamReviewBadge(game.reviewSummary)
-                }
-                if (game.discountPercent > 0 && game.steamInitialPrice.isNotBlank()) {
-                    Text("Было ${game.steamInitialPrice}", style = MaterialTheme.typography.bodySmall.copy(
-                        textDecoration = TextDecoration.LineThrough), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                CachedPriceLines(cachedPrices)
-                if (marketplacePrices?.checking == true || (cachedPrices == null && !marketplacePrices?.message.isNullOrBlank())) {
-                    Text(marketplacePrices?.message.orEmpty(), style = MaterialTheme.typography.labelSmall)
-                }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(availabilityLabel, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall,
+                DealPriceStrip(
+                    steamPrice = game.steamPrice.ifBlank { "Цена не указана" },
+                    discountPercent = game.discountPercent,
+                    platiPrice = marketplacePrices?.platiMinimum ?: cachedPrices?.plati?.price,
+                    ggselPrice = marketplacePrices?.ggselMinimum ?: cachedPrices?.ggsel?.price,
+                    steamAvailable = when (game.availability) {
+                        SteamRuAvailability.AVAILABLE -> true
+                        SteamRuAvailability.UNAVAILABLE -> false
+                        SteamRuAvailability.UNKNOWN -> null
+                    }
+                )
+                PriceChecksSummary(cachedPrices)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text(availabilityLabel, style = MaterialTheme.typography.labelSmall,
                         color = when (game.availability) {
                             SteamRuAvailability.AVAILABLE -> MaterialTheme.colorScheme.primary
                             SteamRuAvailability.UNAVAILABLE -> MaterialTheme.colorScheme.error
                             SteamRuAvailability.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant
                         })
+                    SteamReviewBadge(game.reviewSummary)
+                }
+                if (game.discountPercent > 0 && game.steamInitialPrice.isNotBlank()) {
+                    Text("Обычная цена Steam RU: ${game.steamInitialPrice}", style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (marketplacePrices?.checking == true || (cachedPrices == null && !marketplacePrices?.message.isNullOrBlank())) {
+                    Text(marketplacePrices?.message.orEmpty(), style = MaterialTheme.typography.labelSmall)
+                }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Spacer(Modifier.weight(1f))
                     OutlinedButton(onClick = onSearchPrice,
                         enabled = searchEnabled && marketplacePrices?.checking != true,
                         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
@@ -2980,7 +3050,7 @@ class MainActivity : ComponentActivity() {
                     SteamGenreLine(game.genres)
                     val searchKey = selectedId?.let { "$it:${game.appId}" }
                     val searchStatus = searchKey?.let { searchStatuses[it] }
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Column(Modifier.width(104.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                             SteamArtwork(
                                 "https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/header.jpg",
@@ -2994,18 +3064,16 @@ class MainActivity : ComponentActivity() {
                                 Text("Подробнее", style = MaterialTheme.typography.labelMedium)
                             }
                         }
-                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                            Text(game.steamPrice.ifBlank { "Нет цены RU" }, style = MaterialTheme.typography.titleSmall)
-                            if (game.discountPercent > 0) {
-                                if (game.steamInitialPrice.isNotBlank()) Text(game.steamInitialPrice,
-                                    style = MaterialTheme.typography.bodySmall.copy(textDecoration = TextDecoration.LineThrough),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("−${game.discountPercent}% · Steam RU", style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.primary)
-                            } else Text("Steam RU", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
                     }
-                    CachedPriceLines(cachedPrices(game), game.lowestPlatiPrice, game.lowestGgselPrice)
+                    val prices = cachedPrices(game)
+                    DealPriceStrip(game.steamPrice, game.discountPercent,
+                        prices?.plati?.price ?: game.lowestPlatiPrice,
+                        prices?.ggsel?.price ?: game.lowestGgselPrice)
+                    PriceChecksSummary(prices)
+                    if (game.discountPercent > 0 && game.steamInitialPrice.isNotBlank()) {
+                        Text("Обычная цена Steam RU: ${game.steamInitialPrice}",
+                            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                     searchStatus?.let { status ->
                         Text(status, style = MaterialTheme.typography.labelSmall, maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
