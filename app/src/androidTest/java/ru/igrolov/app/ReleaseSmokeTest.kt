@@ -2,6 +2,7 @@ package ru.igrolov.app
 
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.semantics.SemanticsActions
 import org.junit.Rule
@@ -68,10 +69,10 @@ class ReleaseSmokeTest {
         compose.onNodeWithText("Мониторинг").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Мониторинг")) })
-        compose.onNodeWithText("⚙").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.onNodeWithContentDescription("Настройки").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Настройки")) })
-        compose.onNodeWithText("×").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.onNodeWithContentDescription("Закрыть настройки").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         compose.onNodeWithText("Поиск").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()

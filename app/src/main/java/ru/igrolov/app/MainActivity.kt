@@ -121,6 +121,12 @@ class MainActivity : ComponentActivity() {
                 background = Color(0xFFF4F6F8),
                 surface = Color(0xFFFFFFFF),
                 surfaceVariant = Color(0xFFEEF1F4),
+                primaryContainer = Color(0xFFFFE2A6),
+                onPrimaryContainer = Color(0xFF35260C),
+                secondaryContainer = Color(0xFFE0F4E9),
+                onSecondaryContainer = Color(0xFF155B35),
+                tertiaryContainer = Color(0xFFE9EDF1),
+                onTertiaryContainer = Color(0xFF344253),
                 outline = Color(0xFFD8DEE5),
                 outlineVariant = Color(0xFFE2E6EB),
                 onSurface = Color(0xFF17212D),
@@ -658,7 +664,7 @@ class MainActivity : ComponentActivity() {
         val cheapest = listOfNotNull(platiPrice?.let { "Plati" to it }, ggselPrice?.let { "GGSEL" to it })
             .filter { it.second.isFinite() && it.second > 0.0 }.minByOrNull { it.second }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Top) {
-            DealPriceCell("Steam RU", if (steamAvailable == false) "Нет в РФ" else steamPrice.ifBlank { "—" },
+            DealPriceCell("Steam RU", if (steamAvailable == false) "Нет в РФ" else steamPrice.replace(" руб.", " ₽").replace(" руб", " ₽").ifBlank { "—" },
                 Modifier.weight(1f), false, if (discountPercent > 0) "−$discountPercent%" else null)
             DealPriceCell("Plati", platiPrice?.let { String.format(Locale("ru", "RU"), "%.0f ₽", it) } ?: "—",
                 Modifier.weight(1f), cheapest?.first == "Plati", if (cheapest?.first == "Plati") "Лучшая цена" else null)
@@ -694,13 +700,13 @@ class MainActivity : ComponentActivity() {
                 verticalArrangement = Arrangement.spacedBy(2.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 if (note == "Лучшая цена") Surface(color = Color(0xFF168F57), shape = MaterialTheme.shapes.small) {
                     Text("ЛУЧШАЯ", Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp), color = Color.White, maxLines = 1)
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.sp), color = Color.White, maxLines = 1)
                 }
-                Text(label, style = MaterialTheme.typography.labelSmall, maxLines = 1, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(price, style = MaterialTheme.typography.titleSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                Text(label, style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp), maxLines = 1, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(price, style = MaterialTheme.typography.titleSmall.copy(fontSize = 11.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (note != null && note != "Лучшая цена") Surface(color = Color(0xFFFFE4AA), shape = MaterialTheme.shapes.small) {
-                    Text(note, Modifier.padding(horizontal = 5.dp, vertical = 1.dp), style = MaterialTheme.typography.labelSmall,
+                    Text(note, Modifier.padding(horizontal = 4.dp, vertical = 1.dp), style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
                         color = Color(0xFF8D5200), maxLines = 1)
                 }
             }
@@ -740,9 +746,9 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun SteamFeatureBadges(features: SteamGameFeatures) {
         val localization = when (features.russianLocalization) {
-            SteamRussianLocalization.SUPPORTED -> "Русский язык"
-            SteamRussianLocalization.NOT_SUPPORTED -> "Без русского"
-            SteamRussianLocalization.UNKNOWN -> "Язык не указан"
+            SteamRussianLocalization.SUPPORTED -> "RU"
+            SteamRussianLocalization.NOT_SUPPORTED -> "Без RU"
+            SteamRussianLocalization.UNKNOWN -> "Язык ?"
         }
         val localizationColor = when (features.russianLocalization) {
             SteamRussianLocalization.SUPPORTED -> MaterialTheme.colorScheme.primaryContainer
@@ -751,9 +757,9 @@ class MainActivity : ComponentActivity() {
         }
         val controller = when (features.controllerSupport) {
             SteamControllerSupport.FULL -> "Геймпад ✓"
-            SteamControllerSupport.PARTIAL -> "Геймпад частично"
+            SteamControllerSupport.PARTIAL -> "Частично"
             SteamControllerSupport.NONE -> "Без геймпада"
-            SteamControllerSupport.UNKNOWN -> "Геймпад не указан"
+            SteamControllerSupport.UNKNOWN -> "Геймпад ?"
         }
         val controllerColor = when (features.controllerSupport) {
             SteamControllerSupport.FULL -> MaterialTheme.colorScheme.primaryContainer
@@ -2473,36 +2479,18 @@ class MainActivity : ComponentActivity() {
                 }
                 if (topBusy) LinearProgressIndicator(Modifier.fillMaxWidth())
                 if (topError.isNotBlank()) Text(topError, color = MaterialTheme.colorScheme.error)
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    SteamLeaderSection.values().toList().chunked(2).forEach { row ->
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            row.forEach { section ->
-                                FilterChip(
-                                    selected = leaderSection == section,
-                                    onClick = {
-                                        catalogueUi.selectedLeaderIds = emptySet()
-                                        leaderSection = section
-                                        topError = ""
-                                    },
-                                    label = { Text(section.label, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            if (row.size == 1) Spacer(Modifier.weight(1f))
-                        }
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SteamLeaderSection.values().forEach { section ->
+                        FilterChip(selected = leaderSection == section,
+                            onClick = { catalogueUi.selectedLeaderIds = emptySet(); leaderSection = section; topError = "" },
+                            label = { Text(section.label, maxLines = 1, style = MaterialTheme.typography.labelSmall) })
                     }
-                    listOf("Все игры", "Доступны в Steam RU", "Недоступны в Steam RU").chunked(2).forEach { row ->
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            row.forEach { filter ->
-                                FilterChip(
-                                    selected = topAvailabilityFilter == filter,
-                                    onClick = { catalogueUi.selectedLeaderIds = emptySet(); topAvailabilityFilter = filter },
-                                    label = { Text(filter, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            if (row.size == 1) Spacer(Modifier.weight(1f))
-                        }
+                }
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("Все игры", "Доступны в Steam RU", "Недоступны в Steam RU").forEach { filter ->
+                        FilterChip(selected = topAvailabilityFilter == filter,
+                            onClick = { catalogueUi.selectedLeaderIds = emptySet(); topAvailabilityFilter = filter },
+                            label = { Text(filter, maxLines = 1, style = MaterialTheme.typography.labelSmall) })
                     }
                 }
                 val sectionGames = remember(leaderSection, newReleaseGames, topGames, discountedExtraGames) {
