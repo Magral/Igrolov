@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-24T08:25:27.711Z
+- Обновлено (UTC): 2026-10-24T08:41:54.477Z
 - Ветка: `main`.
-- HEAD: [`ab692f964e41`](https://github.com/Magral/Igrolov/commit/ab692f964e41a833abddf4f70eeb3f514f327bc4).
+- HEAD: [`5b763808e08d`](https://github.com/Magral/Igrolov/commit/5b763808e08d4b5267cc36906eb72db63c1e1633).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [5b76380](https://github.com/Magral/Igrolov/commit/5b763808e08d4b5267cc36906eb72db63c1e1633) — ui: compact tracked product cards
 - [ab692f9](https://github.com/Magral/Igrolov/commit/ab692f964e41a833abddf4f70eeb3f514f327bc4) — perf: defer Steam artwork requests offscreen
 - [7dd13fd](https://github.com/Magral/Igrolov/commit/7dd13fd4accf490ea0a529018e84e94d81a94e10) — feat: show verified price trend in monitor cards
 - [09debc2](https://github.com/Magral/Igrolov/commit/09debc269e6915d57a0247dbfba9108392486c6b) — ui: tighten Steam leader cards
-- [e971080](https://github.com/Magral/Igrolov/commit/e971080ffce569658a33bda7535088e29805a584) — test: reveal wishlist card actions before checking
 <!-- AUTO_CONTEXT_END -->
