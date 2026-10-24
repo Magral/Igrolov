@@ -92,6 +92,8 @@ class TrackedTransferUiRegressionTest {
         device.findObject(By.text("Отслеживать")).click()
         device.findObject(By.text("Товары")).click()
         assertTrue(device.wait(Until.hasObject(By.text("4914,00 ₽")),10000))
+        assertTrue(device.hasObject(By.text("Открыть")))
+        assertTrue(device.hasObject(By.text("Удалить")))
         assertEquals("Stellaris",cached("123456").canonical);assertEquals(281990,cached("123456").steamAppId)
         val roomDeadline=android.os.SystemClock.uptimeMillis()+10000
         while(cachedFromRoom("123456").price!=4914.0 && android.os.SystemClock.uptimeMillis()<roomDeadline)Thread.sleep(100)

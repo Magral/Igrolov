@@ -1789,18 +1789,25 @@ class MainActivity : ComponentActivity() {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 sortedTrackedItems.take(trackedVisibleLimit).forEach { item ->
                     OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
-                        Column(Modifier.padding(12.dp)) {
-                            Text(item.name, style = MaterialTheme.typography.titleMedium)
-                            Text("${item.marketplace} · ID ${item.id} · ${item.status}", style = MaterialTheme.typography.bodySmall)
-                            Text(item.price?.let { String.format(Locale("ru", "RU"), "%.2f ₽", it) } ?: "Цена недоступна", style = MaterialTheme.typography.titleLarge)
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                TextButton(onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.url))) }) { Text("Открыть ${item.marketplace}") }
-                                TextButton(onClick = {
-                                    items = items.filterNot { it.storageKey == item.storageKey }
-                                    saveIds(items.map { it.storageKey })
-                                    prefs.edit().remove("product_cache_${item.storageKey}").remove("product_cache_${item.id}").apply()
-                                    ioExecutor.execute { MonitorRoomStore.writeTrackedProduct(this@MainActivity,item.storageKey,null) }
-                                }) { Text("Удалить") }
+                        Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(item.name, style = MaterialTheme.typography.titleSmall,
+                                maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text("${item.marketplace} · ${item.status}", style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically) {
+                                Text(item.price?.let { String.format(Locale("ru", "RU"), "%.2f ₽", it) } ?: "Цена недоступна",
+                                    style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    OutlinedButton(onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.url))) },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) { Text("Открыть") }
+                                    OutlinedButton(onClick = {
+                                        items = items.filterNot { it.storageKey == item.storageKey }
+                                        saveIds(items.map { it.storageKey })
+                                        prefs.edit().remove("product_cache_${item.storageKey}").remove("product_cache_${item.id}").apply()
+                                        ioExecutor.execute { MonitorRoomStore.writeTrackedProduct(this@MainActivity,item.storageKey,null) }
+                                    }, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) { Text("Удалить") }
+                                }
                             }
                         }
                     }
