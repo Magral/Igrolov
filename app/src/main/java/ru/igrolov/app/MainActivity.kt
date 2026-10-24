@@ -648,7 +648,7 @@ class MainActivity : ComponentActivity() {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             DealPriceCell("Steam RU", if (steamAvailable == false) "Недоступна" else steamPrice.ifBlank { "—" },
                 modifier = Modifier.weight(1f), highlighted = false,
-                note = if (discountPercent > 0) "−$discountPercent% · Steam RU" else "Steam RU")
+                note = if (discountPercent > 0) "−$discountPercent%" else null)
             DealPriceCell("Plati", platiPrice?.let { String.format(Locale("ru", "RU"), "%.0f ₽", it) } ?: "—",
                 modifier = Modifier.weight(1f), highlighted = cheapest?.first == "Plati")
             DealPriceCell("GGSEL", ggselPrice?.let { String.format(Locale("ru", "RU"), "%.0f ₽", it) } ?: "—",
