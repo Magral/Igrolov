@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-24T00:31:14.777Z
+- Обновлено (UTC): 2026-10-24T00:38:36.244Z
 - Ветка: `main`.
-- HEAD: [`0163bc298667`](https://github.com/Magral/Igrolov/commit/0163bc29866713901f5e21757736fc3fb93442d4).
+- HEAD: [`c74c57ee8f89`](https://github.com/Magral/Igrolov/commit/c74c57ee8f899c130d2945bd161f185178329348).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [c74c57e](https://github.com/Magral/Igrolov/commit/c74c57ee8f899c130d2945bd161f185178329348) — perf: render long lists in incremental batches
 - [0163bc2](https://github.com/Magral/Igrolov/commit/0163bc29866713901f5e21757736fc3fb93442d4) — fix: size nested lazy lists for scrolling
 - [cd3cfda](https://github.com/Magral/Igrolov/commit/cd3cfda553505c905565ff26f31cbf9b306330a6) — perf: virtualize long product and game lists
 - [05e12ce](https://github.com/Magral/Igrolov/commit/05e12ced7dd7f7a1e105c41abf88f432183108e5) — fix: handle cancelled wishlist genre backfill
-- [595aca5](https://github.com/Magral/Igrolov/commit/595aca5a3c1b6a117f943cfe45bf73955f6d3b15) — perf: cache wishlist and leader filter results
 <!-- AUTO_CONTEXT_END -->
