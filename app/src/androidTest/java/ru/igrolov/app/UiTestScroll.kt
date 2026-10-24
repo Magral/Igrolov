@@ -2,12 +2,12 @@ package ru.igrolov.app
 
 import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.junit4.ComposeTestRule
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performScrollTo
 
 object UiTestScroll {
     fun reveal(compose: ComposeTestRule, text: String, contains: Boolean = false) {
-        compose.onNodeWithText(text, substring = contains).performScrollTo()
+        compose.onAllNodesWithText(text, substring = contains).onFirst().performScrollTo()
         compose.waitForIdle()
     }
 
