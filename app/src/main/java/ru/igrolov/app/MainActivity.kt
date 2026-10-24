@@ -690,15 +690,15 @@ class MainActivity : ComponentActivity() {
         cachedPrices: CachedGamePrices?, selected: Boolean, selectionEnabled: Boolean, onToggle: () -> Unit
     ) {
         OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 3.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    SteamArtwork(game.headerImageUrl, Modifier.size(88.dp, 50.dp), appId = game.appId)
+                    SteamArtwork(game.headerImageUrl, Modifier.size(80.dp, 45.dp), appId = game.appId)
                     TextButton(onClick = onOpenSearch, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)) {
                         Text("${index + 1}. ${game.title}", modifier = Modifier.fillMaxWidth(), maxLines = 2)
                     }
-                    TextButton(onClick = onDetails,
-                        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp)) {
-                        Text("Подробнее", style = MaterialTheme.typography.labelSmall)
+                    OutlinedButton(onClick = onDetails,
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                        Text("Подробнее", style = MaterialTheme.typography.labelSmall, maxLines = 1)
                     }
                 }
                 SteamFeatureBadges(game.features)
@@ -730,14 +730,14 @@ class MainActivity : ComponentActivity() {
                             SteamRuAvailability.UNAVAILABLE -> MaterialTheme.colorScheme.error
                             SteamRuAvailability.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant
                         })
-                    TextButton(onClick = onSearchPrice,
+                    OutlinedButton(onClick = onSearchPrice,
                         enabled = searchEnabled && marketplacePrices?.checking != true,
                         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
                         Text(when {
                             marketplacePrices?.checking == true -> "Проверяем…"
                             cachedPrices != null -> "Обновить Plati/GGSEL"
                             else -> "Проверить Plati/GGSEL"
-                        })
+                        }, style = MaterialTheme.typography.labelSmall, maxLines = 1)
                     }
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
