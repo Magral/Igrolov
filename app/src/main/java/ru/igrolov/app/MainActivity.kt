@@ -3046,8 +3046,6 @@ class MainActivity : ComponentActivity() {
                             maxLines = 2
                         )
                     }
-                    SteamFeatureBadges(game.features)
-                    SteamGenreLine(game.genres)
                     val searchKey = selectedId?.let { "$it:${game.appId}" }
                     val searchStatus = searchKey?.let { searchStatuses[it] }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -3063,6 +3061,10 @@ class MainActivity : ComponentActivity() {
                             ) {
                                 Text("Подробнее", style = MaterialTheme.typography.labelMedium)
                             }
+                        }
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            SteamFeatureBadges(game.features)
+                            SteamGenreLine(game.genres)
                         }
                     }
                     val prices = cachedPrices(game)
