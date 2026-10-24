@@ -2879,12 +2879,12 @@ class MainActivity : ComponentActivity() {
             selectionEnabled && searchEnabled && !filterInput.hasInvalidInput, onSelectFive, onCheckSelected)
         visibleGames.take(visibleLimit).forEach { game ->
             OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
-                Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     TextButton(
                         onClick = { onOpenSearch(game) },
                         enabled = game.title.isNotBlank() && searchEnabled,
                         modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(horizontal = 0.dp, vertical = 2.dp)
+                        contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)
                     ) {
                         Text(
                             game.title.ifBlank { "Название игры не получено" },
@@ -2895,11 +2895,13 @@ class MainActivity : ComponentActivity() {
                     }
                     SteamFeatureBadges(game.features)
                     SteamGenreLine(game.genres)
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Column(Modifier.width(116.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    val searchKey = selectedId?.let { "$it:${game.appId}" }
+                    val searchStatus = searchKey?.let { searchStatuses[it] }
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(Modifier.width(104.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                             SteamArtwork(
                                 "https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/header.jpg",
-                                Modifier.size(112.dp, 63.dp),
+                                Modifier.size(96.dp, 54.dp),
                                 appId = game.appId
                             )
                             TextButton(
@@ -2918,29 +2920,35 @@ class MainActivity : ComponentActivity() {
                                 Text("−${game.discountPercent}% · Steam RU", style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.primary)
                             } else Text("Steam RU", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            val searchKey = selectedId?.let { "$it:${game.appId}" }
-                            searchKey?.let { searchStatuses[it] }?.let { status ->
-                                Text(status, style = MaterialTheme.typography.labelSmall,
-                                    color = if (status.startsWith("Ошибка")) MaterialTheme.colorScheme.error
-                                    else MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            TextButton(onClick = { onSearchPrice(game) },
-                                enabled = searchEnabled && searchKey != null && searchKey !in searchingKeys,
-                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
-                                Text(if (searchKey != null && searchKey in searchingKeys) "Ищем…" else "Искать")
-                            }
-                            OutlinedButton(onClick = { onMonitor(game) }, enabled = game.appId > 0,
-                                contentPadding = PaddingValues(horizontal = 7.dp, vertical = 0.dp)) {
-                                Text(if (isMonitored(game)) "Ещё издание" else "В мониторинг",
-                                    style = MaterialTheme.typography.labelSmall)
-                            }
                         }
                     }
                     CachedPriceLines(cachedPrices(game), game.lowestPlatiPrice, game.lowestGgselPrice)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(game.appId in selectedIds, { onToggleSelection(game) },
-                            enabled = selectionEnabled, modifier = Modifier.size(32.dp))
-                        Text("Выбрать", style = MaterialTheme.typography.labelSmall)
+                    searchStatus?.let { status ->
+                        Text(status, style = MaterialTheme.typography.labelSmall, maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = if (status.startsWith("Ошибка")) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        OutlinedButton(onClick = { onSearchPrice(game) },
+                            enabled = searchEnabled && searchKey != null && searchKey !in searchingKeys,
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                            Text(if (searchKey != null && searchKey in searchingKeys) "Ищем…" else "Искать",
+                                style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                        }
+                        OutlinedButton(onClick = { onMonitor(game) }, enabled = game.appId > 0,
+                            modifier = Modifier.weight(1.2f),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                            Text(if (isMonitored(game)) "Ещё издание" else "В мониторинг",
+                                style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(game.appId in selectedIds, { onToggleSelection(game) },
+                                enabled = selectionEnabled, modifier = Modifier.size(32.dp))
+                            Text("Выбрать", style = MaterialTheme.typography.labelSmall)
+                        }
                     }
                 }
             }
