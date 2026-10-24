@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-24T08:41:54.477Z
+- Обновлено (UTC): 2026-10-24T11:29:53.536Z
 - Ветка: `main`.
-- HEAD: [`5b763808e08d`](https://github.com/Magral/Igrolov/commit/5b763808e08d4b5267cc36906eb72db63c1e1633).
+- HEAD: [`f59e513fdbe0`](https://github.com/Magral/Igrolov/commit/f59e513fdbe001db625741c70165d418ca0a3287).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [f59e513](https://github.com/Magral/Igrolov/commit/f59e513fdbe001db625741c70165d418ca0a3287) — ui: compact monitoring cards
 - [5b76380](https://github.com/Magral/Igrolov/commit/5b763808e08d4b5267cc36906eb72db63c1e1633) — ui: compact tracked product cards
 - [ab692f9](https://github.com/Magral/Igrolov/commit/ab692f964e41a833abddf4f70eeb3f514f327bc4) — perf: defer Steam artwork requests offscreen
 - [7dd13fd](https://github.com/Magral/Igrolov/commit/7dd13fd4accf490ea0a529018e84e94d81a94e10) — feat: show verified price trend in monitor cards
-- [09debc2](https://github.com/Magral/Igrolov/commit/09debc269e6915d57a0247dbfba9108392486c6b) — ui: tighten Steam leader cards
 <!-- AUTO_CONTEXT_END -->
