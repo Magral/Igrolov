@@ -139,6 +139,9 @@ class ReleaseSmokeTest {
         assertTrue(device.hasObject(By.text("900 руб.")))
         assertTrue(device.hasObject(By.text("−50% · Steam RU")))
         assertTrue(device.hasObject(By.textContains("Plati от 750 ₽")))
+        if (!device.hasObject(By.text("Искать"))) {
+            UiTestScroll.reveal(compose, "Искать")
+        }
         assertTrue(device.hasObject(By.text("Искать")))
         assertFalse(device.hasObject(By.text("Искать Plati")))
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"wishlist.png"))
