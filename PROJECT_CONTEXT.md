@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-24T15:24:55.995Z
+- Обновлено (UTC): 2026-10-24T15:34:19.560Z
 - Ветка: `main`.
-- HEAD: [`009a29b8b387`](https://github.com/Magral/Igrolov/commit/009a29b8b387e5c53cf0208cb164bd484603057a).
+- HEAD: [`8685ffbfbd69`](https://github.com/Magral/Igrolov/commit/8685ffbfbd69707bda5da5139133ea2f9d066819).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [8685ffb](https://github.com/Magral/Igrolov/commit/8685ffbfbd69707bda5da5139133ea2f9d066819) — ui: align wishlist features with cover
 - [009a29b](https://github.com/Magral/Igrolov/commit/009a29b8b387e5c53cf0208cb164bd484603057a) — ui: compact wishlist game cards
 - [5b32c2f](https://github.com/Magral/Igrolov/commit/5b32c2fc8f10188571c8883c2021c592befa4954) — test: assert discount through compose semantics
 - [1553137](https://github.com/Magral/Igrolov/commit/15531375c07f56b7e7bf034c410978bd781324a9) — test: keep wishlist profile state in UI smoke
-- [a7c3fcc](https://github.com/Magral/Igrolov/commit/a7c3fcc3cfad164fc6551b0f929d8713b8ea17c8) — test: scroll to discount indicator
 <!-- AUTO_CONTEXT_END -->
