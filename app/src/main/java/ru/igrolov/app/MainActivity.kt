@@ -1947,10 +1947,23 @@ class MainActivity : ComponentActivity() {
                         val failedAt = w.optLong("failedAt", 0L)
                         val monitorDate = java.text.SimpleDateFormat("dd.MM HH:mm", Locale("ru", "RU"))
                         var diagnosticsExpanded by remember(w.optString("name")) { mutableStateOf(false) }
+                        var resultsExpanded by remember(w.optString("name")) { mutableStateOf(false) }
+                        val bestOffers = w.optJSONArray("topOffers") ?: JSONArray()
                         if (checkedAt > 0L) Text("Проверено ${monitorDate.format(java.util.Date(checkedAt))}",
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        TextButton(onClick = { diagnosticsExpanded = !diagnosticsExpanded }) {
-                            Text(if (diagnosticsExpanded) "Скрыть детали проверки" else "Детали проверки")
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            OutlinedButton(onClick = { diagnosticsExpanded = !diagnosticsExpanded },
+                                modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                                Text(if (diagnosticsExpanded) "Скрыть детали проверки" else "Детали проверки",
+                                    maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, fontSize = 11.sp)
+                            }
+                            OutlinedButton(onClick = { resultsExpanded = !resultsExpanded },
+                                modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                                Text(if (resultsExpanded) "Скрыть цены" else "3 лучшие цены (${bestOffers.length()})",
+                                    maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, fontSize = 11.sp)
+                            }
                         }
                         if (diagnosticsExpanded) {
                             val expectedCheck = MonitorSchedule.expectedNextCheck(checkedAt, failedAt)
@@ -1988,11 +2001,6 @@ class MainActivity : ComponentActivity() {
                         }
                         if (w.has("error")) Text("Ошибка проверки: ${w.optString("error")}. Показаны предыдущие данные.", style = MaterialTheme.typography.bodySmall)
                         if(w.has("notificationError"))Text(w.optString("notificationError"),style=MaterialTheme.typography.bodySmall)
-                        var resultsExpanded by remember(w.optString("name")) { mutableStateOf(false) }
-                        val bestOffers = w.optJSONArray("topOffers") ?: JSONArray()
-                        TextButton(onClick = { resultsExpanded = !resultsExpanded }) {
-                            Text(if (resultsExpanded) "Скрыть предложения" else "Три минимальные цены (${bestOffers.length()})")
-                        }
                         if (resultsExpanded) {
                             if (bestOffers.length() == 0) {
                                 Text("Пока нет результатов. Нажмите «Проверить сейчас».", style = MaterialTheme.typography.bodySmall)
@@ -2047,7 +2055,19 @@ class MainActivity : ComponentActivity() {
                         }
                         val history=WatchHistory.points(w.optJSONArray("history") ?: JSONArray())
                         var historyExpanded by remember(w.optString("name")) {mutableStateOf(false)}
-                        TextButton(onClick={historyExpanded=!historyExpanded}) {Text(if(historyExpanded) "Скрыть историю цен" else "История цен (${history.size})")}
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            OutlinedButton(onClick={historyExpanded=!historyExpanded},
+                                modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                                Text(if(historyExpanded) "Скрыть историю" else "История цен (${history.size})",
+                                    maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, fontSize = 11.sp)
+                            }
+                            OutlinedButton(onClick = { ioExecutor.execute { WatchStore.remove(this@MainActivity, wi); runOnUiThread { reloadWatches() } } },
+                                modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                                Text("Убрать игру", maxLines = 1, softWrap = false, fontSize = 11.sp)
+                            }
+                        }
                         if(historyExpanded) {
                             val prices=history.mapNotNull {it.price}
                             if(history.isEmpty())Text("История появится после первой успешной проверки.",style=MaterialTheme.typography.bodySmall)
@@ -2063,7 +2083,6 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         }
-                        TextButton(onClick = { ioExecutor.execute { WatchStore.remove(this@MainActivity, wi); runOnUiThread { reloadWatches() } } }) { Text("Удалить отслеживание") }
                     }
                 }
             }

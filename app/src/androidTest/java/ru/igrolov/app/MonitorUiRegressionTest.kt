@@ -65,14 +65,14 @@ class MonitorUiRegressionTest {
         device.takeScreenshot(File(context.getExternalFilesDir(null),"monitor-compact.png"))
         device.findObject(By.text("Детали проверки")).click()
         assertTrue(scroll.scrollIntoView(UiSelector().text("Источники · Plati: 0 · GGSEL: 1")))
-        assertTrue(scroll.scrollIntoView(UiSelector().text("Три минимальные цены (1)")))
+        assertTrue(scroll.scrollIntoView(UiSelector().text("3 лучшие цены (1)")))
         assertTrue(scroll.scrollIntoView(UiSelector().textStartsWith("Следующая проверка")) ||
             scroll.scrollIntoView(UiSelector().textStartsWith("Проверка будет повторена автоматически")))
-        device.findObject(By.text("Три минимальные цены (1)")).click()
+        device.findObject(By.text("3 лучшие цены (1)")).click()
         assertTrue(scroll.scrollIntoView(UiSelector().text("Открыть на GGSEL")))
         assertTrue(device.hasObject(By.text("Отслеживать товар")))
-        assertTrue(scroll.scrollIntoView(UiSelector().text("Скрыть предложения")))
-        device.findObject(By.text("Скрыть предложения")).click()
+        assertTrue(scroll.scrollIntoView(UiSelector().text("Скрыть цены")))
+        device.findObject(By.text("Скрыть цены")).click()
         assertTrue(scroll.scrollIntoView(UiSelector().textStartsWith("История цен (")))
         if(!WatchStore.read(context).getJSONObject(0).has("eligibleCount")) {
             assertFalse("Old records without counters must not be labelled as an empty marketplace",device.hasObject(By.text("Подходящих предложений нет — это не ошибка сети.")))
