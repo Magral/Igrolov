@@ -3048,7 +3048,7 @@ class MainActivity : ComponentActivity() {
                     }
                     val searchKey = selectedId?.let { "$it:${game.appId}" }
                     val searchStatus = searchKey?.let { searchStatuses[it] }
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Column(Modifier.width(104.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                             SteamArtwork(
                                 "https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/header.jpg",
