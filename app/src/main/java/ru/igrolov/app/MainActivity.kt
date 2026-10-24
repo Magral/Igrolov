@@ -30,9 +30,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items as lazyItems
-import androidx.compose.foundation.lazy.itemsIndexed as lazyItemsIndexed
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -57,9 +54,6 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 
 data class Offer(val id: String, val name: String, val price: Double, val type: String, val rfStatus: String, val edition: String, val categoryLabel: String = "", val detailsChecked: Boolean = false, val variablePrice: Boolean = false, val available: Boolean? = null, val priceVerified: Boolean = false, val purchaseNote: String = "", val canonical:String="", val steamAppId:Int=0, val marketplace:String="Plati", val productUrl:String="")
-
-private val embeddedListMinHeight = 420.dp
-private val embeddedListMaxHeight = 560.dp
 
 data class Tracked(val id: String, val name: String, val price: Double?, val status: String, val url: String, val canonical:String="", val steamAppId:Int=0, val marketplace:String="Plati") { val storageKey:String get() = "$marketplace:$id" }
 
@@ -877,7 +871,7 @@ class MainActivity : ComponentActivity() {
         var wishlistGenresLoading by mutableStateOf(false)
         var wishlistMessage by mutableStateOf("")
         var wishlistImportedAt by mutableLongStateOf(prefs.getLong("wishlist_imported_at", 0L))
-        var wishlistVisibleLimit by mutableIntStateOf(50)
+        var wishlistVisibleLimit by mutableIntStateOf(30)
         var wishlistSearchingKeys by mutableStateOf<Set<String>>(emptySet())
         var wishlistSearchStatuses by mutableStateOf<Map<String, String>>(emptyMap())
         var priceCache by mutableStateOf(OfferPriceCacheStore.readAll(context))
@@ -973,6 +967,7 @@ class MainActivity : ComponentActivity() {
             }
         }
         var items by remember { mutableStateOf(loadIds().map { cachedTrackedFromPreferences(it) }) }
+        var trackedVisibleLimit by remember { mutableIntStateOf(30) }
         var message by remember { mutableStateOf("Вставьте ссылку на товар Plati или его ID") }
         var busy by remember { mutableStateOf(false) }
         var watchGame by remember { mutableStateOf("") }
@@ -1155,6 +1150,7 @@ class MainActivity : ComponentActivity() {
         var topBusy by remember { mutableStateOf(false) }
         var topError by remember { mutableStateOf("") }
         var topAvailabilityFilter by remember { mutableStateOf("Все игры") }
+        var leaderVisibleLimit by remember { mutableIntStateOf(20) }
         var leaderFilterInput by remember { mutableStateOf(SteamLeaderFilterInput()) }
         var wishlistFilterInput by remember { mutableStateOf(SteamLeaderFilterInput()) }
         var wishlistGenreBackfillAttempt by remember { mutableStateOf("") }
@@ -1296,7 +1292,7 @@ class MainActivity : ComponentActivity() {
                             .putString("wishlist_selected_profile", snapshot.steamId64)
                             .putLong("wishlist_imported_at", timestamp).apply()
                         catalogueUi.wishlistGames = games
-                        catalogueUi.wishlistVisibleLimit = 50
+                        catalogueUi.wishlistVisibleLimit = 30
                         catalogueUi.wishlistImportedAt = timestamp
                         catalogueUi.wishlistBusy = false
                         catalogueUi.wishlistMessage = if (games.isEmpty()) "В открытом списке пока нет игр."
@@ -1767,11 +1763,9 @@ class MainActivity : ComponentActivity() {
             Text(message, style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(10.dp))
             Text("Отслеживаемые товары: ${items.size}", style = MaterialTheme.typography.titleMedium)
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth().heightIn(min = embeddedListMinHeight, max = embeddedListMaxHeight),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                lazyItems(items.sortedBy { it.price ?: Double.MAX_VALUE }, key = { it.storageKey }) { item ->
+            val sortedTrackedItems = remember(items) { items.sortedBy { it.price ?: Double.MAX_VALUE } }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                sortedTrackedItems.take(trackedVisibleLimit).forEach { item ->
                     OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
                         Column(Modifier.padding(12.dp)) {
                             Text(item.name, style = MaterialTheme.typography.titleMedium)
@@ -1788,6 +1782,11 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
+                }
+            }
+            if (sortedTrackedItems.size > trackedVisibleLimit) {
+                OutlinedButton(onClick = { trackedVisibleLimit += 30 }, modifier = Modifier.fillMaxWidth()) {
+                    Text("Показать ещё · ${minOf(trackedVisibleLimit, sortedTrackedItems.size)} из ${sortedTrackedItems.size}")
                 }
             }
             } // конец вкладки товаров
@@ -2086,11 +2085,8 @@ class MainActivity : ComponentActivity() {
                 }
                 Text("Предложения по цене ↑ · $visibleCount", style = MaterialTheme.typography.titleMedium)
                 if (visibleCount == 0) Text("По выбранным фильтрам предложений нет. Уточните название или проверьте регион в заголовках.", style = MaterialTheme.typography.bodySmall)
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth().heightIn(min = embeddedListMinHeight, max = embeddedListMaxHeight),
-                    verticalArrangement = Arrangement.spacedBy(5.dp)
-                ) {
-                    lazyItems(filteredOffers.take(visibleOfferLimit), key = { "${it.marketplace}:${it.id}" }) { offer ->
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    filteredOffers.take(visibleOfferLimit).forEach { offer ->
                         OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
                             Column(Modifier.padding(horizontal = 9.dp, vertical = 7.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(offer.marketplace, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
@@ -2151,10 +2147,10 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
-                }
-                if (visibleCount > visibleOfferLimit) {
-                    OutlinedButton(onClick = { visibleOfferLimit += 30 }, modifier = Modifier.fillMaxWidth()) {
-                        Text("Показать ещё 30 · отображено ${minOf(visibleOfferLimit, visibleCount)} из $visibleCount")
+                    if (visibleCount > visibleOfferLimit) {
+                        OutlinedButton(onClick = { visibleOfferLimit += 30 }, modifier = Modifier.fillMaxWidth()) {
+                            Text("Показать ещё 30 · отображено ${minOf(visibleOfferLimit, visibleCount)} из $visibleCount")
+                        }
                     }
                 }
             }
@@ -2181,7 +2177,7 @@ class MainActivity : ComponentActivity() {
                         catalogueUi.wishlistProfile = ""
                         catalogueUi.wishlistGames = profile.games
                         catalogueUi.wishlistImportedAt = profile.importedAt
-                        catalogueUi.wishlistVisibleLimit = 50
+                        catalogueUi.wishlistVisibleLimit = 30
                         catalogueUi.wishlistMessage = "Выбран профиль «${profile.displayName}»."
                         prefs.edit().putString("wishlist_selected_profile", profile.steamId64)
                             .putString("wishlist_profile", profile.input)
@@ -2252,7 +2248,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     },
-                    onShowMore = { catalogueUi.wishlistVisibleLimit += 50 }
+                    onShowMore = { catalogueUi.wishlistVisibleLimit += 30 }
                 )
             }
             }
@@ -2338,6 +2334,12 @@ class MainActivity : ComponentActivity() {
                 val visibleTopGames = remember(availabilityFilteredGames, leaderFilterInput) {
                     SteamLeaderFilter.apply(availabilityFilteredGames, leaderFilterInput.toFilters())
                 }
+                LaunchedEffect(leaderSection, leaderFilterInput, topAvailabilityFilter) {
+                    leaderVisibleLimit = 20
+                }
+                val displayedTopGames = remember(visibleTopGames, leaderVisibleLimit) {
+                    visibleTopGames.take(leaderVisibleLimit)
+                }
                 val leaderHasMore = when (leaderSection) {
                     SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseHasMore
                     SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedHasMore
@@ -2382,16 +2384,12 @@ class MainActivity : ComponentActivity() {
                     SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedHasMore
                     SteamLeaderSection.TOP_SELLERS -> false
                 }
-                BatchSelectionControls(visibleTopGames.count { it.appId in catalogueUi.selectedLeaderIds },
+                BatchSelectionControls(displayedTopGames.count { it.appId in catalogueUi.selectedLeaderIds },
                     enabled = !searching && !catalogueUi.priceBatch.running && manualFilters.valid && !leaderFilterInput.hasInvalidInput,
-                    onSelectFive = { catalogueUi.selectedLeaderIds = visibleTopGames.take(5).map { it.appId }.toSet() },
-                    onStart = { catalogueUi.priceBatch = PriceCheckBatch.start(visibleTopGames.filter { it.appId in catalogueUi.selectedLeaderIds }
+                    onSelectFive = { catalogueUi.selectedLeaderIds = displayedTopGames.take(5).map { it.appId }.toSet() },
+                    onStart = { catalogueUi.priceBatch = PriceCheckBatch.start(displayedTopGames.filter { it.appId in catalogueUi.selectedLeaderIds }
                         .map { PriceCheckTarget(it.appId, it.title) }, manualFilters, searchTotalPages) })
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth().heightIn(min = embeddedListMinHeight, max = embeddedListMaxHeight),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    lazyItemsIndexed(visibleTopGames, key = { _, game -> game.appId }) { index, game ->
+                displayedTopGames.forEachIndexed { index, game ->
                     val cacheKey = remember(game.appId, game.title, manualFilters, rulesRevision, ignoredIds,
                         searchTotalPages, comparisonSavedAliases[game.appId]) { comparisonKey(game.appId, game.title, true) }
                     SteamLeaderCard(index, game, leaderOfferPrices[game.appId]?.takeIf { it.scopeKey == cacheKey },
@@ -2422,6 +2420,10 @@ class MainActivity : ComponentActivity() {
                             )
                         },
                         onMonitor = { openGameMonitoring(game.appId, game.title) })
+                }
+                if (visibleTopGames.size > leaderVisibleLimit) {
+                    OutlinedButton(onClick = { leaderVisibleLimit += 20 }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Показать ещё · ${minOf(leaderVisibleLimit, visibleTopGames.size)} из ${visibleTopGames.size}")
                     }
                 }
                 if (sectionHasMore) {
@@ -2875,11 +2877,7 @@ class MainActivity : ComponentActivity() {
         }
         BatchSelectionControls(visibleGames.count { it.appId in selectedIds },
             selectionEnabled && searchEnabled && !filterInput.hasInvalidInput, onSelectFive, onCheckSelected)
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth().heightIn(min = embeddedListMinHeight, max = embeddedListMaxHeight),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            lazyItems(visibleGames.take(visibleLimit), key = { it.appId }) { game ->
+        visibleGames.take(visibleLimit).forEach { game ->
             OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     TextButton(
@@ -2945,7 +2943,6 @@ class MainActivity : ComponentActivity() {
                         Text("Выбрать", style = MaterialTheme.typography.labelSmall)
                     }
                 }
-            }
             }
         }
         if (visibleGames.size > visibleLimit) {
