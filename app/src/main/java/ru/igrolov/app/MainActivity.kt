@@ -58,6 +58,7 @@ import coil3.request.crossfade
 
 data class Offer(val id: String, val name: String, val price: Double, val type: String, val rfStatus: String, val edition: String, val categoryLabel: String = "", val detailsChecked: Boolean = false, val variablePrice: Boolean = false, val available: Boolean? = null, val priceVerified: Boolean = false, val purchaseNote: String = "", val canonical:String="", val steamAppId:Int=0, val marketplace:String="Plati", val productUrl:String="")
 
+private val embeddedListMinHeight = 420.dp
 private val embeddedListMaxHeight = 560.dp
 
 data class Tracked(val id: String, val name: String, val price: Double?, val status: String, val url: String, val canonical:String="", val steamAppId:Int=0, val marketplace:String="Plati") { val storageKey:String get() = "$marketplace:$id" }
@@ -1767,7 +1768,7 @@ class MainActivity : ComponentActivity() {
             Spacer(Modifier.height(10.dp))
             Text("Отслеживаемые товары: ${items.size}", style = MaterialTheme.typography.titleMedium)
             LazyColumn(
-                modifier = Modifier.fillMaxWidth().heightIn(max = embeddedListMaxHeight),
+                modifier = Modifier.fillMaxWidth().heightIn(min = embeddedListMinHeight, max = embeddedListMaxHeight),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 lazyItems(items.sortedBy { it.price ?: Double.MAX_VALUE }, key = { it.storageKey }) { item ->
@@ -2086,7 +2087,7 @@ class MainActivity : ComponentActivity() {
                 Text("Предложения по цене ↑ · $visibleCount", style = MaterialTheme.typography.titleMedium)
                 if (visibleCount == 0) Text("По выбранным фильтрам предложений нет. Уточните название или проверьте регион в заголовках.", style = MaterialTheme.typography.bodySmall)
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = embeddedListMaxHeight),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = embeddedListMinHeight, max = embeddedListMaxHeight),
                     verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
                     lazyItems(filteredOffers.take(visibleOfferLimit), key = { "${it.marketplace}:${it.id}" }) { offer ->
@@ -2387,7 +2388,7 @@ class MainActivity : ComponentActivity() {
                     onStart = { catalogueUi.priceBatch = PriceCheckBatch.start(visibleTopGames.filter { it.appId in catalogueUi.selectedLeaderIds }
                         .map { PriceCheckTarget(it.appId, it.title) }, manualFilters, searchTotalPages) })
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = embeddedListMaxHeight),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = embeddedListMinHeight, max = embeddedListMaxHeight),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     lazyItemsIndexed(visibleTopGames, key = { _, game -> game.appId }) { index, game ->
@@ -2875,7 +2876,7 @@ class MainActivity : ComponentActivity() {
         BatchSelectionControls(visibleGames.count { it.appId in selectedIds },
             selectionEnabled && searchEnabled && !filterInput.hasInvalidInput, onSelectFive, onCheckSelected)
         LazyColumn(
-            modifier = Modifier.fillMaxWidth().heightIn(max = embeddedListMaxHeight),
+            modifier = Modifier.fillMaxWidth().heightIn(min = embeddedListMinHeight, max = embeddedListMaxHeight),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             lazyItems(visibleGames.take(visibleLimit), key = { it.appId }) { game ->
