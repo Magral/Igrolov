@@ -122,6 +122,7 @@ class OfferPriceCacheUiTest {
             UiTestScroll.reveal(compose,"500 ₽")
         }
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("500 ₽")) })
+        UiTestScroll.reveal(compose,"ошибка обновления",contains=true)
         assertTrue(device.hasObject(By.textContains("ошибка обновления")))
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"offer-cache-restored.png"))
         context.getSharedPreferences("tracked_products",0).edit().remove("wishlist_profiles").remove("wishlist_selected_profile")
