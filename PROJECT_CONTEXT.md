@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-24T14:05:47.719Z
+- Обновлено (UTC): 2026-10-24T14:09:54.647Z
 - Ветка: `main`.
-- HEAD: [`bb440c22b306`](https://github.com/Magral/Igrolov/commit/bb440c22b306043213b072633d7c2262cf319468).
+- HEAD: [`3777fb1f5cdc`](https://github.com/Magral/Igrolov/commit/3777fb1f5cdc1afd6a652a4afdbb0dbfe184b851).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [3777fb1](https://github.com/Magral/Igrolov/commit/3777fb1f5cdc1afd6a652a4afdbb0dbfe184b851) — test: import first matching compose node
 - [bb440c2](https://github.com/Magral/Igrolov/commit/bb440c22b306043213b072633d7c2262cf319468) — test: reveal first cached price status
 - [895b8aa](https://github.com/Magral/Igrolov/commit/895b8aaaa446c906bdf4c711fce9654605799c53) — test: scroll to cached price status
 - [5f6d2ba](https://github.com/Magral/Igrolov/commit/5f6d2ba1a101eb4a4d9f2b5271c6fb969ab7d755) — test: target best price cell exactly
-- [ea5930f](https://github.com/Magral/Igrolov/commit/ea5930ff20410a8b5732e07c6ed890375edc7a44) — ui: prioritize best deal prices
 <!-- AUTO_CONTEXT_END -->
