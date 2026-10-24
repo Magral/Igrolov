@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-24T11:57:01.681Z
+- Обновлено (UTC): 2026-10-24T12:12:34.203Z
 - Ветка: `main`.
-- HEAD: [`f321d098fdf6`](https://github.com/Magral/Igrolov/commit/f321d098fdf6c838c2670f956c474ec1a949ed02).
+- HEAD: [`5d297ba2fa5b`](https://github.com/Magral/Igrolov/commit/5d297ba2fa5b9485acb696ffdf4a6adb8aa2bb4b).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [5d297ba](https://github.com/Magral/Igrolov/commit/5d297ba2fa5b9485acb696ffdf4a6adb8aa2bb4b) — ui: compact monitoring card actions
 - [f321d09](https://github.com/Magral/Igrolov/commit/f321d098fdf6c838c2670f956c474ec1a949ed02) — test: upload compact monitoring screenshot
 - [7ee690f](https://github.com/Magral/Igrolov/commit/7ee690f3849887bfd86e18978a15a82947174869) — ui: fit all navigation tabs
 - [f59e513](https://github.com/Magral/Igrolov/commit/f59e513fdbe001db625741c70165d418ca0a3287) — ui: compact monitoring cards
-- [5b76380](https://github.com/Magral/Igrolov/commit/5b763808e08d4b5267cc36906eb72db63c1e1633) — ui: compact tracked product cards
 <!-- AUTO_CONTEXT_END -->
