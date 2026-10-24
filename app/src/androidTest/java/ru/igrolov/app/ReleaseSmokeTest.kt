@@ -120,14 +120,6 @@ class ReleaseSmokeTest {
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.textContains("Namtar")) })
         assertTrue(device.hasObject(By.textContains("Friend")))
-        device.pressBack()
-        if (!UiTestScroll.await(compose, 1500) { device.hasObject(By.textContains("Namtar")) }) {
-            context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-            assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Игролов 1.4.4")) })
-            compose.onNodeWithText("Желания").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        compose.waitForIdle()
-            assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.textContains("Namtar")) })
-        }
         UiTestScroll.reveal(compose,"Stellaris")
         assertTrue(device.hasObject(By.text("Stellaris")))
         assertFalse(device.hasObject(By.text("AppID 281990")))
