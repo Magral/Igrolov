@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-24T14:16:27.030Z
+- Обновлено (UTC): 2026-10-24T14:23:53.098Z
 - Ветка: `main`.
-- HEAD: [`b20cc5f67b64`](https://github.com/Magral/Igrolov/commit/b20cc5f67b64f3096e176bfd054550ecf163d539).
+- HEAD: [`8f47dd513d24`](https://github.com/Magral/Igrolov/commit/8f47dd513d2467553b99831880491b90cd71a210).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [8f47dd5](https://github.com/Magral/Igrolov/commit/8f47dd513d2467553b99831880491b90cd71a210) — ui: simplify discount badge
 - [b20cc5f](https://github.com/Magral/Igrolov/commit/b20cc5f67b64f3096e176bfd054550ecf163d539) — test: expect formatted wishlist marketplace price
 - [3777fb1](https://github.com/Magral/Igrolov/commit/3777fb1f5cdc1afd6a652a4afdbb0dbfe184b851) — test: import first matching compose node
 - [bb440c2](https://github.com/Magral/Igrolov/commit/bb440c22b306043213b072633d7c2262cf319468) — test: reveal first cached price status
-- [895b8aa](https://github.com/Magral/Igrolov/commit/895b8aaaa446c906bdf4c711fce9654605799c53) — test: scroll to cached price status
 <!-- AUTO_CONTEXT_END -->
