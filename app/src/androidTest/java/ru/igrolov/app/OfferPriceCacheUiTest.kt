@@ -42,7 +42,7 @@ class OfferPriceCacheUiTest {
     }
     private fun launchWishlist() {
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Игролов 1.4.4")) })
+        assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Игролов")) })
         compose.onNodeWithText("Желания").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.textContains("Price cache test")) })

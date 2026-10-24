@@ -46,7 +46,7 @@ jobs:
       - name: Verify version metadata
         run: |
           grep -F "versionName = \"$APP_VERSION\"" app/build.gradle.kts
-          grep -F "Text(\"Игролов $APP_VERSION\"" app/src/main/java/ru/igrolov/app/MainActivity.kt
+          grep -F "Text(\"Игролов\"" app/src/main/java/ru/igrolov/app/MainActivity.kt
       - name: Restore pinned debug signing key
         run: |
           mkdir -p signing
