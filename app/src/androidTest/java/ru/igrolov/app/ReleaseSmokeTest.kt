@@ -133,12 +133,12 @@ class ReleaseSmokeTest {
         assertFalse(device.hasObject(By.text("AppID 281990")))
         UiTestScroll.reveal(compose,"Подробнее")
         assertTrue(device.hasObject(By.text("Подробнее")))
-        if (!device.hasObject(By.textContains("Plati от 750 ₽"))) {
-            UiTestScroll.reveal(compose,"Plati от 750 ₽",contains=true)
+        if (!device.hasObject(By.text("750 ₽"))) {
+            UiTestScroll.reveal(compose,"750 ₽")
         }
         assertTrue(device.hasObject(By.text("900 руб.")))
         assertTrue(device.hasObject(By.text("−50% · Steam RU")))
-        assertTrue(device.hasObject(By.textContains("Plati от 750 ₽")))
+        assertTrue(device.hasObject(By.text("750 ₽")))
         if (!device.hasObject(By.text("Искать"))) {
             UiTestScroll.reveal(compose, "Искать")
         }
