@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-24T16:10:08.749Z
+- Обновлено (UTC): 2026-10-24T16:13:00.810Z
 - Ветка: `main`.
-- HEAD: [`4205f251ab79`](https://github.com/Magral/Igrolov/commit/4205f251ab79b8f38de6def0a2537536e0223b2e).
+- HEAD: [`c66a749fa739`](https://github.com/Magral/Igrolov/commit/c66a749fa73933a0d75c913c917aee136b66068a).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [c66a749](https://github.com/Magral/Igrolov/commit/c66a749fa73933a0d75c913c917aee136b66068a) — test: import Compose first-node matcher
 - [4205f25](https://github.com/Magral/Igrolov/commit/4205f251ab79b8f38de6def0a2537536e0223b2e) — test: reveal first matching UI label
 - [5bcd3fd](https://github.com/Magral/Igrolov/commit/5bcd3fd6e58476b1cc355427076cc22d28688a81) — ui: redesign Steam cards around best price
 - [8685ffb](https://github.com/Magral/Igrolov/commit/8685ffbfbd69707bda5da5139133ea2f9d066819) — ui: align wishlist features with cover
-- [009a29b](https://github.com/Magral/Igrolov/commit/009a29b8b387e5c53cf0208cb164bd484603057a) — ui: compact wishlist game cards
 <!-- AUTO_CONTEXT_END -->
