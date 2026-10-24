@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-24T07:32:18.828Z
+- Обновлено (UTC): 2026-10-24T08:25:27.711Z
 - Ветка: `main`.
-- HEAD: [`7dd13fd4accf`](https://github.com/Magral/Igrolov/commit/7dd13fd4accf490ea0a529018e84e94d81a94e10).
+- HEAD: [`ab692f964e41`](https://github.com/Magral/Igrolov/commit/ab692f964e41a833abddf4f70eeb3f514f327bc4).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [ab692f9](https://github.com/Magral/Igrolov/commit/ab692f964e41a833abddf4f70eeb3f514f327bc4) — perf: defer Steam artwork requests offscreen
 - [7dd13fd](https://github.com/Magral/Igrolov/commit/7dd13fd4accf490ea0a529018e84e94d81a94e10) — feat: show verified price trend in monitor cards
 - [09debc2](https://github.com/Magral/Igrolov/commit/09debc269e6915d57a0247dbfba9108392486c6b) — ui: tighten Steam leader cards
 - [e971080](https://github.com/Magral/Igrolov/commit/e971080ffce569658a33bda7535088e29805a584) — test: reveal wishlist card actions before checking
-- [2e2fffa](https://github.com/Magral/Igrolov/commit/2e2fffa17fc6cccfb5cdfbfeea56dbb497975275) — ui: compact wishlist game cards
 <!-- AUTO_CONTEXT_END -->
