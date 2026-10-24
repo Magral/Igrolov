@@ -59,6 +59,7 @@ class MonitorUiRegressionTest {
         assertTrue(device.hasObject(By.text("Ниже цели")))
         assertTrue(device.hasObject(By.text("С ошибкой")))
         assertTrue(device.hasObject(By.text("Сортировка: внимание")))
+        assertTrue(scroll.scrollIntoView(UiSelector().textStartsWith("Динамика: минимум снизился")))
         assertTrue(scroll.scrollIntoView(UiSelector().text("Источники · Plati: 0 · GGSEL: 1")))
         assertTrue(scroll.scrollIntoView(UiSelector().text("Три минимальные цены (1)")))
         assertTrue(scroll.scrollIntoView(UiSelector().textStartsWith("Следующая проверка")) ||

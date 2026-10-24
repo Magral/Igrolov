@@ -1879,6 +1879,20 @@ class MainActivity : ComponentActivity() {
                         Text(listOfNotNull(w.optString("kind"), w.optString("steamEditionName").takeIf { it.isNotBlank() },
                             "цель: ${w.optDouble("limit").toInt()} ₽", "РФ: ${if (w.optBoolean("rf",true)) "да" else "не обязательно"}").joinToString(" · "))
                         Text(if (w.optDouble("last", -1.0) > 0) "Последний найденный минимум: ${w.optDouble("last").toInt()} ₽" else "Проверка ещё не завершена или подходящих товаров нет")
+                        WatchHistory.priceChange(w.optJSONArray("history") ?: JSONArray())?.let { change ->
+                            val difference = kotlin.math.abs(change.difference)
+                            val changeText = when {
+                                difference < 0.005 -> "Динамика: минимум не изменился к прошлой подтверждённой цене"
+                                change.difference < 0 -> "Динамика: минимум снизился на ${String.format(Locale("ru", "RU"), "%.2f ₽ (%.1f%%)", difference, kotlin.math.abs(change.percent))}"
+                                else -> "Динамика: минимум вырос на ${String.format(Locale("ru", "RU"), "%.2f ₽ (%.1f%%)", difference, change.percent)}"
+                            }
+                            Text(changeText, style = MaterialTheme.typography.bodySmall,
+                                color = when {
+                                    difference < 0.005 -> MaterialTheme.colorScheme.onSurfaceVariant
+                                    change.difference < 0 -> MaterialTheme.colorScheme.tertiary
+                                    else -> MaterialTheme.colorScheme.error
+                                })
+                        }
                         val checkedAt = w.optLong("checked", 0L)
                         val failedAt = w.optLong("failedAt", 0L)
                         val monitorDate = java.text.SimpleDateFormat("dd.MM HH:mm", Locale("ru", "RU"))

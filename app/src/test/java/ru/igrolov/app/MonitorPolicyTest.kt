@@ -79,4 +79,17 @@ class MonitorPolicyTest {
         assertEquals(400,many.length())
         assertNull(WatchHistory.points(WatchHistory.append(JSONArray(),now,Double.NaN,0)).single().price)
     }
+    @Test fun priceChangeUsesLatestConfirmedPricesAcrossMissingOfferGaps() {
+        val history=JSONArray()
+            .put(JSONObject().put("at",100L).put("price",1000.0))
+            .put(JSONObject().put("at",200L))
+            .put(JSONObject().put("at",300L).put("price",800.0))
+            .put(JSONObject().put("at",400L).put("price",0.0))
+        val change=WatchHistory.priceChange(history)!!
+        assertEquals(1000.0,change.previous,0.0)
+        assertEquals(800.0,change.current,0.0)
+        assertEquals(-200.0,change.difference,0.0)
+        assertEquals(-20.0,change.percent,0.0001)
+        assertNull(WatchHistory.priceChange(JSONArray().put(JSONObject().put("at",100L).put("price",1000.0))))
+    }
 }

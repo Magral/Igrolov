@@ -65,11 +65,21 @@ object MonitorDiagnostics {
 
 object WatchHistory {
     data class Point(val at:Long,val price:Double?)
+    data class PriceChange(val previous:Double,val current:Double) {
+        val difference:Double get() = current - previous
+        val percent:Double get() = (difference / previous) * 100.0
+    }
     fun points(history:JSONArray):List<Point> = (0 until history.length()).mapNotNull {i ->
         val j=history.optJSONObject(i) ?: return@mapNotNull null
         val at=j.optLong("at");if(at<=0)return@mapNotNull null
         Point(at,j.optDouble("price",Double.NaN).takeIf {it.isFinite() && it>0})
     }.sortedBy {it.at}
+    /** Compare the two latest confirmed prices; no-offer checks remain gaps, not zero-price drops. */
+    fun priceChange(history:JSONArray):PriceChange? {
+        val prices=points(history).mapNotNull {it.price}.takeLast(2)
+        if(prices.size<2) return null
+        return PriceChange(prices[0],prices[1])
+    }
     fun append(history:JSONArray,at:Long,price:Double?,count:Int):JSONArray {
         val result=JSONArray()
         val cutoff=at-90L*24*60*60*1000
