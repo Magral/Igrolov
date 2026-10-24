@@ -36,6 +36,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.text.input.KeyboardType
 import org.json.JSONObject
 import org.json.JSONArray
@@ -49,6 +51,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -531,8 +534,10 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun SteamArtwork(url: String, modifier: Modifier = Modifier, appId: Int? = null) {
         val context = LocalContext.current
+        val view = LocalView.current
         val scope = rememberCoroutineScope()
         val artworkPrefs = remember(context) { context.getSharedPreferences("steam_artwork_urls", MODE_PRIVATE) }
+        var shouldLoad by remember(url, appId) { mutableStateOf(false) }
         var imageUrl by remember(url, appId) {
             mutableStateOf(
                 appId?.let { artworkPrefs.getString(it.toString(), null) }
@@ -541,8 +546,8 @@ class MainActivity : ComponentActivity() {
         }
         var fallbackTried by remember(url, appId) { mutableStateOf(false) }
 
-        LaunchedEffect(imageUrl, appId) {
-            if (imageUrl.isBlank() && appId != null && appId > 0 && !fallbackTried) {
+        LaunchedEffect(imageUrl, appId, shouldLoad) {
+            if (shouldLoad && imageUrl.isBlank() && appId != null && appId > 0 && !fallbackTried) {
                 fallbackTried = true
                 val fallbackUrl = withContext(Dispatchers.IO) { steamFallbackArtworkUrl(appId) }
                 if (fallbackUrl.isNotBlank()) {
@@ -553,11 +558,28 @@ class MainActivity : ComponentActivity() {
         }
 
         Box(
-            modifier.background(MaterialTheme.colorScheme.surfaceVariant),
+            modifier
+                .onGloballyPositioned { coordinates ->
+                    if (!shouldLoad && coordinates.isAttached) {
+                        val root = view.rootView
+                        if (root.width > 0 && root.height > 0) {
+                            val position = coordinates.positionInWindow()
+                            val size = coordinates.size
+                            val prefetch = 220f * context.resources.displayMetrics.density
+                            if (ArtworkViewport.isNearViewport(
+                                    left = position.x, top = position.y,
+                                    width = size.width.toFloat(), height = size.height.toFloat(),
+                                    viewportWidth = root.width.toFloat(), viewportHeight = root.height.toFloat(),
+                                    margin = prefetch
+                                )) shouldLoad = true
+                        }
+                    }
+                }
+                .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
             Text("🎮", style = MaterialTheme.typography.bodySmall)
-            if (imageUrl.isNotBlank()) {
+            if (shouldLoad && imageUrl.isNotBlank()) {
                 AsyncImage(
                     model = ImageRequest.Builder(context)
                         .data(imageUrl)
