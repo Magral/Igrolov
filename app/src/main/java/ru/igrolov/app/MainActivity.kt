@@ -23,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -33,6 +34,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -913,10 +915,25 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.onSurface)
             }
         }
-        TabRow(selectedTabIndex = activeTab) {
-            listOf("Поиск", "Товары", "Мониторинг", "Желания", "Лидеры").forEachIndexed { index, title ->
-                Tab(selected = activeTab == index, onClick = { onTab(index) },
-                    text = { Text(title, maxLines = 1, fontSize = 10.sp) })
+        val tabs = listOf("Поиск", "Товары", "Мониторинг", "Желания", "Лидеры")
+        Row(Modifier.fillMaxWidth().height(48.dp)) {
+            tabs.forEachIndexed { index, title ->
+                val selected = activeTab == index
+                Column(
+                    modifier = Modifier.weight(1f).fillMaxHeight()
+                        .selectable(selected = selected, onClick = { onTab(index) }, role = Role.Tab),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 1.dp),
+                        contentAlignment = Alignment.Center) {
+                        Text(title, maxLines = 1, softWrap = false, fontSize = 9.sp,
+                            color = if (selected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurface)
+                    }
+                    Box(Modifier.fillMaxWidth(0.72f).height(2.dp)
+                        .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent))
+                }
             }
         }
     }
