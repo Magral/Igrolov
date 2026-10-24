@@ -2,6 +2,8 @@ package ru.igrolov.app
 
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.semantics.SemanticsActions
 import org.junit.Rule
@@ -122,7 +124,8 @@ class OfferPriceCacheUiTest {
             UiTestScroll.reveal(compose,"500 ₽")
         }
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("500 ₽")) })
-        UiTestScroll.reveal(compose,"ошибка обновления",contains=true)
+        compose.onAllNodesWithText("ошибка обновления", substring = true).onFirst().performScrollTo()
+        compose.waitForIdle()
         assertTrue(device.hasObject(By.textContains("ошибка обновления")))
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"offer-cache-restored.png"))
         context.getSharedPreferences("tracked_products",0).edit().remove("wishlist_profiles").remove("wishlist_selected_profile")
