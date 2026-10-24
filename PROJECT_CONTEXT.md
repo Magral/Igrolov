@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-23T23:58:57.699Z
+- Обновлено (UTC): 2026-10-24T00:24:07.817Z
 - Ветка: `main`.
-- HEAD: [`05e12ced7dd7`](https://github.com/Magral/Igrolov/commit/05e12ced7dd7f7a1e105c41abf88f432183108e5).
+- HEAD: [`cd3cfda55350`](https://github.com/Magral/Igrolov/commit/cd3cfda553505c905565ff26f31cbf9b306330a6).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [cd3cfda](https://github.com/Magral/Igrolov/commit/cd3cfda553505c905565ff26f31cbf9b306330a6) — perf: virtualize long product and game lists
 - [05e12ce](https://github.com/Magral/Igrolov/commit/05e12ced7dd7f7a1e105c41abf88f432183108e5) — fix: handle cancelled wishlist genre backfill
 - [595aca5](https://github.com/Magral/Igrolov/commit/595aca5a3c1b6a117f943cfe45bf73955f6d3b15) — perf: cache wishlist and leader filter results
 - [7df6d08](https://github.com/Magral/Igrolov/commit/7df6d08289669b8191c512fb726eed1c509f1347) — ui: explain filtered leader pagination
-- [3582063](https://github.com/Magral/Igrolov/commit/35820635f291f7d3fbd9eb49ede9b753c03dc284) — ui: explain filtered leader pagination
 <!-- AUTO_CONTEXT_END -->
