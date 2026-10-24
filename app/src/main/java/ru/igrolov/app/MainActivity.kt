@@ -1904,10 +1904,14 @@ class MainActivity : ComponentActivity() {
                 val w = watchEntry.game
                 OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
                     Column(Modifier.padding(10.dp)) {
-                        Text(w.optString("name"), style = MaterialTheme.typography.titleMedium)
+                        Text(w.optString("name"), style = MaterialTheme.typography.titleSmall, maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                         Text(listOfNotNull(w.optString("kind"), w.optString("steamEditionName").takeIf { it.isNotBlank() },
-                            "цель: ${w.optDouble("limit").toInt()} ₽", "РФ: ${if (w.optBoolean("rf",true)) "да" else "не обязательно"}").joinToString(" · "))
-                        Text(if (w.optDouble("last", -1.0) > 0) "Последний найденный минимум: ${w.optDouble("last").toInt()} ₽" else "Проверка ещё не завершена или подходящих товаров нет")
+                            "цель ${w.optDouble("limit").toInt()} ₽", "РФ ${if (w.optBoolean("rf",true)) "да" else "не обязательно"}").joinToString(" · "),
+                            style = MaterialTheme.typography.bodySmall, maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        Text(if (w.optDouble("last", -1.0) > 0) "Минимум: ${w.optDouble("last").toInt()} ₽" else "Подходящих цен пока нет",
+                            style = MaterialTheme.typography.bodyMedium)
                         WatchHistory.priceChange(w.optJSONArray("history") ?: JSONArray())?.let { change ->
                             val difference = kotlin.math.abs(change.difference)
                             val changeText = when {
@@ -1925,48 +1929,48 @@ class MainActivity : ComponentActivity() {
                         val checkedAt = w.optLong("checked", 0L)
                         val failedAt = w.optLong("failedAt", 0L)
                         val monitorDate = java.text.SimpleDateFormat("dd.MM HH:mm", Locale("ru", "RU"))
-                        if (checkedAt > 0L) {
-                            Text("Последняя проверка: ${monitorDate.format(java.util.Date(checkedAt))}",
-                                style = MaterialTheme.typography.bodySmall)
+                        var diagnosticsExpanded by remember(w.optString("name")) { mutableStateOf(false) }
+                        if (checkedAt > 0L) Text("Проверено ${monitorDate.format(java.util.Date(checkedAt))}",
+                            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        TextButton(onClick = { diagnosticsExpanded = !diagnosticsExpanded }) {
+                            Text(if (diagnosticsExpanded) "Скрыть детали проверки" else "Детали проверки")
                         }
-                        val expectedCheck = MonitorSchedule.expectedNextCheck(checkedAt, failedAt)
-                        if (failedAt > checkedAt) {
-                            Text("Проверка будет повторена автоматически; точное время задаёт Android.",
-                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        } else if (expectedCheck != null) {
-                            val expectedStamp = monitorDate.format(java.util.Date(expectedCheck))
-                            val expectation = if (expectedCheck <= System.currentTimeMillis())
-                                "Следующая проверка ожидается; расчётное время $expectedStamp уже прошло"
-                            else "Следующая проверка: $expectedStamp"
-                            Text("$expectation · ориентировочно, Android может задержать",
-                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        } else {
-                            Text("Следующая проверка — по расписанию, примерно раз в час.",
-                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        if(w.optInt("steamAppId")>0) Text("Steam #${w.optInt("steamAppId")}",style=MaterialTheme.typography.bodySmall)
-                        if (w.has("error")) Text("Ошибка проверки: ${w.optString("error")}. Показаны предыдущие данные.", style = MaterialTheme.typography.bodySmall)
-                        if(w.has("notificationError"))Text(w.optString("notificationError"),style=MaterialTheme.typography.bodySmall)
-                        if (w.has("checked") && w.has("eligibleCount")) {
-                            MonitorDiagnostics.noOfferReason(
-                                totalCount = w.optInt("totalCount", 0),
-                                eligibleCount = w.optInt("eligibleCount", 0),
-                                rejectedCount = w.optInt("rejectedCount", 0),
-                                hasError = w.has("error")
-                            )?.let { reason ->
-                                Text(reason, style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (diagnosticsExpanded) {
+                            val expectedCheck = MonitorSchedule.expectedNextCheck(checkedAt, failedAt)
+                            if (failedAt > checkedAt) {
+                                Text("Проверка будет повторена автоматически; точное время задаёт Android.",
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            } else if (expectedCheck != null) {
+                                val expectedStamp = monitorDate.format(java.util.Date(expectedCheck))
+                                val expectation = if (expectedCheck <= System.currentTimeMillis())
+                                    "Следующая проверка ожидается; расчётное время $expectedStamp уже прошло"
+                                else "Следующая проверка: $expectedStamp"
+                                Text("$expectation · ориентировочно, Android может задержать",
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            } else {
+                                Text("Следующая проверка — по расписанию, примерно раз в час.",
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            val sourceCounts=w.optJSONObject("sourceCounts")
+                            if(sourceCounts!=null) Text("Источники · Plati: ${sourceCounts.optInt("Plati")} · GGSEL: ${sourceCounts.optInt("GGSEL")}",style=MaterialTheme.typography.bodySmall)
+                            val sourceMinimums=w.optJSONObject("sourceMinimums")
+                            if(sourceMinimums!=null) {
+                                val platiMinimum=if(sourceMinimums.has("Plati")) String.format(Locale("ru", "RU"), "%.2f ₽", sourceMinimums.optDouble("Plati")) else "—"
+                                val ggselMinimum=if(sourceMinimums.has("GGSEL")) String.format(Locale("ru", "RU"), "%.2f ₽", sourceMinimums.optDouble("GGSEL")) else "—"
+                                Text("Минимумы · Plati: $platiMinimum · GGSEL: $ggselMinimum", style=MaterialTheme.typography.bodySmall)
+                            }
+                            if (w.has("checked") && w.has("eligibleCount")) {
+                                MonitorDiagnostics.noOfferReason(
+                                    totalCount = w.optInt("totalCount", 0),
+                                    eligibleCount = w.optInt("eligibleCount", 0),
+                                    rejectedCount = w.optInt("rejectedCount", 0),
+                                    hasError = w.has("error")
+                                )?.let { reason -> Text(reason, style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant) }
                             }
                         }
-                        val sourceCounts=w.optJSONObject("sourceCounts")
-                        if(sourceCounts!=null) Text("Источники · Plati: ${sourceCounts.optInt("Plati")} · GGSEL: ${sourceCounts.optInt("GGSEL")}",style=MaterialTheme.typography.bodySmall)
-                        val sourceMinimums=w.optJSONObject("sourceMinimums")
-                        if(sourceMinimums!=null) {
-                            val platiMinimum=if(sourceMinimums.has("Plati")) String.format(Locale("ru", "RU"), "%.2f ₽", sourceMinimums.optDouble("Plati")) else "—"
-                            val ggselMinimum=if(sourceMinimums.has("GGSEL")) String.format(Locale("ru", "RU"), "%.2f ₽", sourceMinimums.optDouble("GGSEL")) else "—"
-                            Text("Минимумы · Plati: $platiMinimum · GGSEL: $ggselMinimum",
-                                style=MaterialTheme.typography.bodySmall)
-                        }
+                        if (w.has("error")) Text("Ошибка проверки: ${w.optString("error")}. Показаны предыдущие данные.", style = MaterialTheme.typography.bodySmall)
+                        if(w.has("notificationError"))Text(w.optString("notificationError"),style=MaterialTheme.typography.bodySmall)
                         var resultsExpanded by remember(w.optString("name")) { mutableStateOf(false) }
                         val bestOffers = w.optJSONArray("topOffers") ?: JSONArray()
                         TextButton(onClick = { resultsExpanded = !resultsExpanded }) {
