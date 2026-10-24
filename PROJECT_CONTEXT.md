@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-24T06:26:08.848Z
+- Обновлено (UTC): 2026-10-24T06:34:55.353Z
 - Ветка: `main`.
-- HEAD: [`e971080ffce5`](https://github.com/Magral/Igrolov/commit/e971080ffce569658a33bda7535088e29805a584).
+- HEAD: [`09debc269e69`](https://github.com/Magral/Igrolov/commit/09debc269e6915d57a0247dbfba9108392486c6b).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [09debc2](https://github.com/Magral/Igrolov/commit/09debc269e6915d57a0247dbfba9108392486c6b) — ui: tighten Steam leader cards
 - [e971080](https://github.com/Magral/Igrolov/commit/e971080ffce569658a33bda7535088e29805a584) — test: reveal wishlist card actions before checking
 - [2e2fffa](https://github.com/Magral/Igrolov/commit/2e2fffa17fc6cccfb5cdfbfeea56dbb497975275) — ui: compact wishlist game cards
 - [c74c57e](https://github.com/Magral/Igrolov/commit/c74c57ee8f899c130d2945bd161f185178329348) — perf: render long lists in incremental batches
-- [0163bc2](https://github.com/Magral/Igrolov/commit/0163bc29866713901f5e21757736fc3fb93442d4) — fix: size nested lazy lists for scrolling
 <!-- AUTO_CONTEXT_END -->
