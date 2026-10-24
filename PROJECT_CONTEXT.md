@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-24T14:37:32.721Z
+- Обновлено (UTC): 2026-10-24T14:44:46.341Z
 - Ветка: `main`.
-- HEAD: [`15531375c07f`](https://github.com/Magral/Igrolov/commit/15531375c07f56b7e7bf034c410978bd781324a9).
+- HEAD: [`5b32c2fc8f10`](https://github.com/Magral/Igrolov/commit/5b32c2fc8f10188571c8883c2021c592befa4954).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [5b32c2f](https://github.com/Magral/Igrolov/commit/5b32c2fc8f10188571c8883c2021c592befa4954) — test: assert discount through compose semantics
 - [1553137](https://github.com/Magral/Igrolov/commit/15531375c07f56b7e7bf034c410978bd781324a9) — test: keep wishlist profile state in UI smoke
 - [a7c3fcc](https://github.com/Magral/Igrolov/commit/a7c3fcc3cfad164fc6551b0f929d8713b8ea17c8) — test: scroll to discount indicator
 - [8f47dd5](https://github.com/Magral/Igrolov/commit/8f47dd513d2467553b99831880491b90cd71a210) — ui: simplify discount badge
-- [b20cc5f](https://github.com/Magral/Igrolov/commit/b20cc5f67b64f3096e176bfd054550ecf163d539) — test: expect formatted wishlist marketplace price
 <!-- AUTO_CONTEXT_END -->
