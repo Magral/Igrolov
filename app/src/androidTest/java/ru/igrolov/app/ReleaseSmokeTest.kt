@@ -137,6 +137,7 @@ class ReleaseSmokeTest {
             UiTestScroll.reveal(compose,"750 ₽")
         }
         assertTrue(device.hasObject(By.text("900 руб.")))
+        UiTestScroll.reveal(compose,"−50%")
         assertTrue(device.hasObject(By.text("−50%")))
         assertTrue(device.hasObject(By.text("750 ₽")))
         if (!device.hasObject(By.text("Искать"))) {
