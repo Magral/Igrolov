@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-24T23:50:47.914Z
+- Обновлено (UTC): 2026-10-24T23:57:21.077Z
 - Ветка: `main`.
-- HEAD: [`7368f144b9a2`](https://github.com/Magral/Igrolov/commit/7368f144b9a27b22ab2f39c17bde4d863124c067).
+- HEAD: [`f8a86a36583d`](https://github.com/Magral/Igrolov/commit/f8a86a36583d0c88f3c1269a5ffed7d55eac1be8).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [f8a86a3](https://github.com/Magral/Igrolov/commit/f8a86a36583d0c88f3c1269a5ffed7d55eac1be8) — fix: align filters and settings UI test with redesign
 - [7368f14](https://github.com/Magral/Igrolov/commit/7368f144b9a27b22ab2f39c17bde4d863124c067) — ui: redesign app to match reference layout
 - [c66a749](https://github.com/Magral/Igrolov/commit/c66a749fa73933a0d75c913c917aee136b66068a) — test: import Compose first-node matcher
 - [4205f25](https://github.com/Magral/Igrolov/commit/4205f251ab79b8f38de6def0a2537536e0223b2e) — test: reveal first matching UI label
-- [5bcd3fd](https://github.com/Magral/Igrolov/commit/5bcd3fd6e58476b1cc355427076cc22d28688a81) — ui: redesign Steam cards around best price
 <!-- AUTO_CONTEXT_END -->
