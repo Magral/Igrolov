@@ -58,6 +58,7 @@ grep -E 'OK \(1 test\)' device-results/restart-filters.txt
 adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class ru.igrolov.app.MonitorUiRegressionTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/monitor-ui.txt
 grep -E 'OK \(1 test\)' device-results/monitor-ui.txt
+adb pull /sdcard/Android/data/ru.igrolov.app/files/monitor-compact.png device-results/monitor-compact.png
 adb pull /sdcard/Android/data/ru.igrolov.app/files/monitor-history.png device-results/monitor-history.png
 adb pull /sdcard/Android/data/ru.igrolov.app/files/monitor-selection.png device-results/monitor-selection.png
 adb shell am force-stop ru.igrolov.app
