@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-24T14:00:05.375Z
+- Обновлено (UTC): 2026-10-24T14:05:47.719Z
 - Ветка: `main`.
-- HEAD: [`895b8aaaa446`](https://github.com/Magral/Igrolov/commit/895b8aaaa446c906bdf4c711fce9654605799c53).
+- HEAD: [`bb440c22b306`](https://github.com/Magral/Igrolov/commit/bb440c22b306043213b072633d7c2262cf319468).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [bb440c2](https://github.com/Magral/Igrolov/commit/bb440c22b306043213b072633d7c2262cf319468) — test: reveal first cached price status
 - [895b8aa](https://github.com/Magral/Igrolov/commit/895b8aaaa446c906bdf4c711fce9654605799c53) — test: scroll to cached price status
 - [5f6d2ba](https://github.com/Magral/Igrolov/commit/5f6d2ba1a101eb4a4d9f2b5271c6fb969ab7d755) — test: target best price cell exactly
 - [ea5930f](https://github.com/Magral/Igrolov/commit/ea5930ff20410a8b5732e07c6ed890375edc7a44) — ui: prioritize best deal prices
-- [5d297ba](https://github.com/Magral/Igrolov/commit/5d297ba2fa5b9485acb696ffdf4a6adb8aa2bb4b) — ui: compact monitoring card actions
 <!-- AUTO_CONTEXT_END -->
