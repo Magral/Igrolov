@@ -1936,8 +1936,13 @@ class MainActivity : ComponentActivity() {
                 }) { Text("Добавить") }
                 OutlinedButton(onClick = { refresh() }, enabled = !busy && items.isNotEmpty()) { Text(if (busy) "Обновление..." else "Обновить цены") }
             }
-            Text(message, style = MaterialTheme.typography.bodySmall)
-            Spacer(Modifier.height(10.dp))
+            if (message.isNotBlank()) OutlinedCard(Modifier.fillMaxWidth(),
+                border = BorderStroke(1.dp, Color(0xFFDCE2E8)),
+                colors = CardDefaults.outlinedCardColors(containerColor = Color.White)) {
+                Text(message, Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Spacer(Modifier.height(8.dp))
             Text("Отслеживаемые товары: ${items.size}", style = MaterialTheme.typography.titleMedium)
             val sortedTrackedItems = remember(items) { items.sortedBy { it.price ?: Double.MAX_VALUE } }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
