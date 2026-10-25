@@ -4,6 +4,7 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.semantics.SemanticsActions
 import org.junit.Rule
 import android.content.Context
@@ -125,7 +126,7 @@ class ReleaseSmokeTest {
         assertTrue(device.hasObject(By.text("Stellaris")))
         assertFalse(device.hasObject(By.text("AppID 281990")))
         UiTestScroll.reveal(compose,"Подробнее")
-        assertTrue(device.hasObject(By.text("Подробнее")))
+        compose.onNodeWithText("Подробнее").assertIsDisplayed()
         if (!device.hasObject(By.text("750 ₽"))) {
             UiTestScroll.reveal(compose,"750 ₽")
         }
@@ -133,7 +134,7 @@ class ReleaseSmokeTest {
         // Compose's text matcher confirms the discount note is rendered; UIAutomator
         // does not expose this nested Text as an exact standalone accessibility node.
         UiTestScroll.reveal(compose,"−50%")
-        assertTrue(device.hasObject(By.text("750 ₽")))
+        compose.onNodeWithText("750 ₽").assertIsDisplayed()
         if (!device.hasObject(By.text("Искать цены"))) {
             UiTestScroll.reveal(compose, "Искать цены")
         }
