@@ -3085,7 +3085,7 @@ class MainActivity : ComponentActivity() {
                                 }
                                 TextButton(onClick = { onMonitor(game) }, enabled = game.appId > 0,
                                     modifier = Modifier.height(26.dp), contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp)) {
-                                    Text(if (isMonitored(game)) "Издание +" else "Мониторинг",
+                                    Text(if (isMonitored(game)) "Издание" else "Следить",
                                         style = MaterialTheme.typography.labelSmall, color = Color(0xFFF0A928), maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                                 Checkbox(game.appId in selectedIds, { onToggleSelection(game) }, enabled = selectionEnabled, modifier = Modifier.size(24.dp))
