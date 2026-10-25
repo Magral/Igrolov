@@ -55,6 +55,7 @@ adb shell dumpsys package ru.igrolov.app > device-results/package.txt
 adb shell am instrument -w -r -e class ru.igrolov.app.StellarisUiRegressionTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/stellaris-ui.txt
 grep -E 'OK \(1 test\)' device-results/stellaris-ui.txt
 adb pull /sdcard/Android/data/ru.igrolov.app/files/stellaris-result.png device-results/stellaris-result.png
+cp device-results/stellaris-result.png device-results/redesign-search.png
 adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class 'ru.igrolov.app.ManualSearchPreferencesTest#saveFiltersFromScreen' ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/save-filters.txt
 grep -E 'OK \(1 test\)' device-results/save-filters.txt
@@ -65,6 +66,7 @@ adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class ru.igrolov.app.MonitorUiRegressionTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/monitor-ui.txt
 grep -E 'OK \(1 test\)' device-results/monitor-ui.txt
 adb pull /sdcard/Android/data/ru.igrolov.app/files/monitor-compact.png device-results/monitor-compact.png
+cp device-results/monitor-compact.png device-results/redesign-monitoring.png
 adb pull /sdcard/Android/data/ru.igrolov.app/files/monitor-history.png device-results/monitor-history.png
 adb pull /sdcard/Android/data/ru.igrolov.app/files/monitor-selection.png device-results/monitor-selection.png
 adb shell am force-stop ru.igrolov.app
@@ -76,4 +78,5 @@ adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class 'ru.igrolov.app.TrackedTransferUiRegressionTest#restartKeepsContextAndRepairsLegacyTrackedItemWithoutReadding' ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/tracked-restart.txt
 grep -E 'OK \(1 test\)' device-results/tracked-restart.txt
 adb pull /sdcard/Android/data/ru.igrolov.app/files/tracked-transfer.png device-results/tracked-transfer.png
+cp device-results/tracked-transfer.png device-results/redesign-products.png
 adb pull /sdcard/Android/data/ru.igrolov.app/files/tracked-restart.png device-results/tracked-restart.png
