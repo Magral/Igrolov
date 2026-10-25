@@ -566,10 +566,38 @@ class MainActivity : ComponentActivity() {
         }.start()
     }
 
-    private fun steamFallbackArtworkUrl(appId: Int): String = runCatching {
-        val raw = steamGet("https://store.steampowered.com/api/appdetails?appids=$appId&cc=us&l=russian")
-        SteamTopSellerParser.applyGlobalMetadata(SteamTopSeller(appId, ""), raw).headerImageUrl
-    }.getOrDefault("")
+    private fun steamArtworkJson(url: String): String {
+        val connection = URL(url).openConnection() as HttpURLConnection
+        connection.connectTimeout = 7000
+        connection.readTimeout = 9000
+        connection.setRequestProperty("Accept", "application/json")
+        connection.setRequestProperty("User-Agent", "Igrolov Android")
+        try {
+            if (connection.responseCode !in 200..299) throw java.io.IOException("Steam HTTP ${connection.responseCode}")
+            return connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+        } finally { connection.disconnect() }
+    }
+
+    private fun steamArtworkFallbackUrls(appId: Int, portrait: Boolean): List<String> {
+        val urls = mutableListOf<String>()
+        if (portrait) runCatching {
+            val request = JSONObject()
+                .put("ids", JSONArray().put(JSONObject().put("appid", appId)))
+                .put("context", JSONObject().put("language", "english").put("country_code", "US"))
+                .put("data_request", JSONObject().put("include_assets", true))
+            val encoded = URLEncoder.encode(request.toString(), "UTF-8")
+            val response = steamArtworkJson(
+                "https://api.steampowered.com/IStoreBrowseService/GetItems/v1/?input_json=$encoded"
+            )
+            urls += SteamArtworkPresentation.libraryCapsuleUrls(response, appId)
+        }
+        runCatching {
+            val raw = steamArtworkJson("https://store.steampowered.com/api/appdetails?appids=$appId&cc=us&l=english")
+            SteamTopSellerParser.applyGlobalMetadata(SteamTopSeller(appId, ""), raw).headerImageUrl
+                .takeIf { it.isNotBlank() }?.let(urls::add)
+        }
+        return urls.distinct()
+    }
 
     @Composable
     private fun SteamArtwork(url: String, modifier: Modifier = Modifier, appId: Int? = null) {
@@ -581,25 +609,16 @@ class MainActivity : ComponentActivity() {
         val artworkCacheKey = remember(appId, portraitArtwork) {
             appId?.let { SteamArtworkPresentation.cacheKey(it, portraitArtwork) }
         }
+        val initialCandidates = remember(url, appId, artworkCacheKey) {
+            val cached = artworkCacheKey?.let { artworkPrefs.getString(it, null) }
+                ?.takeIf { it.isNotBlank() }
+            listOfNotNull(cached, url).distinct()
+        }
+        var candidates by remember(url, appId) { mutableStateOf(initialCandidates) }
+        var candidateIndex by remember(url, appId) { mutableIntStateOf(0) }
         var shouldLoad by remember(url, appId) { mutableStateOf(false) }
-        var imageUrl by remember(url, appId) {
-            mutableStateOf(
-                artworkCacheKey?.let { artworkPrefs.getString(it, null) }
-                    ?.takeIf { !it.isNullOrBlank() } ?: url
-            )
-        }
-        var fallbackTried by remember(url, appId) { mutableStateOf(false) }
-
-        LaunchedEffect(imageUrl, appId, shouldLoad) {
-            if (shouldLoad && imageUrl.isBlank() && appId != null && appId > 0 && !fallbackTried) {
-                fallbackTried = true
-                val fallbackUrl = withContext(Dispatchers.IO) { steamFallbackArtworkUrl(appId) }
-                if (fallbackUrl.isNotBlank()) {
-                    artworkCacheKey?.let { artworkPrefs.edit().putString(it, fallbackUrl).apply() }
-                    imageUrl = fallbackUrl
-                }
-            }
-        }
+        var imageUrl by remember(url, appId) { mutableStateOf(initialCandidates.firstOrNull().orEmpty()) }
+        var fallbackCandidatesLoaded by remember(url, appId) { mutableStateOf(false) }
 
         Box(
             modifier
@@ -633,16 +652,27 @@ class MainActivity : ComponentActivity() {
                     contentScale = if (portraitArtwork) androidx.compose.ui.layout.ContentScale.Crop
                         else androidx.compose.ui.layout.ContentScale.Fit,
                     modifier = modifier,
+                    onSuccess = {
+                        artworkCacheKey?.let { artworkPrefs.edit().putString(it, imageUrl).apply() }
+                    },
                     onError = {
-                        if (!fallbackTried && appId != null && appId > 0) {
-                            fallbackTried = true
+                        artworkCacheKey?.let { artworkPrefs.edit().remove(it).apply() }
+                        val nextIndex = candidateIndex + 1
+                        if (nextIndex < candidates.size) {
+                            candidateIndex = nextIndex
+                            imageUrl = candidates[nextIndex]
+                        } else if (!fallbackCandidatesLoaded && appId != null && appId > 0) {
+                            fallbackCandidatesLoaded = true
                             scope.launch {
-                                val fallbackUrl = withContext(Dispatchers.IO) {
-                                    steamFallbackArtworkUrl(appId)
+                                val additional = withContext(Dispatchers.IO) {
+                                    steamArtworkFallbackUrls(appId, portraitArtwork)
                                 }
-                                if (fallbackUrl.isNotBlank() && fallbackUrl != imageUrl) {
-                                    artworkCacheKey?.let { artworkPrefs.edit().putString(it, fallbackUrl).apply() }
-                                    imageUrl = fallbackUrl
+                                val merged = (candidates + additional).distinct()
+                                val nextUrl = merged.drop(candidateIndex + 1).firstOrNull()
+                                candidates = merged
+                                if (nextUrl != null) {
+                                    candidateIndex = merged.indexOf(nextUrl)
+                                    imageUrl = nextUrl
                                 }
                             }
                         }
@@ -841,7 +871,7 @@ class MainActivity : ComponentActivity() {
                     OutlinedButton(onClick = onMonitor, modifier = Modifier.weight(1f).height(36.dp),
                         contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp),
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
-                        Text(if (monitored) "Ещё издание" else "Следить",
+                        Text(if (monitored) "Добавить издание" else "Следить",
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                             color = Color(0xFF17212D), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
@@ -3159,7 +3189,7 @@ class MainActivity : ComponentActivity() {
                             OutlinedButton(onClick = { onMonitor(game) }, enabled = game.appId > 0,
                                 modifier = Modifier.weight(1f).height(36.dp), contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp),
                                 shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
-                                Text(if (isMonitored(game)) "Издание" else "Следить",
+                                Text(if (isMonitored(game)) "Добавить издание" else "Следить",
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                                     color = Color(0xFF17212D), maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
