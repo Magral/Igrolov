@@ -17,6 +17,7 @@ import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
@@ -38,8 +39,10 @@ class StellarisUiRegressionTest {
                 override fun disconnect(){}
                 override fun usingProxy()=false
                 override fun getResponseCode()=200
+                override fun getOutputStream()=ByteArrayOutputStream()
                 override fun getInputStream():ByteArrayInputStream {
                     val json=when {
+                        url.host.contains("ggsel") -> JSONObject().put("categories",JSONArray())
                         url.path.contains("storesearch") -> JSONObject("""{"items":[{"id":281990,"name":"Stellaris"}]}""")
                         url.path.contains("appdetails") -> JSONObject("""{"281990":{"success":true,"data":{"name":"Stellaris","type":"game","dlc":[518910]}}}""")
                         url.path.endsWith("search2") -> {
@@ -94,6 +97,7 @@ class StellarisUiRegressionTest {
         device.swipe(device.displayWidth / 2, device.displayHeight * 3 / 4,
             device.displayWidth / 2, device.displayHeight / 3, 12)
         device.waitForIdle()
+        Thread.sleep(700)
         device.takeScreenshot(File(context.getExternalFilesDir(null),"stellaris-result.png"))
     }
 }
