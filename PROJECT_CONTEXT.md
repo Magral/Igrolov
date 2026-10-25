@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T02:47:48.016Z
+- Обновлено (UTC): 2026-10-25T02:55:14.443Z
 - Ветка: `main`.
-- HEAD: [`521881299c3a`](https://github.com/Magral/Igrolov/commit/521881299c3adac9ec8ac11302cffe875e5a3b6c).
+- HEAD: [`996d2c469f7b`](https://github.com/Magral/Igrolov/commit/996d2c469f7b367c7d2c1f94dbb3678842c160e6).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [996d2c4](https://github.com/Magral/Igrolov/commit/996d2c469f7b367c7d2c1f94dbb3678842c160e6) — test: switch products tab through Compose semantics
 - [5218812](https://github.com/Magral/Igrolov/commit/521881299c3adac9ec8ac11302cffe875e5a3b6c) — test: reveal monitor details through Compose
 - [99cbe97](https://github.com/Magral/Igrolov/commit/99cbe97f7d4e5f7d8cb1a1bfac1e906a1b70a51f) — test: switch monitor section through Compose semantics
 - [8515650](https://github.com/Magral/Igrolov/commit/8515650a7f165c80d192e3725ccfaafb105990cb) — test: import Compose semantics matcher
-- [b5e65af](https://github.com/Magral/Igrolov/commit/b5e65afa531bc75e72240678779aca4d43e5c07d) — ui: compact filters and preserve wishlist actions
 <!-- AUTO_CONTEXT_END -->
