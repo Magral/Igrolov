@@ -78,6 +78,7 @@ class MonitorUiRegressionTest {
             assertFalse("Old records without counters must not be labelled as an empty marketplace",device.hasObject(By.text("Подходящих предложений нет — это не ошибка сети.")))
         }
         device.findObject(By.textStartsWith("История цен (")).click()
+        assertTrue(device.wait(Until.hasObject(By.text("Скрыть историю")),5000))
         assertTrue(scroll.scrollIntoView(UiSelector().textStartsWith("Диапазон:")))
         assertTrue(device.findObject(By.textStartsWith("Диапазон:")).text.contains("800"))
         // Missing-price history gaps are covered by WatchHistory unit tests; UI focuses on the visible chart range.
