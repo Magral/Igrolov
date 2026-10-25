@@ -115,8 +115,8 @@ class MainActivity : ComponentActivity() {
         WatchScheduler.start(this)
         setContent {
             MaterialTheme(colorScheme = lightColorScheme(
-                primary = Color(0xFFF2B94B),
-                onPrimary = Color(0xFF17212D),
+                primary = Color(0xFF17212D),
+                onPrimary = Color.White,
                 secondary = Color(0xFF168F57),
                 onSecondary = Color.White,
                 tertiary = Color(0xFF4C5969),
@@ -124,7 +124,7 @@ class MainActivity : ComponentActivity() {
                 surface = Color(0xFFFFFFFF),
                 surfaceVariant = Color(0xFFEEF1F4),
                 primaryContainer = Color(0xFFFFE2A6),
-                onPrimaryContainer = Color(0xFF35260C),
+                onPrimaryContainer = Color(0xFF17212D),
                 secondaryContainer = Color(0xFFE0F4E9),
                 onSecondaryContainer = Color(0xFF155B35),
                 tertiaryContainer = Color(0xFFE9EDF1),
@@ -577,10 +577,14 @@ class MainActivity : ComponentActivity() {
         val view = LocalView.current
         val scope = rememberCoroutineScope()
         val artworkPrefs = remember(context) { context.getSharedPreferences("steam_artwork_urls", MODE_PRIVATE) }
+        val portraitArtwork = remember(url) { SteamArtworkPresentation.isPortrait(url) }
+        val artworkCacheKey = remember(appId, portraitArtwork) {
+            appId?.let { SteamArtworkPresentation.cacheKey(it, portraitArtwork) }
+        }
         var shouldLoad by remember(url, appId) { mutableStateOf(false) }
         var imageUrl by remember(url, appId) {
             mutableStateOf(
-                appId?.let { artworkPrefs.getString(it.toString(), null) }
+                artworkCacheKey?.let { artworkPrefs.getString(it, null) }
                     ?.takeIf { !it.isNullOrBlank() } ?: url
             )
         }
@@ -591,7 +595,7 @@ class MainActivity : ComponentActivity() {
                 fallbackTried = true
                 val fallbackUrl = withContext(Dispatchers.IO) { steamFallbackArtworkUrl(appId) }
                 if (fallbackUrl.isNotBlank()) {
-                    artworkPrefs.edit().putString(appId.toString(), fallbackUrl).apply()
+                    artworkCacheKey?.let { artworkPrefs.edit().putString(it, fallbackUrl).apply() }
                     imageUrl = fallbackUrl
                 }
             }
@@ -626,7 +630,8 @@ class MainActivity : ComponentActivity() {
                         .crossfade(true)
                         .build(),
                     contentDescription = null,
-                    contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                    contentScale = if (portraitArtwork) androidx.compose.ui.layout.ContentScale.Crop
+                        else androidx.compose.ui.layout.ContentScale.Fit,
                     modifier = modifier,
                     onError = {
                         if (!fallbackTried && appId != null && appId > 0) {
@@ -636,7 +641,7 @@ class MainActivity : ComponentActivity() {
                                     steamFallbackArtworkUrl(appId)
                                 }
                                 if (fallbackUrl.isNotBlank() && fallbackUrl != imageUrl) {
-                                    artworkPrefs.edit().putString(appId.toString(), fallbackUrl).apply()
+                                    artworkCacheKey?.let { artworkPrefs.edit().putString(it, fallbackUrl).apply() }
                                     imageUrl = fallbackUrl
                                 }
                             }
@@ -2327,7 +2332,7 @@ class MainActivity : ComponentActivity() {
                                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically) {
                                         Text(offer.marketplace, style = MaterialTheme.typography.labelSmall,
-                                            color = Color(0xFFB9780A), maxLines = 1)
+                                            color = Color(0xFF17212D), maxLines = 1)
                                         Text(String.format(Locale("ru", "RU"), "%.2f ₽", offer.price),
                                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                                             color = Color(0xFF17212D), maxLines = 1)
