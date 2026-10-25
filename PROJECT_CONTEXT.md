@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T03:25:30.283Z
+- Обновлено (UTC): 2026-10-25T03:25:43.640Z
 - Ветка: `main`.
-- HEAD: [`f7838f4417eb`](https://github.com/Magral/Igrolov/commit/f7838f4417eb397484d4cbaf032641c39e2d4fbe).
+- HEAD: [`7f8326d85891`](https://github.com/Magral/Igrolov/commit/7f8326d85891fd3514f1377c68b69e1161b076fc).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [7f8326d](https://github.com/Magral/Igrolov/commit/7f8326d85891fd3514f1377c68b69e1161b076fc) — ui: highlight handbook tab while browsing directory
 - [f7838f4](https://github.com/Magral/Igrolov/commit/f7838f4417eb397484d4cbaf032641c39e2d4fbe) — test: correct screenshot result assertion
 - [6984f53](https://github.com/Magral/Igrolov/commit/6984f534c025e0ca2caf315846b4753ca91ce1af) — test: fix screenshot navigation matcher import
 - [baaeb9e](https://github.com/Magral/Igrolov/commit/baaeb9e2720e04996e48482f1d0078cc01496642) — test: collect real screenshots from each tab
-- [f8ce1ab](https://github.com/Magral/Igrolov/commit/f8ce1ab9dcaa2bca9dcee14ae21653a33f7e5b81) — test: capture screenshots for all app tabs
 <!-- AUTO_CONTEXT_END -->
