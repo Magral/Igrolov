@@ -858,7 +858,7 @@ class MainActivity : ComponentActivity() {
                             style = MaterialTheme.typography.labelSmall, maxLines = 1)
                     }
                     TextButton(onClick = onMonitor, contentPadding = PaddingValues(horizontal = 5.dp, vertical = 0.dp)) {
-                        Text(if (monitored) "Издание +" else "Мониторинг +", style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                        Text(if (monitored) "Ещё издание" else "В мониторинг", style = MaterialTheme.typography.labelSmall, maxLines = 1)
                     }
                     Checkbox(selected, { onToggle() }, enabled = selectionEnabled, modifier = Modifier.size(28.dp))
                 }
@@ -3071,7 +3071,7 @@ class MainActivity : ComponentActivity() {
                         }
                         TextButton(onClick = { onMonitor(game) }, enabled = game.appId > 0,
                             contentPadding = PaddingValues(horizontal = 5.dp, vertical = 0.dp)) {
-                            Text(if (isMonitored(game)) "Издание +" else "Мониторинг +", style = MaterialTheme.typography.labelSmall,
+                            Text(if (isMonitored(game)) "Ещё издание" else "В мониторинг", style = MaterialTheme.typography.labelSmall,
                                 maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         Checkbox(game.appId in selectedIds, { onToggleSelection(game) }, enabled = selectionEnabled, modifier = Modifier.size(28.dp))
