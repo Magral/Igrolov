@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T00:43:06.778Z
+- Обновлено (UTC): 2026-10-25T00:47:23.883Z
 - Ветка: `main`.
-- HEAD: [`6fe4204bb7b0`](https://github.com/Magral/Igrolov/commit/6fe4204bb7b03c6fc3c32d04daa7a21de2005acc).
+- HEAD: [`c6165af1bf97`](https://github.com/Magral/Igrolov/commit/c6165af1bf9736f9536b553801d3d663daeb918c).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [c6165af](https://github.com/Magral/Igrolov/commit/c6165af1bf9736f9536b553801d3d663daeb918c) — ui: compact cards to match redesign reference
 - [6fe4204](https://github.com/Magral/Igrolov/commit/6fe4204bb7b03c6fc3c32d04daa7a21de2005acc) — test: reveal tracked product with viewport swipes
 - [a7dc5fe](https://github.com/Magral/Igrolov/commit/a7dc5fee9749ed8434674b5b459fa9f98ed2683c) — fix: restore complete MainActivity source
 - [42b4965](https://github.com/Magral/Igrolov/commit/42b4965b6225f5166d411d0e0d750f7a7ec3cc4c) — ui: unify wishlist card action colors
-- [3557f3c](https://github.com/Magral/Igrolov/commit/3557f3c9fc30e314b9bc21d94fb441256d2c484a) — test: scroll tracked products into view
 <!-- AUTO_CONTEXT_END -->
