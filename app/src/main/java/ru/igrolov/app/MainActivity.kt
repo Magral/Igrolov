@@ -1728,7 +1728,7 @@ class MainActivity : ComponentActivity() {
                 GameMonitoringDialog(game, onDismiss = { pendingWatchGame = null },
                     onSaved = { saved -> watches = saved; pendingWatchGame = null })
             }
-            NavigationHeader(activeTab, settingsOpen,
+            NavigationHeader(if (settingsOpen && showDirectory) 5 else activeTab, settingsOpen,
                 onSettings = {
                     keyboardController?.hide()
                     focusManager.clearFocus()
