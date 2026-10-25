@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T07:00:47.114Z
+- Обновлено (UTC): 2026-10-25T07:09:44.872Z
 - Ветка: `main`.
-- HEAD: [`af07929c05fe`](https://github.com/Magral/Igrolov/commit/af07929c05fe358d105a71954389876595b5ac89).
+- HEAD: [`c5102090ffc6`](https://github.com/Magral/Igrolov/commit/c5102090ffc6761334a664b94f08092634fb75d1).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [c510209](https://github.com/Magral/Igrolov/commit/c5102090ffc6761334a664b94f08092634fb75d1) — test: enter tracked game through Compose search field
 - [af07929](https://github.com/Magral/Igrolov/commit/af07929c05fe358d105a71954389876595b5ac89) — test: remove API 26 device swipe from tracked price flow
 - [98253eb](https://github.com/Magral/Igrolov/commit/98253eb92ae465b4985b9ba3be17e4845a555064) — test: import Compose rule for transfer regression
 - [ba6b8d5](https://github.com/Magral/Igrolov/commit/ba6b8d53f4459d92f30ad54911a66ad78c567e5e) — test: remove mock GGSEL error from redesign screenshot
-- [1b437df](https://github.com/Magral/Igrolov/commit/1b437dfa9f1a40cbb6b0600d5522947c2782c33e) — test: clean up Compose price-flow regression
 <!-- AUTO_CONTEXT_END -->
