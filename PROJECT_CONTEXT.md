@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T06:21:08.595Z
+- Обновлено (UTC): 2026-10-25T06:21:31.098Z
 - Ветка: `main`.
-- HEAD: [`b37b8ff489ad`](https://github.com/Magral/Igrolov/commit/b37b8ff489adceea76f94700af0ce50604528ad2).
+- HEAD: [`c016f7f27633`](https://github.com/Magral/Igrolov/commit/c016f7f27633b114d97ed0dfd2871d73ba7dc694).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [c016f7f](https://github.com/Magral/Igrolov/commit/c016f7f27633b114d97ed0dfd2871d73ba7dc694) — test: capture redesign screens before scenario tests
 - [b37b8ff](https://github.com/Magral/Igrolov/commit/b37b8ff489adceea76f94700af0ce50604528ad2) — ui: redesign search results as compact game cards
 - [c3f7306](https://github.com/Magral/Igrolov/commit/c3f7306dadf4bf36961707720714dffd85a6cb78) — ui: add artwork to monitored game cards
 - [36b7739](https://github.com/Magral/Igrolov/commit/36b7739e110730a7e2fc071d317357ffb7eaf376) — ui: add Steam thumbnails to tracked product cards
-- [593e9f7](https://github.com/Magral/Igrolov/commit/593e9f7d1c9f56fb3ab474d98a6113ecc94af595) — ui: align button corners with the reference
 <!-- AUTO_CONTEXT_END -->
