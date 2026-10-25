@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T06:49:51.572Z
+- Обновлено (UTC): 2026-10-25T06:59:48.225Z
 - Ветка: `main`.
-- HEAD: [`8a1cb878c080`](https://github.com/Magral/Igrolov/commit/8a1cb878c080cab86d78355aa619fdd5053be2a5).
+- HEAD: [`7639914ac57c`](https://github.com/Magral/Igrolov/commit/7639914ac57c95514500975f38d383bbf43bc18b).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [7639914](https://github.com/Magral/Igrolov/commit/7639914ac57c95514500975f38d383bbf43bc18b) — test: use Compose semantics for API 26 price-check flow
 - [8a1cb87](https://github.com/Magral/Igrolov/commit/8a1cb878c080cab86d78355aa619fdd5053be2a5) — test: tap visible Compose buttons reliably on API 26
 - [34678b5](https://github.com/Magral/Igrolov/commit/34678b579ad0c2dba4bb795e1038a996ec63111c) — test: center populated search result in redesign screenshot
 - [d732074](https://github.com/Magral/Igrolov/commit/d732074ed822d7c75f61162c0da8801428660a93) — test: tidy device screenshot capture sequence
-- [4bf2368](https://github.com/Magral/Igrolov/commit/4bf23686f5863418e620a221d0ba5796990d5937) — ui: wrap leader availability filters without clipping
 <!-- AUTO_CONTEXT_END -->
