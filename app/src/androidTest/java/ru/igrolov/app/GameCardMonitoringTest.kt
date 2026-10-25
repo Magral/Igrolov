@@ -82,7 +82,6 @@ class GameCardMonitoringTest {
         UiTestScroll.reveal(compose,"92%")
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("92%")) })
         assertTrue(device.hasObject(By.desc("Положительные отзывы")))
-        UiTestScroll.reveal(compose,"Следить")
         compose.onNodeWithText("Следить").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Желаемая цена, ₽")) })
@@ -118,7 +117,6 @@ class GameCardMonitoringTest {
         assertTrue(UiTestScroll.await(compose,10000) { device.hasObject(By.text("A strategy game.")) })
         compose.onNodeWithText("Закрыть").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
-        UiTestScroll.reveal(compose,"Dead by Daylight")
         UiTestScroll.reveal(compose,"Следить")
         compose.onNodeWithText("Следить").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
