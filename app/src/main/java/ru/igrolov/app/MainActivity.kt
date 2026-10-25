@@ -2693,13 +2693,16 @@ class MainActivity : ComponentActivity() {
                 if (localSuggestions.isNotEmpty()) {
                     Text("Совпадения в истории и справочнике", style = MaterialTheme.typography.labelMedium)
                     localSuggestions.forEach { candidate ->
-                        TextButton(onClick = {
+                        OutlinedButton(onClick = {
                             directoryGame = candidate
                             directoryCanonical = GameRuleStore.read(this@MainActivity, candidate).optString("canonical")
                             directoryGameInfo = null
                             directorySuggestions = emptyList()
                             directorySelectedAppId = null
-                        }) { Text(candidate) }
+                        }, modifier = Modifier.fillMaxWidth().height(34.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
+                            Text(candidate, modifier = Modifier.fillMaxWidth(), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
                     }
                 }
                 OutlinedButton(onClick = {
@@ -2718,23 +2721,30 @@ class MainActivity : ComponentActivity() {
                     }.start()
                 }, enabled = directoryGame.isNotBlank() && !directoryBusy) { Text("Найти название в Steam") }
                 directorySuggestions.forEach { candidate ->
-                    TextButton(onClick = {
+                    OutlinedButton(onClick = {
                         directoryGame = candidate.name
                         directorySelectedAppId = candidate.id
                         directoryCanonical = GameRuleStore.read(this@MainActivity, candidate.name).optString("canonical")
                         directoryGameInfo = null
                         directorySuggestions = emptyList()
-                    }) { Text("${candidate.name} (Steam #${candidate.id})") }
+                    }, modifier = Modifier.fillMaxWidth().height(34.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
+                        Text("${candidate.name} (Steam #${candidate.id})", modifier = Modifier.fillMaxWidth(),
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
                 }
                 if (savedGames.isNotEmpty()) {
                     Text("Ранее изменённые игры", style = MaterialTheme.typography.titleSmall)
                     savedGames.forEach { saved ->
-                        TextButton(onClick = {
+                        OutlinedButton(onClick = {
                             directoryGame = saved
                             directorySelectedAppId = null
                             directoryCanonical = GameRuleStore.read(this@MainActivity, saved).optString("canonical")
                             directoryGameInfo = null
-                        }) { Text(saved) }
+                        }, modifier = Modifier.fillMaxWidth().height(34.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
+                            Text(saved, modifier = Modifier.fillMaxWidth(), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
                     }
                 }
                 OutlinedButton(onClick = {
@@ -2755,7 +2765,11 @@ class MainActivity : ComponentActivity() {
                     }.start()
                 }, enabled = directoryGame.isNotBlank() && !directoryBusy) { Text("Открыть / обновить из Steam") }
                 if (directoryBusy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                Text(directoryMessage, style = MaterialTheme.typography.bodySmall)
+                OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, Color(0xFFDCE2E8)),
+                    colors = CardDefaults.outlinedCardColors(containerColor = Color.White)) {
+                    Text(directoryMessage, Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 if (directoryGame.isNotBlank()) {
                     val directoryRules = remember(directoryGame, rulesRevision) {
                         GameRuleStore.read(this@MainActivity, directoryGame)
