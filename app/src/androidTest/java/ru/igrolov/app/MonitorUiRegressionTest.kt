@@ -2,6 +2,9 @@ package ru.igrolov.app
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -10,6 +13,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.Rule
 import org.junit.runner.RunWith
 import java.io.ByteArrayInputStream
 import java.io.File
@@ -20,6 +24,7 @@ import java.net.URLStreamHandler
 
 @RunWith(AndroidJUnit4::class)
 class MonitorUiRegressionTest {
+    @get:Rule val compose = createEmptyComposeRule()
     @Test fun historyGapsTrackedVariantPriceAndExactWatchSelection() {
         URL.setURLStreamHandlerFactory {protocol->if(protocol!="https")null else object:URLStreamHandler() {
             override fun openConnection(url:URL):URLConnection=object:HttpURLConnection(url) {
@@ -91,15 +96,17 @@ class MonitorUiRegressionTest {
         device.findObject(By.text("Товары")).click()
         assertTrue(device.wait(Until.hasObject(By.text("450,00 ₽")),10000))
         assertFalse(device.hasObject(By.text("1,00 ₽")))
-        device.findObject(By.text("Мониторинг")).click()
+        compose.onNodeWithText("Мониторинг").performSemanticsAction(SemanticsActions.OnClick) { it() }
         scroll.scrollToBeginning(30)
-        assertTrue(scroll.scrollIntoView(UiSelector().className("android.widget.EditText")))
-        val watchInput=device.findObject(By.clazz("android.widget.EditText"))
-        watchInput.click()
-        watchInput.text="Стелларис"
-        assertTrue(scroll.scrollIntoView(UiSelector().text("Stellaris · Steam #281990")))
-        device.findObject(By.text("Stellaris · Steam #281990")).click()
-        assertTrue(device.wait(Until.hasObject(By.text("Выбрано: Stellaris · Steam #281990")),5000))
+        compose.onAllNodes(hasSetTextAction()).onFirst().performTextInput("Стелларис")
+        compose.waitUntil(15000) {
+            compose.onAllNodesWithText("Stellaris · Steam #281990").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithText("Stellaris · Steam #281990")
+            .performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitUntil(5000) {
+            compose.onAllNodesWithText("Выбрано: Stellaris · Steam #281990").fetchSemanticsNodes().isNotEmpty()
+        }
         device.takeScreenshot(File(context.getExternalFilesDir(null),"monitor-selection.png"))
         WatchStore.write(context,JSONArray())
         context.getSharedPreferences("tracked_products",0).edit().putString("ids","").remove("product_cache_10000").commit()
