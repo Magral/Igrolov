@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T01:00:24.940Z
+- Обновлено (UTC): 2026-10-25T01:05:47.135Z
 - Ветка: `main`.
-- HEAD: [`6db93b1c134e`](https://github.com/Magral/Igrolov/commit/6db93b1c134e60bae41ac69d68e725a2d6cb78e9).
+- HEAD: [`a428db894cb1`](https://github.com/Magral/Igrolov/commit/a428db894cb1482118d535a74925808da6032d7f).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [a428db8](https://github.com/Magral/Igrolov/commit/a428db894cb1482118d535a74925808da6032d7f) — ui: improve compact action touch targets
 - [6db93b1](https://github.com/Magral/Igrolov/commit/6db93b1c134e60bae41ac69d68e725a2d6cb78e9) — test: verify compact cards through Compose semantics
 - [1700919](https://github.com/Magral/Igrolov/commit/1700919e16ae12c5a79200d2b16c774fe81a3a1d) — test: preserve compact card action accessibility
 - [c6165af](https://github.com/Magral/Igrolov/commit/c6165af1bf9736f9536b553801d3d663daeb918c) — ui: compact cards to match redesign reference
-- [6fe4204](https://github.com/Magral/Igrolov/commit/6fe4204bb7b03c6fc3c32d04daa7a21de2005acc) — test: reveal tracked product with viewport swipes
 <!-- AUTO_CONTEXT_END -->
