@@ -2534,13 +2534,6 @@ class MainActivity : ComponentActivity() {
                             label = { Text(section.label, maxLines = 1, style = MaterialTheme.typography.labelSmall) })
                     }
                 }
-                SteamRuAvailabilityFilter(
-                    selected = topAvailabilityFilter,
-                    onSelected = { filter ->
-                        catalogueUi.selectedLeaderIds = emptySet()
-                        topAvailabilityFilter = filter
-                    }
-                )
                 val sectionGames = remember(leaderSection, newReleaseGames, topGames, discountedExtraGames) {
                     when (leaderSection) {
                         SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseGames
@@ -2557,7 +2550,16 @@ class MainActivity : ComponentActivity() {
                     sectionGames.asSequence().flatMap { it.genres.asSequence() }.distinct().sorted().toList()
                 }
                 Text(countLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                SteamLeaderFiltersPanel(leaderFilterInput, { leaderFilterInput = it }, availableGenres = availableLeaderGenres)
+                SteamLeaderFiltersPanel(
+                    leaderFilterInput,
+                    { leaderFilterInput = it },
+                    availableGenres = availableLeaderGenres,
+                    availabilityFilter = topAvailabilityFilter,
+                    onAvailabilitySelected = { filter ->
+                        catalogueUi.selectedLeaderIds = emptySet()
+                        topAvailabilityFilter = filter
+                    }
+                )
                 val availabilityFilteredGames = remember(sectionGames, leaderSection, topAvailabilityFilter) {
                     leaderSection.filter(sectionGames).filter { game ->
                         game.isGame && when (topAvailabilityFilter) {
@@ -2908,7 +2910,9 @@ class MainActivity : ComponentActivity() {
         input: SteamLeaderFilterInput,
         onInput: (SteamLeaderFilterInput) -> Unit,
         includeReviewFilters: Boolean = true,
-        availableGenres: List<String> = emptyList()
+        availableGenres: List<String> = emptyList(),
+        availabilityFilter: String? = null,
+        onAvailabilitySelected: ((String) -> Unit)? = null
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(
@@ -2916,6 +2920,9 @@ class MainActivity : ComponentActivity() {
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                if (availabilityFilter != null && onAvailabilitySelected != null) {
+                    SteamRuAvailabilityFilter(availabilityFilter, onAvailabilitySelected)
+                }
                 SteamFeatureFilterChoices(input, onInput)
                 SteamGenreFilterChoices(input, onInput, availableGenres)
                 OutlinedButton(
