@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T06:23:23.268Z
+- Обновлено (UTC): 2026-10-25T06:25:34.147Z
 - Ветка: `main`.
-- HEAD: [`83daae11e7ca`](https://github.com/Magral/Igrolov/commit/83daae11e7ca811b4bd7fd86f6d6398bf6ac8263).
+- HEAD: [`ea8a053379e0`](https://github.com/Magral/Igrolov/commit/ea8a053379e0838cac543b05b0b2c0db0ed2e718).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [ea8a053](https://github.com/Magral/Igrolov/commit/ea8a053379e0838cac543b05b0b2c0db0ed2e718) — fix: close the tracked product list layout
 - [83daae1](https://github.com/Magral/Igrolov/commit/83daae11e7ca811b4bd7fd86f6d6398bf6ac8263) — ui: outline compact card actions
 - [9b59867](https://github.com/Magral/Igrolov/commit/9b598673744cbf2c349eb75416334732c0e5fec9) — test: show a saved rule on the handbook screenshot
 - [729bcd3](https://github.com/Magral/Igrolov/commit/729bcd3475f44f6967f21153af812e3427e9111c) — test: use populated app screens for redesign evidence
-- [9a2d53f](https://github.com/Magral/Igrolov/commit/9a2d53f3587888bfdab40432165e77ee90309730) — test: copy seeded screenshots after card scenario
 <!-- AUTO_CONTEXT_END -->
