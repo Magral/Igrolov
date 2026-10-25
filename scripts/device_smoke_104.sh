@@ -30,13 +30,13 @@ adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class ru.igrolov.app.FullRedesignScreenshotsTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/redesign-screenshots.txt
 grep -E 'OK \(1 test\)' device-results/redesign-screenshots.txt
 for tab in search products monitoring wishlist leaders directory; do adb pull "/sdcard/Android/data/ru.igrolov.app/files/redesign-$tab.png" "device-results/redesign-$tab.png"; done
-cp device-results/leader-review-monitor.png device-results/redesign-leaders.png
-cp device-results/wishlist-monitor.png device-results/redesign-wishlist.png
 adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class ru.igrolov.app.GameCardMonitoringTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/game-card-monitoring.txt
 grep -E 'OK \(1 test\)' device-results/game-card-monitoring.txt
 adb pull /sdcard/Android/data/ru.igrolov.app/files/leader-review-monitor.png device-results/leader-review-monitor.png
 adb pull /sdcard/Android/data/ru.igrolov.app/files/wishlist-monitor.png device-results/wishlist-monitor.png
+cp device-results/leader-review-monitor.png device-results/redesign-leaders.png
+cp device-results/wishlist-monitor.png device-results/redesign-wishlist.png
 
 adb shell am force-stop ru.igrolov.app
 run_test launchAndNavigateFiltersSettingsAndMonitoring
