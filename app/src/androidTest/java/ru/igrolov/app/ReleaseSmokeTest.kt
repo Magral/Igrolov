@@ -56,9 +56,14 @@ class ReleaseSmokeTest {
         assertTrue(device.hasObject(By.text("Бестселлеры")))
         assertTrue(device.hasObject(By.text("Новинки")))
         assertTrue(device.hasObject(By.text("Скидки")))
+        assertTrue(device.hasObject(By.text("Steam RU · Все")))
+        compose.onNodeWithText("Steam RU · Все").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitForIdle()
         assertTrue(device.hasObject(By.text("Все игры")))
         assertTrue(device.hasObject(By.text("Доступны в Steam RU")))
         assertTrue(device.hasObject(By.text("Недоступны в Steam RU")))
+        compose.onNodeWithText("Все игры").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitForIdle()
         compose.onNodeWithText("Поиск").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         compose.onNodeWithText("Gift").performSemanticsAction(SemanticsActions.OnClick) { it() }
