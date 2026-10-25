@@ -23,6 +23,7 @@ class FullRedesignScreenshotsTest {
 
     @Test fun captureAllMainScreens() {
         val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        GameRuleStore.add(context, "Stellaris", "blocked", "DLC")
         context.startActivity(Intent(context, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         compose.waitUntil(15000) {
@@ -45,5 +46,6 @@ class FullRedesignScreenshotsTest {
             }
             capture(file)
         }
+        GameRuleStore.remove(context, "Stellaris", "blocked", "DLC")
     }
 }
