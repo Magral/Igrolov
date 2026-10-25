@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T06:16:00.564Z
+- Обновлено (UTC): 2026-10-25T06:16:49.490Z
 - Ветка: `main`.
-- HEAD: [`19750043505b`](https://github.com/Magral/Igrolov/commit/19750043505bd8d8aba4bcc6f6340b19a70d6968).
+- HEAD: [`f7599c47e36e`](https://github.com/Magral/Igrolov/commit/f7599c47e36ef084187ccec71281f42c6c52ca2d).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [f7599c4](https://github.com/Magral/Igrolov/commit/f7599c47e36ef084187ccec71281f42c6c52ca2d) — ui: add a bordered empty state to products
 - [1975004](https://github.com/Magral/Igrolov/commit/19750043505bd8d8aba4bcc6f6340b19a70d6968) — ui: compact monitoring copy and price columns
 - [156b790](https://github.com/Magral/Igrolov/commit/156b79074d0ec09e695ec608373b06a76b21b40b) — test: follow the current leader card action
 - [36588c8](https://github.com/Magral/Igrolov/commit/36588c84e149719a5f98879e1b6c5e4995e587b5) — test: click compact card action without nested scroll
-- [31b046b](https://github.com/Magral/Igrolov/commit/31b046b22dcd5ce37a9cb7ac76040e18a984a7fd) — test: target compact card action without tab collision
 <!-- AUTO_CONTEXT_END -->
