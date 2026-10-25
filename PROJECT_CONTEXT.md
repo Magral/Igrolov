@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T06:35:16.984Z
+- Обновлено (UTC): 2026-10-25T06:35:27.027Z
 - Ветка: `main`.
-- HEAD: [`d9e2deb1b28a`](https://github.com/Magral/Igrolov/commit/d9e2deb1b28a6dc6997c14e6443b4124f0bde488).
+- HEAD: [`2b040665d20b`](https://github.com/Magral/Igrolov/commit/2b040665d20b0206cf6f6875108185b8f0375da6).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [2b04066](https://github.com/Magral/Igrolov/commit/2b040665d20b0206cf6f6875108185b8f0375da6) — test: capture the populated monitoring card
 - [d9e2deb](https://github.com/Magral/Igrolov/commit/d9e2deb1b28a6dc6997c14e6443b4124f0bde488) — test: capture search results with the keyboard hidden
 - [1901ad7](https://github.com/Magral/Igrolov/commit/1901ad71fe4c1f239601099d2dd5d9653a0bb2cd) — test: dismiss keyboard without backing out of search
 - [ea8a053](https://github.com/Magral/Igrolov/commit/ea8a053379e0838cac543b05b0b2c0db0ed2e718) — fix: close the tracked product list layout
-- [83daae1](https://github.com/Magral/Igrolov/commit/83daae11e7ca811b4bd7fd86f6d6398bf6ac8263) — ui: outline compact card actions
 <!-- AUTO_CONTEXT_END -->
