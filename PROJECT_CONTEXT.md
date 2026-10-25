@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T09:34:21.431Z
+- Обновлено (UTC): 2026-10-25T09:34:37.362Z
 - Ветка: `main`.
-- HEAD: [`fcdd07ab52df`](https://github.com/Magral/Igrolov/commit/fcdd07ab52dfbc8b93cacc5c66da24dc0d359c35).
+- HEAD: [`347c0382cad0`](https://github.com/Magral/Igrolov/commit/347c0382cad0b94c1f75d1da1d25e8bbb8f61f11).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [347c038](https://github.com/Magral/Igrolov/commit/347c0382cad0b94c1f75d1da1d25e8bbb8f61f11) — Use settings icon semantics in screenshot test
 - [fcdd07a](https://github.com/Magral/Igrolov/commit/fcdd07ab52dfbc8b93cacc5c66da24dc0d359c35) — Update leader section smoke expectations
 - [615dcc8](https://github.com/Magral/Igrolov/commit/615dcc8e8c1fd9532bb3d60644e5605e4196daa1) — Capture game directory from settings
 - [687295b](https://github.com/Magral/Igrolov/commit/687295b5e133a0afcbc345fc929fec8b379b93a3) — Shorten Steam leader section labels
-- [922678e](https://github.com/Magral/Igrolov/commit/922678e583e0616bf4ded231c4df52bac12acf7d) — Refine navigation and compact Steam filters
 <!-- AUTO_CONTEXT_END -->
