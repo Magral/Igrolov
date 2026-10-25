@@ -62,12 +62,16 @@ adb pull /sdcard/Android/data/ru.igrolov.app/files/monitor-compact.png device-re
 adb pull /sdcard/Android/data/ru.igrolov.app/files/monitor-history.png device-results/monitor-history.png
 adb pull /sdcard/Android/data/ru.igrolov.app/files/monitor-selection.png device-results/monitor-selection.png
 adb shell am force-stop ru.igrolov.app
+adb shell am force-stop ru.igrolov.app
+adb shell am instrument -w -r -e class ru.igrolov.app.FullRedesignScreenshotsTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/redesign-screenshots.txt
+grep -E 'OK \\(1 test\\)' device-results/redesign-screenshots.txt
+for tab in search products monitoring wishlist leaders directory; do adb pull "/sdcard/Android/data/ru.igrolov.app/files/redesign-$tab.png" "device-results/redesign-$tab.png"; done
+adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class 'ru.igrolov.app.TrackedTransferUiRegressionTest#addFromSearchRefreshPriceAndKeepItOnNetworkFailure' ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/tracked-transfer.txt
 grep -E 'OK \(1 test\)' device-results/tracked-transfer.txt
 adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class 'ru.igrolov.app.TrackedTransferUiRegressionTest#restartKeepsContextAndRepairsLegacyTrackedItemWithoutReadding' ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/tracked-restart.txt
-adb shell am force-stop ru.igrolov.app
-adb shell am instrument -w -r -e class ru.igrolov.app.FullRedesignScreenshotsTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/redesign-screenshots.txt
+ ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/redesign-screenshots.txt
 grep -E 'OK \(1 test\)' device-results/redesign-screenshots.txt
 for tab in search products monitoring wishlist leaders directory; do
   adb pull "/sdcard/Android/data/ru.igrolov.app/files/redesign-$tab.png" "device-results/redesign-$tab.png"
