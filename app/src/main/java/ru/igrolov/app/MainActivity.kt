@@ -135,13 +135,15 @@ class MainActivity : ComponentActivity() {
                 onSurfaceVariant = Color(0xFF566273)
             ), typography = Typography().run {
                 copy(
-                    bodySmall = bodySmall.copy(fontSize = 9.sp),
-                    bodyMedium = bodyMedium.copy(fontSize = 10.sp),
-                    bodyLarge = bodyLarge.copy(fontSize = 11.sp),
-                    titleSmall = titleSmall.copy(fontSize = 10.sp),
-                    titleMedium = titleMedium.copy(fontSize = 12.sp),
-                    titleLarge = titleLarge.copy(fontSize = 13.sp),
-                    labelLarge = labelLarge.copy(fontSize = 10.sp),
+                    bodySmall = bodySmall.copy(fontSize = 11.sp),
+                    bodyMedium = bodyMedium.copy(fontSize = 12.sp),
+                    bodyLarge = bodyLarge.copy(fontSize = 13.sp),
+                    titleSmall = titleSmall.copy(fontSize = 12.sp),
+                    titleMedium = titleMedium.copy(fontSize = 14.sp),
+                    titleLarge = titleLarge.copy(fontSize = 16.sp),
+                    labelSmall = labelSmall.copy(fontSize = 12.sp),
+                    labelMedium = labelMedium.copy(fontSize = 13.sp),
+                    labelLarge = labelLarge.copy(fontSize = 12.sp),
                     headlineSmall = headlineSmall.copy(fontSize = 24.sp)
                 )
             }, shapes = Shapes(
@@ -624,7 +626,7 @@ class MainActivity : ComponentActivity() {
                         .crossfade(true)
                         .build(),
                     contentDescription = null,
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit,
                     modifier = modifier,
                     onError = {
                         if (!fallbackTried && appId != null && appId > 0) {
@@ -713,32 +715,17 @@ class MainActivity : ComponentActivity() {
                 verticalArrangement = Arrangement.spacedBy(2.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 if (note == "Лучшая цена") Surface(color = Color(0xFF168F57), shape = MaterialTheme.shapes.small) {
                     Text("ЛУЧШАЯ", Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.sp), color = Color.White, maxLines = 1)
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold), color = Color.White, maxLines = 1)
                 }
-                Text(label, style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp), maxLines = 1, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(price, style = MaterialTheme.typography.titleSmall.copy(fontSize = 11.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                Text(label, style = MaterialTheme.typography.labelSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), maxLines = 1, color = Color(0xFF17212D))
+                Text(price, style = MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (note != null && note != "Лучшая цена") Surface(color = Color(0xFFFFE4AA), shape = MaterialTheme.shapes.small) {
-                    Text(note, Modifier.padding(horizontal = 4.dp, vertical = 1.dp), style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
-                        color = Color(0xFF8D5200), maxLines = 1)
+                    Text(note, Modifier.padding(horizontal = 4.dp, vertical = 1.dp), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
+                        color = Color(0xFF17212D), maxLines = 1)
                 }
             }
         }
-    }
-
-    @Composable
-    private fun BatchSelectionControls(count: Int, enabled: Boolean, onSelectFive: () -> Unit, onStart: () -> Unit) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            TextButton(onClick = onSelectFive, enabled = enabled, contentPadding = PaddingValues(horizontal = 4.dp)) {
-                Text("Выбрать первые 5", style = MaterialTheme.typography.labelSmall)
-            }
-            OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = onStart, enabled = enabled && count > 0,
-                contentPadding = PaddingValues(horizontal = 6.dp)) {
-                Text("Проверить выбранные ($count)", style = MaterialTheme.typography.labelSmall)
-            }
-        }
-        Text("До 10 игр за один запуск", style = MaterialTheme.typography.labelSmall)
     }
 
     @Composable
@@ -807,74 +794,58 @@ class MainActivity : ComponentActivity() {
         monitored: Boolean, searchEnabled: Boolean,
         onOpenSearch: () -> Unit, onDetails: () -> Unit,
         onSearchPrice: () -> Unit, onMonitor: () -> Unit,
-        cachedPrices: CachedGamePrices?, selected: Boolean, selectionEnabled: Boolean, onToggle: () -> Unit
+        cachedPrices: CachedGamePrices?
     ) {
-        val availabilityLabel = when (game.availability) {
-            SteamRuAvailability.AVAILABLE -> "Доступна в Steam RU"
-            SteamRuAvailability.UNAVAILABLE -> "Недоступна в Steam RU"
-            SteamRuAvailability.UNKNOWN -> "Статус Steam RU не определён"
-        }
-        val availabilityColor = when (game.availability) {
-            SteamRuAvailability.AVAILABLE -> Color(0xFF168F57)
-            SteamRuAvailability.UNAVAILABLE -> Color(0xFFC13F42)
-            SteamRuAvailability.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant
-        }
         val platiPrice = marketplacePrices?.platiMinimum ?: cachedPrices?.plati?.price
         val ggselPrice = marketplacePrices?.ggselMinimum ?: cachedPrices?.ggsel?.price
         OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, Color(0xFFDCE2E8)),
             shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
             colors = CardDefaults.outlinedCardColors(containerColor = Color.White)) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 7.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                TextButton(onClick = onOpenSearch, modifier = Modifier.fillMaxWidth().heightIn(min = 36.dp),
+                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp),
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF111820))) {
+                    Text(game.title, Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     SteamArtwork("https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/library_600x900.jpg",
-                        Modifier.size(64.dp, 96.dp), appId = game.appId)
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        TextButton(onClick = onOpenSearch, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(0.dp),
-                            colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF17212D))) {
-                            Text(game.title, Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
-                                maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        }
+                        Modifier.size(76.dp, 114.dp), appId = game.appId)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         SteamReviewBadge(game.reviewSummary)
                         SteamGenreLine(game.genres)
                         SteamFeatureBadges(game.features)
-                        Row(Modifier.fillMaxWidth().heightIn(min = 22.dp), verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Surface(onClick = onSearchPrice, enabled = searchEnabled && marketplacePrices?.checking != true,
-                                modifier = Modifier.height(26.dp), shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
-                                color = Color.White, border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
-                                Box(Modifier.padding(horizontal = 5.dp), contentAlignment = Alignment.Center) {
-                                    Text(if (marketplacePrices?.checking == true) "Ищем…" else "Цены",
-                                        style = MaterialTheme.typography.labelSmall, maxLines = 1, color = Color(0xFFF0A928))
-                                }
-                            }
-                            Surface(onClick = onMonitor, modifier = Modifier.height(26.dp),
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
-                                color = Color.White, border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
-                                Box(Modifier.padding(horizontal = 5.dp), contentAlignment = Alignment.Center) {
-                                    Text(if (monitored) "Ещё издание" else "В мониторинг", style = MaterialTheme.typography.labelSmall,
-                                        color = Color(0xFFF0A928), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
-                            }
-                            Checkbox(selected, { onToggle() }, enabled = selectionEnabled, modifier = Modifier.size(24.dp))
-                        }
                     }
-                    Column(Modifier.width(140.dp), horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        DealPriceStrip(
-                            steamPrice = game.steamPrice.ifBlank { "—" }, discountPercent = game.discountPercent,
-                            platiPrice = platiPrice, ggselPrice = ggselPrice,
-                            steamAvailable = when (game.availability) {
-                                SteamRuAvailability.AVAILABLE -> true
-                                SteamRuAvailability.UNAVAILABLE -> false
-                                SteamRuAvailability.UNKNOWN -> null
-                            }
-                        )
-                        OutlinedButton(onClick = onDetails, modifier = Modifier.fillMaxWidth().height(32.dp),
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
-                            border = BorderStroke(1.dp, Color(0xFFD2D9E1)), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF344253))) {
-                            Text("Подробнее", style = MaterialTheme.typography.labelMedium, color = Color(0xFF344253), maxLines = 1)
-                        }
+                }
+                DealPriceStrip(
+                    steamPrice = game.steamPrice.ifBlank { "—" }, discountPercent = game.discountPercent,
+                    platiPrice = platiPrice, ggselPrice = ggselPrice,
+                    steamAvailable = when (game.availability) {
+                        SteamRuAvailability.AVAILABLE -> true
+                        SteamRuAvailability.UNAVAILABLE -> false
+                        SteamRuAvailability.UNKNOWN -> null
+                    }
+                )
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    OutlinedButton(onClick = onSearchPrice, enabled = searchEnabled && marketplacePrices?.checking != true,
+                        modifier = Modifier.weight(1f).height(36.dp), contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
+                        Text(if (marketplacePrices?.checking == true) "Ищем цены…" else "Цены",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold), maxLines = 1, color = Color(0xFF17212D))
+                    }
+                    OutlinedButton(onClick = onMonitor, modifier = Modifier.weight(1f).height(36.dp),
+                        contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
+                        Text(if (monitored) "Ещё издание" else "Следить",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                            color = Color(0xFF17212D), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    OutlinedButton(onClick = onDetails, modifier = Modifier.weight(1f).height(36.dp),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                        border = BorderStroke(1.dp, Color(0xFFD2D9E1)), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF17212D))) {
+                        Text("Подробнее", style = MaterialTheme.typography.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                            color = Color(0xFF17212D), maxLines = 1)
                     }
                 }
                 if (marketplacePrices?.checking == true || (cachedPrices == null && !marketplacePrices?.message.isNullOrBlank())) {
@@ -1009,8 +980,6 @@ class MainActivity : ComponentActivity() {
         var wishlistSearchStatuses by mutableStateOf<Map<String, String>>(emptyMap())
         var priceCache by mutableStateOf(OfferPriceCacheStore.readAll(context))
         var priceBatch by mutableStateOf(PriceCheckBatch())
-        var selectedLeaderIds by mutableStateOf<Set<Int>>(emptySet())
-        var selectedWishlistIds by mutableStateOf<Set<Int>>(emptySet())
     }
 
     @Composable
@@ -1050,9 +1019,9 @@ class MainActivity : ComponentActivity() {
                 ) {
                     Spacer(Modifier.height(4.dp))
                     Icon(painterResource(icons[index]), contentDescription = null,
-                        tint = if (selected) Color(0xFF17212D) else Color(0xFF596575), modifier = Modifier.size(19.dp))
+                        tint = if (selected) Color(0xFF17212D) else Color(0xFF596575), modifier = Modifier.size(22.dp))
                     Spacer(Modifier.height(1.dp))
-                    Text(title, maxLines = 1, softWrap = false, fontSize = 9.sp,
+                    Text(title, maxLines = 1, softWrap = false, fontSize = 11.sp,
                         fontWeight = if (selected) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Normal,
                         color = if (selected) Color(0xFF17212D) else Color(0xFF596575))
                     Spacer(Modifier.weight(1f))
@@ -2446,7 +2415,6 @@ class MainActivity : ComponentActivity() {
                     searchEnabled = manualFilters.valid && !catalogueUi.priceBatch.running,
                     onInput = { catalogueUi.wishlistProfile = it }, onImport = { importWishlist() },
                     onSelect = { profile ->
-                        catalogueUi.selectedWishlistIds = emptySet()
                         catalogueUi.selectedWishlistId = profile.steamId64
                         catalogueUi.wishlistProfile = ""
                         catalogueUi.wishlistGames = profile.games
@@ -2459,7 +2427,6 @@ class MainActivity : ComponentActivity() {
                             .putLong("wishlist_imported_at", profile.importedAt).apply()
                     },
                     onDelete = {
-                        catalogueUi.selectedWishlistIds = emptySet()
                         val active = catalogueUi.wishlistProfiles.firstOrNull { it.steamId64 == catalogueUi.selectedWishlistId }
                         if (active != null) {
                             val remaining = catalogueUi.wishlistProfiles.filterNot { it.steamId64 == active.steamId64 }
@@ -2491,18 +2458,6 @@ class MainActivity : ComponentActivity() {
                     },
                     isMonitored = { game -> isGameWatched(game.appId, game.title) },
                     onMonitor = { game -> openGameMonitoring(game.appId, game.title) },
-                    selectedIds = catalogueUi.selectedWishlistIds,
-                    selectionEnabled = !catalogueUi.priceBatch.running && !searching,
-                    onToggleSelection = { game ->
-                        catalogueUi.selectedWishlistIds = if (game.appId in catalogueUi.selectedWishlistIds) catalogueUi.selectedWishlistIds - game.appId
-                            else if (catalogueUi.selectedWishlistIds.size < 10) catalogueUi.selectedWishlistIds + game.appId else catalogueUi.selectedWishlistIds
-                    },
-                    onSelectFive = { catalogueUi.selectedWishlistIds = SteamLeaderFilter.applyWishlist(catalogueUi.wishlistGames, wishlistFilterInput.toFilters()).take(5).map { it.appId }.toSet() },
-                    onCheckSelected = {
-                        val visibleIds = SteamLeaderFilter.applyWishlist(catalogueUi.wishlistGames, wishlistFilterInput.toFilters()).map { it.appId }.toSet()
-                        catalogueUi.priceBatch = PriceCheckBatch.start(catalogueUi.wishlistGames.filter { it.appId in catalogueUi.selectedWishlistIds && it.appId in visibleIds }
-                            .map { PriceCheckTarget(it.appId, it.title, catalogueUi.selectedWishlistId) }, manualFilters, searchTotalPages)
-                    },
                     cachedPrices = { game -> wishlistCacheKeys[game.appId]?.let { catalogueUi.priceCache[it] } },
                     onDetails = { game ->
                         val initial = SteamTopSeller(
@@ -2533,7 +2488,7 @@ class MainActivity : ComponentActivity() {
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     SteamLeaderSection.values().forEach { section ->
                         FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = leaderSection == section,
-                            onClick = { catalogueUi.selectedLeaderIds = emptySet(); leaderSection = section; topError = "" },
+                            onClick = { leaderSection = section; topError = "" },
                             label = { Text(section.label, maxLines = 1, style = MaterialTheme.typography.labelSmall) })
                     }
                 }
@@ -2559,7 +2514,6 @@ class MainActivity : ComponentActivity() {
                     availableGenres = availableLeaderGenres,
                     availabilityFilter = topAvailabilityFilter,
                     onAvailabilitySelected = { filter ->
-                        catalogueUi.selectedLeaderIds = emptySet()
                         topAvailabilityFilter = filter
                     }
                 )
@@ -2625,20 +2579,12 @@ class MainActivity : ComponentActivity() {
                     SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedHasMore
                     SteamLeaderSection.TOP_SELLERS -> false
                 }
-                BatchSelectionControls(displayedTopGames.count { it.appId in catalogueUi.selectedLeaderIds },
-                    enabled = !searching && !catalogueUi.priceBatch.running && manualFilters.valid && !leaderFilterInput.hasInvalidInput,
-                    onSelectFive = { catalogueUi.selectedLeaderIds = displayedTopGames.take(5).map { it.appId }.toSet() },
-                    onStart = { catalogueUi.priceBatch = PriceCheckBatch.start(displayedTopGames.filter { it.appId in catalogueUi.selectedLeaderIds }
-                        .map { PriceCheckTarget(it.appId, it.title) }, manualFilters, searchTotalPages) })
                 displayedTopGames.forEachIndexed { index, game ->
                     val cacheKey = remember(game.appId, game.title, manualFilters, rulesRevision, ignoredIds,
                         searchTotalPages, comparisonSavedAliases[game.appId]) { comparisonKey(game.appId, game.title, true) }
                     SteamLeaderCard(index, game, leaderOfferPrices[game.appId]?.takeIf { it.scopeKey == cacheKey },
                         monitored = isGameWatched(game.appId, game.title), searchEnabled = !searching && !catalogueUi.priceBatch.running && manualFilters.valid,
-                        cachedPrices = catalogueUi.priceCache[cacheKey], selected = game.appId in catalogueUi.selectedLeaderIds,
-                        selectionEnabled = !catalogueUi.priceBatch.running,
-                        onToggle = { catalogueUi.selectedLeaderIds = if (game.appId in catalogueUi.selectedLeaderIds) catalogueUi.selectedLeaderIds - game.appId
-                            else if (catalogueUi.selectedLeaderIds.size < 10) catalogueUi.selectedLeaderIds + game.appId else catalogueUi.selectedLeaderIds },
+                        cachedPrices = catalogueUi.priceCache[cacheKey],
                         onOpenSearch = {
                                     if (!catalogueUi.priceBatch.running) {
                                         searchGeneration++
@@ -3119,8 +3065,6 @@ class MainActivity : ComponentActivity() {
         onShowMore: () -> Unit,
         isMonitored: (WishlistGame) -> Boolean,
         onMonitor: (WishlistGame) -> Unit,
-        selectedIds: Set<Int>, selectionEnabled: Boolean,
-        onToggleSelection: (WishlistGame) -> Unit, onSelectFive: () -> Unit, onCheckSelected: () -> Unit,
         cachedPrices: (WishlistGame) -> CachedGamePrices?
     ) {
         Text("ЖЕЛАЕМОЕ STEAM", style = MaterialTheme.typography.labelLarge,
@@ -3176,66 +3120,57 @@ class MainActivity : ComponentActivity() {
             Text("По выбранным фильтрам игр нет.", style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        BatchSelectionControls(visibleGames.count { it.appId in selectedIds },
-            selectionEnabled && searchEnabled && !filterInput.hasInvalidInput, onSelectFive, onCheckSelected)
         visibleGames.take(visibleLimit).forEach { game ->
             OutlinedCard(Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, Color(0xFFDCE2E8)), colors = CardDefaults.outlinedCardColors(containerColor = Color.White)) {
-                Column(Modifier.fillMaxWidth().padding(horizontal = 7.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                        SteamArtwork("https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/library_600x900.jpg",
-                            Modifier.size(64.dp, 96.dp), appId = game.appId)
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            TextButton(onClick = { onOpenSearch(game) }, enabled = game.title.isNotBlank() && searchEnabled,
-                                modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(0.dp)) {
-                                Text(game.title.ifBlank { "Название игры не получено" }, modifier = Modifier.fillMaxWidth(),
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
-                                    color = Color(0xFF17212D), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                            }
-                            SteamGenreLine(game.genres)
-                            SteamFeatureBadges(game.features)
-                            Row(Modifier.fillMaxWidth().heightIn(min = 22.dp), verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Surface(onClick = { onSearchPrice(game) },
-                                    enabled = searchEnabled && selectedId != null && "$selectedId:${game.appId}" !in searchingKeys,
-                                    modifier = Modifier.height(26.dp), shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
-                                    color = Color.White, border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
-                                    Box(Modifier.padding(horizontal = 5.dp), contentAlignment = Alignment.Center) {
-                                        Text(if (selectedId != null && "$selectedId:${game.appId}" in searchingKeys) "Ищем…" else "Цены",
-                                            style = MaterialTheme.typography.labelSmall, color = Color(0xFFF0A928), maxLines = 1)
-                                    }
-                                }
-                                Surface(onClick = { onMonitor(game) }, enabled = game.appId > 0,
-                                    modifier = Modifier.height(26.dp), shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
-                                    color = Color.White, border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
-                                    Box(Modifier.padding(horizontal = 5.dp), contentAlignment = Alignment.Center) {
-                                        Text(if (isMonitored(game)) "Издание" else "Следить",
-                                            style = MaterialTheme.typography.labelSmall, color = Color(0xFFF0A928), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    }
-                                }
-                                Checkbox(game.appId in selectedIds, { onToggleSelection(game) }, enabled = selectionEnabled, modifier = Modifier.size(24.dp))
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        TextButton(onClick = { onOpenSearch(game) }, enabled = game.title.isNotBlank() && searchEnabled,
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 36.dp), contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp),
+                            colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF111820))) {
+                            Text(game.title.ifBlank { "Название игры не получено" }, modifier = Modifier.fillMaxWidth(),
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                                color = Color(0xFF111820), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        }
+                        val prices = cachedPrices(game)
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            SteamArtwork("https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/library_600x900.jpg",
+                                Modifier.size(76.dp, 114.dp), appId = game.appId)
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                SteamGenreLine(game.genres)
+                                SteamFeatureBadges(game.features)
                             }
                         }
-                        Column(Modifier.width(140.dp), horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            val prices = cachedPrices(game)
-                            DealPriceStrip(game.steamPrice, game.discountPercent,
-                                prices?.plati?.price ?: game.lowestPlatiPrice,
-                                prices?.ggsel?.price ?: game.lowestGgselPrice)
-                            OutlinedButton(onClick = { onDetails(game) }, modifier = Modifier.fillMaxWidth().height(32.dp),
+                        DealPriceStrip(game.steamPrice, game.discountPercent,
+                            prices?.plati?.price ?: game.lowestPlatiPrice,
+                            prices?.ggsel?.price ?: game.lowestGgselPrice)
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            OutlinedButton(onClick = { onSearchPrice(game) },
+                                enabled = searchEnabled && selectedId != null && "$selectedId:${game.appId}" !in searchingKeys,
+                                modifier = Modifier.weight(1f).height(36.dp), contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
+                                Text(if (selectedId != null && "$selectedId:${game.appId}" in searchingKeys) "Ищем цены…" else "Цены",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold), color = Color(0xFF17212D), maxLines = 1)
+                            }
+                            OutlinedButton(onClick = { onMonitor(game) }, enabled = game.appId > 0,
+                                modifier = Modifier.weight(1f).height(36.dp), contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
+                                Text(if (isMonitored(game)) "Издание" else "Следить",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                                    color = Color(0xFF17212D), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                            OutlinedButton(onClick = { onDetails(game) }, modifier = Modifier.weight(1f).height(36.dp),
                                 shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp), border = BorderStroke(1.dp, Color(0xFFD2D9E1)), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF344253))) {
-                                Text("Подробнее", style = MaterialTheme.typography.labelMedium, color = Color(0xFF344253), maxLines = 1)
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp), border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
+                                Text("Подробнее", style = MaterialTheme.typography.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold), color = Color(0xFF17212D), maxLines = 1)
                             }
                         }
+                        val searchKey = selectedId?.let { "$it:${game.appId}" }
+                        PriceChecksSummary(prices)
+                        searchKey?.let { key -> searchStatuses[key]?.let { status ->
+                            Text(status, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                color = if (status.startsWith("Ошибка")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+                        } }
                     }
-                    val prices = cachedPrices(game)
-                    val searchKey = selectedId?.let { "$it:${game.appId}" }
-                    PriceChecksSummary(prices)
-                    searchKey?.let { key -> searchStatuses[key]?.let { status ->
-                        Text(status, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                            color = if (status.startsWith("Ошибка")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
-                    } }
                 }
             }
         }

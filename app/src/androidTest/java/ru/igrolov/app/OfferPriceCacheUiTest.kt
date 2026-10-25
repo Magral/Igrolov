@@ -6,7 +6,11 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.isRole
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.Role
 import org.junit.Rule
 import android.content.Context
 import android.content.Intent
@@ -21,11 +25,6 @@ import org.junit.Assert.*
 import org.junit.Test
 import org.junit.After
 import org.junit.runner.RunWith
-import java.io.ByteArrayInputStream
-import java.net.HttpURLConnection
-import java.net.URL
-import java.net.URLConnection
-import java.net.URLStreamHandler
 
 @RunWith(AndroidJUnit4::class)
 class OfferPriceCacheUiTest {
@@ -47,24 +46,7 @@ class OfferPriceCacheUiTest {
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.textContains("Price cache test")) })
     }
-    @Test fun batchRetainsSuccessfulTimesOnSourceFailures() {
-        URL.setURLStreamHandlerFactory {protocol->if(protocol!="https")null else object:URLStreamHandler() {
-            override fun openConnection(url:URL):URLConnection=object:HttpURLConnection(url) {
-                override fun connect(){}
-                override fun disconnect(){}
-                override fun usingProxy()=false
-                override fun getResponseCode()=if(url.host.endsWith("steampowered.com"))200 else 503
-                override fun getInputStream():ByteArrayInputStream {
-                    val body=when {
-                        url.path.contains("appdetails") -> """{"281990":{"success":true,"data":{"type":"game","name":"Stellaris","dlc":[]}},"381210":{"success":true,"data":{"type":"game","name":"Dead by Daylight","dlc":[]}}}"""
-                        url.path.contains("storesearch") -> """{"items":[{"id":281990,"name":"Stellaris"},{"id":381210,"name":"Dead by Daylight"}]}"""
-                        else -> "{}"
-                    }
-                    return ByteArrayInputStream(body.toByteArray())
-                }
-                override fun getErrorStream()=ByteArrayInputStream("{}".toByteArray())
-            }
-        }}
+    @Test fun multiSelectionIsRemovedAndCachedPricesRemainVisible() {
         WorkManager.getInstance(context).cancelAllWork().result.get()
         WatchStore.write(context,JSONArray())
         ManualSearchSettings.save(context,ManualSearchFilters())
@@ -76,8 +58,9 @@ class OfferPriceCacheUiTest {
             GameRuleStore.save(context,game.title,JSONObject())
             for(filters in listOf(ManualSearchFilters(),OfferPriceCache.leaderFilters(ManualSearchFilters()))) {
                 val key=OfferPriceCache.key(game.appId,filters,JSONObject(),IgnoredStore.ids(context),CatalogPageSettings.pages(context),emptyList())
-                OfferPriceCacheStore.update(context,key,mapOf("Plati" to 500.0+index*100,"GGSEL" to 800.0+index*100),
-                    emptySet(),checked-1000,checked,"")
+                val minima = mapOf("Plati" to 500.0+index*100,"GGSEL" to 800.0+index*100)
+                OfferPriceCacheStore.update(context,key,minima,emptySet(),checked-2000,checked,"")
+                OfferPriceCacheStore.update(context,key,minima,setOf("Plati", "GGSEL"),checked+500,checked+1000,"HTTP 503")
                 keys.put(key)
             }
         }
@@ -86,26 +69,14 @@ class OfferPriceCacheUiTest {
         context.getSharedPreferences("tracked_products",0).edit().putString("wishlist_profiles",SteamWishlist.encodeProfiles(listOf(profile)))
             .putString("wishlist_selected_profile",profile.steamId64).commit()
         launchWishlist()
-        reveal("Выбрать первые 5")
-        compose.onNodeWithText("Выбрать первые 5").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        compose.waitForIdle()
-        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Проверить выбранные (2)")) })
-        compose.onNodeWithText("Проверить выбранные (2)").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        compose.waitForIdle()
-        assertTrue(UiTestScroll.await(compose, 90000) { device.hasObject(By.text("Готово 2 / 2")) })
-        val cached=OfferPriceCacheStore.readAll(context)
-        for(i in 0 until keys.length()) {
-            val entry=cached[keys.getString(i)]!!
-            assertEquals(checked,entry.plati.checkedAt)
-            assertEquals(checked,entry.ggsel.checkedAt)
-            assertTrue(entry.plati.failedAt>checked)
-            assertTrue(entry.ggsel.failedAt>checked)
-            assertNotNull(entry.plati.price)
-            assertNotNull(entry.ggsel.price)
-        }
-        assertTrue(context.getSharedPreferences("confirmed_offer_price_cache_v1",0).edit().putBoolean("ui_test_flush",true).commit())
+        reveal("Stellaris")
+        compose.onNodeWithText("Stellaris").assertIsDisplayed()
+        compose.onAllNodes(isRole(Role.Checkbox)).assertCountEquals(0)
+        assertFalse(device.hasObject(By.text("Выбрать первые 5")))
+        assertFalse(device.hasObject(By.textContains("Проверить выбранные")))
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("500 ₽")) })
         assertFalse(device.hasObject(By.text("Поиск игры по названию")))
-        device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"offer-cache-batch.png"))
+        device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"offer-cache-no-multiselect.png"))
     }
     @Test fun restartRestoresCachedPricesAndOriginalSuccessfulTime() {
         val proof=context.getSharedPreferences("offer_cache_ui_proof",0)
