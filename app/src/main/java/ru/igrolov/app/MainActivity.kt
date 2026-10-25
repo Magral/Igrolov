@@ -23,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
@@ -816,7 +817,7 @@ class MainActivity : ComponentActivity() {
             Column(Modifier.fillMaxWidth().padding(horizontal = 7.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                     SteamArtwork("https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/library_600x900.jpg",
-                        Modifier.size(50.dp, 76.dp), appId = game.appId)
+                        Modifier.size(64.dp, 96.dp), appId = game.appId)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         TextButton(onClick = onOpenSearch, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(0.dp),
                             colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF17212D))) {
@@ -826,10 +827,17 @@ class MainActivity : ComponentActivity() {
                         SteamReviewBadge(game.reviewSummary)
                         SteamGenreLine(game.genres)
                         SteamFeatureBadges(game.features)
-                        Text(availabilityLabel, style = MaterialTheme.typography.labelSmall, color = availabilityColor,
-                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Row(Modifier.fillMaxWidth().heightIn(min = 22.dp), verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text("Цены", Modifier.clickable(enabled = searchEnabled && marketplacePrices?.checking != true, onClick = onSearchPrice)
+                                .padding(horizontal = 3.dp), style = MaterialTheme.typography.labelSmall, color = Color(0xFFF0A928), maxLines = 1)
+                            Text(if (monitored) "Ещё издание" else "В мониторинг",
+                                Modifier.clickable(onClick = onMonitor).padding(horizontal = 3.dp), style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFFF0A928), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Checkbox(selected, { onToggle() }, enabled = selectionEnabled, modifier = Modifier.size(24.dp))
+                        }
                     }
-                    Column(Modifier.width(136.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                    Column(Modifier.width(156.dp), horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         DealPriceStrip(
                             steamPrice = game.steamPrice.ifBlank { "—" }, discountPercent = game.discountPercent,
@@ -851,18 +859,6 @@ class MainActivity : ComponentActivity() {
                     Text(marketplacePrices?.message.orEmpty(), style = MaterialTheme.typography.labelSmall,
                         color = if (marketplacePrices?.checking == true) Color(0xFF416C9A) else MaterialTheme.colorScheme.error,
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-                Row(Modifier.fillMaxWidth().height(30.dp), verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onSearchPrice, enabled = searchEnabled && marketplacePrices?.checking != true,
-                        contentPadding = PaddingValues(horizontal = 5.dp, vertical = 0.dp)) {
-                        Text(if (marketplacePrices?.checking == true) "Проверяем…" else "Цены",
-                            style = MaterialTheme.typography.labelSmall, maxLines = 1)
-                    }
-                    TextButton(onClick = onMonitor, contentPadding = PaddingValues(horizontal = 5.dp, vertical = 0.dp)) {
-                        Text(if (monitored) "Ещё издание" else "В мониторинг", style = MaterialTheme.typography.labelSmall, maxLines = 1)
-                    }
-                    Checkbox(selected, { onToggle() }, enabled = selectionEnabled, modifier = Modifier.size(28.dp))
                 }
             }
         }
@@ -3046,7 +3042,7 @@ class MainActivity : ComponentActivity() {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 7.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                         SteamArtwork("https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/library_600x900.jpg",
-                            Modifier.size(50.dp, 76.dp), appId = game.appId)
+                            Modifier.size(64.dp, 96.dp), appId = game.appId)
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             TextButton(onClick = { onOpenSearch(game) }, enabled = game.title.isNotBlank() && searchEnabled,
                                 modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(0.dp)) {
@@ -3056,10 +3052,17 @@ class MainActivity : ComponentActivity() {
                             }
                             SteamGenreLine(game.genres)
                             SteamFeatureBadges(game.features)
-                            Text("В списке желаемого", style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFF687586), maxLines = 1)
+                            Row(Modifier.fillMaxWidth().heightIn(min = 22.dp), verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text("Искать цены", Modifier.clickable(enabled = searchEnabled && selectedId != null && "$selectedId:${game.appId}" !in searchingKeys, onClick = { onSearchPrice(game) })
+                                    .padding(horizontal = 3.dp), style = MaterialTheme.typography.labelSmall, color = Color(0xFFF0A928), maxLines = 1)
+                                Text(if (isMonitored(game)) "Ещё издание" else "В мониторинг",
+                                    Modifier.clickable(enabled = game.appId > 0, onClick = { onMonitor(game) }).padding(horizontal = 3.dp),
+                                    style = MaterialTheme.typography.labelSmall, color = Color(0xFFF0A928), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Checkbox(game.appId in selectedIds, { onToggleSelection(game) }, enabled = selectionEnabled, modifier = Modifier.size(24.dp))
+                            }
                         }
-                        Column(Modifier.width(136.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                        Column(Modifier.width(156.dp), horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             val prices = cachedPrices(game)
                             DealPriceStrip(game.steamPrice, game.discountPercent,
@@ -3078,19 +3081,6 @@ class MainActivity : ComponentActivity() {
                         Text(status, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis,
                             color = if (status.startsWith("Ошибка")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
                     } }
-                    Row(Modifier.fillMaxWidth().height(30.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End) {
-                        OutlinedButton(onClick = { onSearchPrice(game) }, enabled = searchEnabled && searchKey != null && searchKey !in searchingKeys,
-                            contentPadding = PaddingValues(horizontal = 5.dp, vertical = 0.dp), modifier = Modifier.height(30.dp)) {
-                            Text(if (searchKey != null && searchKey in searchingKeys) "Ищем…" else "Искать цены",
-                                style = MaterialTheme.typography.labelSmall, maxLines = 1)
-                        }
-                        TextButton(onClick = { onMonitor(game) }, enabled = game.appId > 0,
-                            contentPadding = PaddingValues(horizontal = 5.dp, vertical = 0.dp)) {
-                            Text(if (isMonitored(game)) "Ещё издание" else "В мониторинг", style = MaterialTheme.typography.labelSmall,
-                                maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }
-                        Checkbox(game.appId in selectedIds, { onToggleSelection(game) }, enabled = selectionEnabled, modifier = Modifier.size(28.dp))
-                    }
                 }
             }
         }
