@@ -64,7 +64,7 @@ adb pull /sdcard/Android/data/ru.igrolov.app/files/monitor-selection.png device-
 adb shell am force-stop ru.igrolov.app
 adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class ru.igrolov.app.FullRedesignScreenshotsTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/redesign-screenshots.txt
-grep -E 'OK \\(1 test\\)' device-results/redesign-screenshots.txt
+grep -E 'OK \(1 test\)' device-results/redesign-screenshots.txt
 for tab in search products monitoring wishlist leaders directory; do adb pull "/sdcard/Android/data/ru.igrolov.app/files/redesign-$tab.png" "device-results/redesign-$tab.png"; done
 adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class 'ru.igrolov.app.TrackedTransferUiRegressionTest#addFromSearchRefreshPriceAndKeepItOnNetworkFailure' ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/tracked-transfer.txt
