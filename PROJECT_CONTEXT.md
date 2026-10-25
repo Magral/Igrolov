@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T13:59:53.050Z
+- Обновлено (UTC): 2026-10-25T15:21:25.385Z
 - Ветка: `main`.
-- HEAD: [`41bfd5bb2411`](https://github.com/Magral/Igrolov/commit/41bfd5bb2411312132f07696c029c44d72a291af).
-- Последний опубликованный стабильный GitHub Release: [v1.5.0](https://github.com/Magral/Igrolov/releases/tag/v1.5.0); APK-файлы: есть вложение APK.
+- HEAD: [`7155414dd692`](https://github.com/Magral/Igrolov/commit/7155414dd692ec91d4894a864a4cc50cb36fa8f3).
+- Последний опубликованный стабильный GitHub Release: [v1.5.1](https://github.com/Magral/Igrolov/releases/tag/v1.5.1); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [7155414](https://github.com/Magral/Igrolov/commit/7155414dd692ec91d4894a864a4cc50cb36fa8f3) — release: Игролов 1.5.2 — исправить обложки и цвет текста
 - [41bfd5b](https://github.com/Magral/Igrolov/commit/41bfd5bb2411312132f07696c029c44d72a291af) — release: Игролов 1.5.1 — обновить UI тест мониторинга
 - [2ffa1cd](https://github.com/Magral/Igrolov/commit/2ffa1cd17a1c2d7df27d6c116005e82f2307a739) — release: Игролов 1.5.1 — стабилизировать UI smoke проверку кеша
 - [4c79e4d](https://github.com/Magral/Igrolov/commit/4c79e4d54cb55463ad7cebea25d047c3449acbb7) — release: Игролов 1.5.1 — исправить проверку кешированной цены
-- [e3953d0](https://github.com/Magral/Igrolov/commit/e3953d0010c045d5a56359ef4be74fbd29c4be2c) — release: Игролов 1.5.1 — исправить запуск UI smoke
 <!-- AUTO_CONTEXT_END -->
