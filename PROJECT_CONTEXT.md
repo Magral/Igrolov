@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T11:54:04.866Z
+- Обновлено (UTC): 2026-10-25T11:54:14.458Z
 - Ветка: `main`.
-- HEAD: [`93070c6dd3b3`](https://github.com/Magral/Igrolov/commit/93070c6dd3b38b324c07b7defa35ed350ef7990e).
+- HEAD: [`5a54e564eed5`](https://github.com/Magral/Igrolov/commit/5a54e564eed58e99027ebac888551cb4b8e80dcc).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [5a54e56](https://github.com/Magral/Igrolov/commit/5a54e564eed58e99027ebac888551cb4b8e80dcc) — Import Compose displayed assertion
 - [93070c6](https://github.com/Magral/Igrolov/commit/93070c6dd3b38b324c07b7defa35ed350ef7990e) — Use Compose assertion for tracked price visibility
 - [56fe392](https://github.com/Magral/Igrolov/commit/56fe392132f283835e474c6b7bb7d9989d09d9ef) — Keep compact search status test compatible
 - [f1406ed](https://github.com/Magral/Igrolov/commit/f1406eded27a83b4d05770586991f7ac402c066a) — Update compact search heading smoke test
-- [b0e1f32](https://github.com/Magral/Igrolov/commit/b0e1f3205fe08d16a5df1c3444933e79a7f2139b) — Trim repeated search and monitoring helper text
 <!-- AUTO_CONTEXT_END -->
