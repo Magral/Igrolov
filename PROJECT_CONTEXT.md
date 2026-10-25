@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T16:39:47.248Z
+- Обновлено (UTC): 2026-10-25T16:45:16.749Z
 - Ветка: `main`.
-- HEAD: [`471e5655e2f6`](https://github.com/Magral/Igrolov/commit/471e5655e2f62118880a46f36eda13fac019fc39).
+- HEAD: [`962493cb18b2`](https://github.com/Magral/Igrolov/commit/962493cb18b2ab6421be11a7d20bec2b946fae8e).
 - Последний опубликованный стабильный GitHub Release: [v1.5.2](https://github.com/Magral/Igrolov/releases/tag/v1.5.2); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [962493c](https://github.com/Magral/Igrolov/commit/962493cb18b2ab6421be11a7d20bec2b946fae8e) — release: Игролов 1.5.3 — обновить проверку кнопки издания
 - [471e565](https://github.com/Magral/Igrolov/commit/471e5655e2f62118880a46f36eda13fac019fc39) — release: Игролов 1.5.3 — восстановить тест обложек
 - [9d50b44](https://github.com/Magral/Igrolov/commit/9d50b44211959f2ab542311c13ef938d93a50a16) — release: Игролов 1.5.3 — исправить тестовые данные
 - [61dc22e](https://github.com/Magral/Igrolov/commit/61dc22ef7cba5748feda469656be44c9eabd855a) — release: Игролов 1.5.3 — исправить загрузку обложек
-- [7155414](https://github.com/Magral/Igrolov/commit/7155414dd692ec91d4894a864a4cc50cb36fa8f3) — release: Игролов 1.5.2 — исправить обложки и цвет текста
 <!-- AUTO_CONTEXT_END -->
