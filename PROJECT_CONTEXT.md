@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T09:34:12.653Z
+- Обновлено (UTC): 2026-10-25T09:34:21.431Z
 - Ветка: `main`.
-- HEAD: [`bf257e96c1c1`](https://github.com/Magral/Igrolov/commit/bf257e96c1c1608eee52f01670667b81c02db5b0).
+- HEAD: [`fcdd07ab52df`](https://github.com/Magral/Igrolov/commit/fcdd07ab52dfbc8b93cacc5c66da24dc0d359c35).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [fcdd07a](https://github.com/Magral/Igrolov/commit/fcdd07ab52dfbc8b93cacc5c66da24dc0d359c35) — Update leader section smoke expectations
 - [615dcc8](https://github.com/Magral/Igrolov/commit/615dcc8e8c1fd9532bb3d60644e5605e4196daa1) — Capture game directory from settings
 - [687295b](https://github.com/Magral/Igrolov/commit/687295b5e133a0afcbc345fc929fec8b379b93a3) — Shorten Steam leader section labels
 - [922678e](https://github.com/Magral/Igrolov/commit/922678e583e0616bf4ded231c4df52bac12acf7d) — Refine navigation and compact Steam filters
-- [4a020bc](https://github.com/Magral/Igrolov/commit/4a020bc96f171dbbd5a928f924fc4c52c2d49767) — test: use Compose semantics for refreshed prices
 <!-- AUTO_CONTEXT_END -->
