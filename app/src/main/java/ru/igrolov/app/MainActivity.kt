@@ -595,6 +595,7 @@ class MainActivity : ComponentActivity() {
                     imageUrl = fallbackUrl
                 }
             }
+        }
 
         Box(
             modifier
@@ -724,6 +725,7 @@ class MainActivity : ComponentActivity() {
                         color = Color(0xFF17212D), maxLines = 1)
                 }
             }
+        }
     }
 
     @Composable
