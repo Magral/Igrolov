@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T02:16:23.815Z
+- Обновлено (UTC): 2026-10-25T02:17:42.612Z
 - Ветка: `main`.
-- HEAD: [`79942bc5d938`](https://github.com/Magral/Igrolov/commit/79942bc5d9383975945d5e88bc8568460977bf9b).
+- HEAD: [`891c79f029cb`](https://github.com/Magral/Igrolov/commit/891c79f029cb22df618f91e96c45c7b142ab9660).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [891c79f](https://github.com/Magral/Igrolov/commit/891c79f029cb22df618f91e96c45c7b142ab9660) — ui: align Steam cards to compact reference layout
 - [79942bc](https://github.com/Magral/Igrolov/commit/79942bc5d9383975945d5e88bc8568460977bf9b) — test: use Compose semantics for monitor game selection
 - [c60282f](https://github.com/Magral/Igrolov/commit/c60282f86982b57150efe98fd0cd168d85861eaa) — ui: align shared screens with redesign reference
 - [f41c552](https://github.com/Magral/Igrolov/commit/f41c55240ca2b770b57e40023420cc211642af04) — test: keep monitor activity active during Steam suggestions
-- [df8cc4e](https://github.com/Magral/Igrolov/commit/df8cc4ea1beb6a2827326371294cee5eeaa41a42) — test: dismiss IME before checking Steam suggestions
 <!-- AUTO_CONTEXT_END -->
