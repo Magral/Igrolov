@@ -1899,7 +1899,6 @@ class MainActivity : ComponentActivity() {
                         onClick = { editionFilter = edition }, label = { Text(edition) })
                 }
             }
-            Text("Основная игра должна быть явно распознана до показа. Недоступные товары и неподтверждённые цены вариантов скрываются.", style = MaterialTheme.typography.bodySmall)
             OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { startCatalogSearch() },
                 enabled = query.isNotBlank() && !searching && !suggestionBusy && manualFilters.valid) {
                 Text(if (searching) "Ищем..." else selectedSteamEdition?.let { "Искать ${it.name}" } ?: "Искать")
@@ -1999,7 +1998,8 @@ class MainActivity : ComponentActivity() {
             ScreenSection {
             if (activeTab == 2 && !settingsOpen) {
             Text("Мониторинг цен", style = MaterialTheme.typography.titleLarge)
-            Text("Уведомления о новых ценах Plati и GGSEL · только предложения для РФ.", style = MaterialTheme.typography.bodySmall)
+            Text("Plati + GGSEL · только подтверждённые предложения РФ.",
+                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             OutlinedTextField(watchGame, { watchGame = it;watchSelection=null }, label = { Text("Название игры") },
                 singleLine = true, modifier = Modifier.fillMaxWidth())
             if(watchSuggesting) Text("Подбираем игру Steam…",style=MaterialTheme.typography.bodySmall)
@@ -2062,8 +2062,10 @@ class MainActivity : ComponentActivity() {
                 LinearProgressIndicator(progress = { if (monitorTotal > 0) monitorDone.toFloat() / monitorTotal else 0f }, modifier = Modifier.fillMaxWidth())
                 Text("Проверено игр: $monitorDone / $monitorTotal${if (monitorCurrent.isNotBlank()) " · Сейчас: $monitorCurrent" else ""}", style = MaterialTheme.typography.bodySmall)
             }
-            Text("Проверяем Plati и GGSEL; уведомляем только об активных предложениях с подтверждённой ценой и регионом РФ.",style=MaterialTheme.typography.bodySmall)
-            Text(watchMessage, style = MaterialTheme.typography.bodySmall)
+            if (watchMessage != "Укажите название игры и цену в рублях") {
+                Text(watchMessage, style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             if (watchEntries.isNotEmpty()) {
                 WatchListControls(
                     filter = watchListFilter,
