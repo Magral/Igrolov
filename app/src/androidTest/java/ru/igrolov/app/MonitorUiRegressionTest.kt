@@ -69,26 +69,39 @@ class MonitorUiRegressionTest {
         assertTrue(device.hasObject(By.text("Ниже цели")))
         assertTrue(device.hasObject(By.text("С ошибкой")))
         assertTrue(device.hasObject(By.text("Сортировка: внимание")))
-        assertTrue(scroll.scrollIntoView(UiSelector().textStartsWith("Динамика: минимум снизился")))
-        assertTrue(device.hasObject(By.text("Детали проверки")))
+        compose.waitUntil(5000) {
+            compose.onAllNodesWithText("Динамика: минимум снизился", substring = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        UiTestScroll.reveal(compose, "Динамика: минимум снизился", contains = true)
+        assertTrue(compose.onAllNodesWithText("Детали проверки").fetchSemanticsNodes().isNotEmpty())
         assertFalse(device.hasObject(By.text("Источники · Plati: 0 · GGSEL: 1")))
         device.takeScreenshot(File(context.getExternalFilesDir(null),"monitor-compact.png"))
-        device.findObject(By.text("Детали проверки")).click()
-        assertTrue(scroll.scrollIntoView(UiSelector().text("Источники · Plati: 0 · GGSEL: 1")))
-        assertTrue(scroll.scrollIntoView(UiSelector().text("3 лучшие цены (1)")))
-        assertTrue(scroll.scrollIntoView(UiSelector().textStartsWith("Следующая проверка")) ||
-            scroll.scrollIntoView(UiSelector().textStartsWith("Проверка будет повторена автоматически")))
-        device.findObject(By.text("3 лучшие цены (1)")).click()
-        assertTrue(scroll.scrollIntoView(UiSelector().text("Открыть на GGSEL")))
+        compose.onNodeWithText("Детали проверки").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitUntil(5000) {
+            compose.onAllNodesWithText("Источники · Plati: 0 · GGSEL: 1").fetchSemanticsNodes().isNotEmpty()
+        }
+        UiTestScroll.reveal(compose, "Источники · Plati: 0 · GGSEL: 1")
+        assertTrue(compose.onAllNodesWithText("Источники · Plati: 0 · GGSEL: 1").fetchSemanticsNodes().isNotEmpty())
+        UiTestScroll.reveal(compose, "3 лучшие цены (1)")
+        assertTrue(device.hasObject(By.text("3 лучшие цены (1)")))
+        assertTrue(device.hasObject(By.textStartsWith("Следующая проверка")) ||
+            device.hasObject(By.textStartsWith("Проверка будет повторена автоматически")))
+        compose.onNodeWithText("3 лучшие цены (1)").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitUntil(5000) {
+            compose.onAllNodesWithText("Открыть на GGSEL").fetchSemanticsNodes().isNotEmpty()
+        }
+        UiTestScroll.reveal(compose, "Открыть на GGSEL")
+        assertTrue(device.hasObject(By.text("Открыть на GGSEL")))
         assertTrue(device.hasObject(By.text("Отслеживать товар")))
-        assertTrue(scroll.scrollIntoView(UiSelector().text("Скрыть цены")))
-        device.findObject(By.text("Скрыть цены")).click()
-        assertTrue(scroll.scrollIntoView(UiSelector().textStartsWith("История цен (")))
+        compose.onNodeWithText("Скрыть цены").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        UiTestScroll.reveal(compose, "История цен (", contains = true)
+        assertTrue(device.hasObject(By.textStartsWith("История цен (")))
         if(!WatchStore.read(context).getJSONObject(0).has("eligibleCount")) {
             assertFalse("Old records without counters must not be labelled as an empty marketplace",device.hasObject(By.text("Подходящих предложений нет — это не ошибка сети.")))
         }
-        device.findObject(By.textStartsWith("История цен (")).click()
-        assertTrue(device.wait(Until.hasObject(By.text("Скрыть историю")),5000))
+        compose.onAllNodesWithText("История цен (", substring = true).onFirst()
+            .performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitUntil(5000) { compose.onAllNodesWithText("Скрыть историю").fetchSemanticsNodes().isNotEmpty() }
         var historyAttempts=0
         while(!device.hasObject(By.textStartsWith("Диапазон:")) && historyAttempts++<12) {
             device.swipe(device.displayWidth/2,device.displayHeight*3/4,device.displayWidth/2,device.displayHeight/3,12)
