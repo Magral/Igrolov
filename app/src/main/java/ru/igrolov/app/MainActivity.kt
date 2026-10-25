@@ -2081,7 +2081,7 @@ class MainActivity : ComponentActivity() {
                 val wi = watchEntry.originalIndex
                 val w = watchEntry.game
                 OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
-                    Column(Modifier.padding(8.dp)) {
+                    Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         val watchAppId = w.optInt("steamAppId", w.optInt("appId", 0))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically) {
@@ -2345,7 +2345,7 @@ class MainActivity : ComponentActivity() {
                         OutlinedCard(Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                             border = BorderStroke(1.dp, Color(0xFFDCE2E8)),
                             colors = CardDefaults.outlinedCardColors(containerColor = Color.White)) {
-                            Row(Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            Row(Modifier.fillMaxWidth().padding(6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 verticalAlignment = Alignment.CenterVertically) {
                                 if (offerAppId > 0) SteamArtwork(
                                     "https://cdn.akamai.steamstatic.com/steam/apps/${offerAppId}/library_600x900.jpg",
@@ -2362,17 +2362,17 @@ class MainActivity : ComponentActivity() {
                                     }
                                     Text(offer.name, style = MaterialTheme.typography.bodyMedium, maxLines = 2,
                                         overflow = TextOverflow.Ellipsis)
-                                    if (offer.categoryLabel.isNotBlank()) Text(offer.categoryLabel,
-                                        style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    if (offer.purchaseNote.isNotBlank()) Text(offer.purchaseNote,
+                                    val compactDetails = listOf(offer.categoryLabel, offer.purchaseNote)
+                                        .filter { it.isNotBlank() }.joinToString(" · ")
+                                    if (compactDetails.isNotBlank()) Text(compactDetails,
                                         style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text("${offer.type} · ${offer.rfStatus} · " +
                                         (if (offer.variablePrice) "Цена варианта не подтверждена" else offer.edition),
                                         style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                         OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(
                                             offer.productUrl.ifBlank { "https://plati.market/itm/${offer.id}" }
-                                        ))) }, modifier = Modifier.weight(1f).height(32.dp),
+                                        ))) }, modifier = Modifier.weight(1f).height(30.dp),
                                             contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
                                             Text("Открыть", maxLines = 1, style = MaterialTheme.typography.labelSmall)
                                         }
@@ -2392,24 +2392,24 @@ class MainActivity : ComponentActivity() {
                                             }
                                         }, enabled = offer.marketplace in setOf("Plati","GGSEL") &&
                                             items.none { it.storageKey==TrackedPriceCache.storageKey(offer.marketplace,offer.id) },
-                                            modifier = Modifier.weight(1f).height(32.dp),
+                                            modifier = Modifier.weight(1f).height(30.dp),
                                             contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp)) {
                                             Text(if (items.any { it.storageKey==TrackedPriceCache.storageKey(offer.marketplace,offer.id) })
                                                 "Уже отслеживается" else "Отслеживать", maxLines = 1, style = MaterialTheme.typography.labelSmall)
                                         }
                                     }
-                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                         OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = {
                                             IgnoredStore.add(this@MainActivity, offer.id, offer.name)
                                             ignoredIds = IgnoredStore.ids(this@MainActivity)
-                                        }, modifier = Modifier.weight(1f).height(32.dp),
+                                        }, modifier = Modifier.weight(1f).height(30.dp),
                                             contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp)) {
                                             Text("Игнорировать", maxLines = 1, style = MaterialTheme.typography.labelSmall)
                                         }
                                         OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = {
                                             GameRuleStore.add(this@MainActivity, query, "blocked", offer.name)
                                             rulesRevision++
-                                        }, modifier = Modifier.weight(1f).height(32.dp),
+                                        }, modifier = Modifier.weight(1f).height(30.dp),
                                             contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp)) {
                                             Text("Исключить как DLC", maxLines = 1, style = MaterialTheme.typography.labelSmall)
                                         }
