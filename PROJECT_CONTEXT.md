@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T07:59:48.851Z
+- Обновлено (UTC): 2026-10-25T08:10:21.619Z
 - Ветка: `main`.
-- HEAD: [`77f351f00e05`](https://github.com/Magral/Igrolov/commit/77f351f00e0578d10f531af7236033f67c460bf4).
+- HEAD: [`d03e323cfe90`](https://github.com/Magral/Igrolov/commit/d03e323cfe90843b30896992213f96fa0866d65e).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [d03e323](https://github.com/Magral/Igrolov/commit/d03e323cfe90843b30896992213f96fa0866d65e) — test: wait for game suggestions through Compose semantics
 - [77f351f](https://github.com/Magral/Igrolov/commit/77f351f00e0578d10f531af7236033f67c460bf4) — fix: show exact game suggestion before network lookup
 - [e69e099](https://github.com/Magral/Igrolov/commit/e69e09930f37ae5a14582cf1b78c2a0f8376db7e) — test: cover immediate exact game suggestions
 - [f6da2b8](https://github.com/Magral/Igrolov/commit/f6da2b86933a1aaa23a712da54851c8349d56626) — search: show exact known game matches without network delay
-- [c0e9b7a](https://github.com/Magral/Igrolov/commit/c0e9b7a1c28c9663c392900e046ea2bb73d709d8) — test: retain failed tracked-search form diagnostics
 <!-- AUTO_CONTEXT_END -->
