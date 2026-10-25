@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T13:21:30.515Z
+- Обновлено (UTC): 2026-10-25T13:23:51.811Z
 - Ветка: `main`.
-- HEAD: [`13d8f1bf1177`](https://github.com/Magral/Igrolov/commit/13d8f1bf11771177274272b68b35eab436c842da).
+- HEAD: [`be53abac55a8`](https://github.com/Magral/Igrolov/commit/be53abac55a848abe7a7925a5fc4dac54c2df60f).
 - Последний опубликованный стабильный GitHub Release: [v1.5.0](https://github.com/Magral/Igrolov/releases/tag/v1.5.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [be53aba](https://github.com/Magral/Igrolov/commit/be53abac55a848abe7a7925a5fc4dac54c2df60f) — release: Игролов 1.5.1 — читаемые карточки (сборка проходит)
 - [13d8f1b](https://github.com/Magral/Igrolov/commit/13d8f1bf11771177274272b68b35eab436c842da) — release: Игролов 1.5.1 — читаемые карточки (исправление сборки)
 - [29844a5](https://github.com/Magral/Igrolov/commit/29844a56216031980a9aae74fe97c434630483b1) — release: Игролов 1.5.1 — читаемые карточки
 - [3d94b2b](https://github.com/Magral/Igrolov/commit/3d94b2be94ac73f51caf2ca529791d41c2a9cc39) — release: Игролов 1.5.0 — редизайн интерфейса
-- [5a54e56](https://github.com/Magral/Igrolov/commit/5a54e564eed58e99027ebac888551cb4b8e80dcc) — Import Compose displayed assertion
 <!-- AUTO_CONTEXT_END -->
