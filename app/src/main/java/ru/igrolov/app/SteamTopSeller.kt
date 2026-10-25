@@ -5,9 +5,9 @@ import org.json.JSONObject
 enum class SteamRuAvailability { AVAILABLE, UNAVAILABLE, UNKNOWN }
 
 enum class SteamLeaderSection(val label: String) {
-    TOP_SELLERS("Топ продаж"),
-    POPULAR_NEW_RELEASES("Популярные новинки"),
-    DISCOUNTED_TOP_SELLERS("Топ со скидками");
+    TOP_SELLERS("Бестселлеры"),
+    POPULAR_NEW_RELEASES("Новинки"),
+    DISCOUNTED_TOP_SELLERS("Скидки");
 
     fun filter(games: List<SteamTopSeller>): List<SteamTopSeller> =
         when (this) {
