@@ -69,9 +69,9 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T05:56:22.686Z
+- Обновлено (UTC): 2026-10-25T05:56:29.311Z
 - Ветка: `main`.
-- HEAD: [`f6aeb7f7623a`](https://github.com/Magral/Igrolov/commit/f6aeb7f7623a8fe63206e318c885756865a9aff8).
+- HEAD: [`962a2f64e447`](https://github.com/Magral/Igrolov/commit/962a2f64e447252080772ec976b0cb532ef8783a).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
