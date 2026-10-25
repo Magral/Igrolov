@@ -69,14 +69,15 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T03:11:14.217Z
+- Обновлено (UTC): 2026-10-25T03:20:24.054Z
 - Ветка: `main`.
-- HEAD: [`cda976fd46bb`](https://github.com/Magral/Igrolov/commit/cda976fd46bb733312570895932f4b00fe1f88f4).
+- HEAD: [`cad9f34d34bb`](https://github.com/Magral/Igrolov/commit/cad9f34d34bb7491455c294ab3508964dfaf5d4e).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [cad9f34](https://github.com/Magral/Igrolov/commit/cad9f34d34bb7491455c294ab3508964dfaf5d4e) — ui: add handbook navigation icon
+- [a3002ee](https://github.com/Magral/Igrolov/commit/a3002ee08f7d6b680e4ece41a8529ad2aebca0af) — ui: add handbook to unified compact navigation
 - [cda976f](https://github.com/Magral/Igrolov/commit/cda976fd46bb733312570895932f4b00fe1f88f4) — test: stabilize tracked search on API 26
 - [36c1a4f](https://github.com/Magral/Igrolov/commit/36c1a4fe20bd8cbae30f471b4590996e497db0a9) — test: reveal monitor input through Compose
 - [996d2c4](https://github.com/Magral/Igrolov/commit/996d2c469f7b367c7d2c1f94dbb3678842c160e6) — test: switch products tab through Compose semantics
-- [5218812](https://github.com/Magral/Igrolov/commit/521881299c3adac9ec8ac11302cffe875e5a3b6c) — test: reveal monitor details through Compose
 <!-- AUTO_CONTEXT_END -->
