@@ -126,7 +126,7 @@ class TrackedTransferUiRegressionTest {
         // API 26 can take longer to expose newly added tracked rows after a tab
         // switch. Keep waiting for the persisted price while bringing it into view.
         UiTestScroll.reveal(compose,"4914,00 ₽",contains=true)
-        assertTrue(device.hasObject(By.textContains("4914,00 ₽")))
+        compose.onAllNodesWithText("4914,00 ₽", substring = true).onFirst().assertIsDisplayed()
         assertTrue(compose.onAllNodesWithText("Открыть").fetchSemanticsNodes().isNotEmpty())
         assertTrue(compose.onAllNodesWithText("Удалить").fetchSemanticsNodes().isNotEmpty())
         assertEquals("Stellaris",cached("123456").canonical);assertEquals(281990,cached("123456").steamAppId)
