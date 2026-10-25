@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T06:20:16.866Z
+- Обновлено (UTC): 2026-10-25T06:20:46.422Z
 - Ветка: `main`.
-- HEAD: [`36b7739e1107`](https://github.com/Magral/Igrolov/commit/36b7739e110730a7e2fc071d317357ffb7eaf376).
+- HEAD: [`c3f7306dadf4`](https://github.com/Magral/Igrolov/commit/c3f7306dadf4bf36961707720714dffd85a6cb78).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [c3f7306](https://github.com/Magral/Igrolov/commit/c3f7306dadf4bf36961707720714dffd85a6cb78) — ui: add artwork to monitored game cards
 - [36b7739](https://github.com/Magral/Igrolov/commit/36b7739e110730a7e2fc071d317357ffb7eaf376) — ui: add Steam thumbnails to tracked product cards
 - [593e9f7](https://github.com/Magral/Igrolov/commit/593e9f7d1c9f56fb3ab474d98a6113ecc94af595) — ui: align button corners with the reference
 - [3996cb6](https://github.com/Magral/Igrolov/commit/3996cb6d5bed0d1a25434463e0f94fbb722c4b64) — ui: give handbook choices clear borders
-- [b304f70](https://github.com/Magral/Igrolov/commit/b304f701fea4a588a19fa1bc27e7e67a92e007a7) — test: assert the leader edition action label
 <!-- AUTO_CONTEXT_END -->
