@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T00:31:32.490Z
+- Обновлено (UTC): 2026-10-25T00:32:42.701Z
 - Ветка: `main`.
-- HEAD: [`3557f3c9fc30`](https://github.com/Magral/Igrolov/commit/3557f3c9fc30e314b9bc21d94fb441256d2c484a).
+- HEAD: [`42b4965b6225`](https://github.com/Magral/Igrolov/commit/42b4965b6225f5166d411d0e0d750f7a7ec3cc4c).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [42b4965](https://github.com/Magral/Igrolov/commit/42b4965b6225f5166d411d0e0d750f7a7ec3cc4c) — ui: unify wishlist card action colors
 - [3557f3c](https://github.com/Magral/Igrolov/commit/3557f3c9fc30e314b9bc21d94fb441256d2c484a) — test: scroll tracked products into view
 - [867660f](https://github.com/Magral/Igrolov/commit/867660fead54be0ae9147dbf218540dbed09a11c) — test: dismiss keyboard before switching tabs
 - [12d9c10](https://github.com/Magral/Igrolov/commit/12d9c10cf652a2a8e14cb340b81c6dc9b99aa2c9) — test: follow renamed wishlist price action
-- [ef959ac](https://github.com/Magral/Igrolov/commit/ef959acfbdaba54006683292dc03f63591ab6cf2) — test: assert compact leaders tab label
 <!-- AUTO_CONTEXT_END -->
