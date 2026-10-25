@@ -82,7 +82,7 @@ class GameCardMonitoringTest {
         UiTestScroll.reveal(compose,"92%")
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("92%")) })
         assertTrue(device.hasObject(By.desc("Положительные отзывы")))
-        compose.onNodeWithText("В мониторинг").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.onNodeWithText("Следить").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Желаемая цена, ₽")) })
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.clazz("android.widget.EditText")) })
