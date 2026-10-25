@@ -89,6 +89,11 @@ class StellarisUiRegressionTest {
         compose.waitForIdle()
         price.assertIsDisplayed()
         UiTestScroll.reveal(compose,"Stellaris Steam Key РФ", contains = true)
+        // Move the populated offer into the center of the viewport for the
+        // review screenshot while keeping the fixed app navigation visible.
+        device.swipe(device.displayWidth / 2, device.displayHeight * 3 / 4,
+            device.displayWidth / 2, device.displayHeight / 3, 12)
+        device.waitForIdle()
         device.takeScreenshot(File(context.getExternalFilesDir(null),"stellaris-result.png"))
     }
 }
