@@ -733,7 +733,7 @@ class MainActivity : ComponentActivity() {
             TextButton(onClick = onSelectFive, enabled = enabled, contentPadding = PaddingValues(horizontal = 4.dp)) {
                 Text("Выбрать первые 5", style = MaterialTheme.typography.labelSmall)
             }
-            OutlinedButton(onClick = onStart, enabled = enabled && count > 0,
+            OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = onStart, enabled = enabled && count > 0,
                 contentPadding = PaddingValues(horizontal = 6.dp)) {
                 Text("Проверить выбранные ($count)", style = MaterialTheme.typography.labelSmall)
             }
@@ -917,7 +917,7 @@ class MainActivity : ComponentActivity() {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(game.name, style = MaterialTheme.typography.titleSmall)
                     Box {
-                        OutlinedButton(onClick = { editionMenu = true }, enabled = !pendingWatchSaving) {
+                        OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { editionMenu = true }, enabled = !pendingWatchSaving) {
                             Text(pendingEdition?.name ?: "Основная игра", maxLines = 1)
                         }
                         DropdownMenu(expanded = editionMenu, onDismissRequest = { editionMenu = false }) {
@@ -947,7 +947,7 @@ class MainActivity : ComponentActivity() {
                 }
             },
             confirmButton = {
-                OutlinedButton(enabled = !pendingWatchSaving, onClick = {
+                OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), enabled = !pendingWatchSaving, onClick = {
                     val amount = pendingWatchPrice.trim().replace(',', '.').toDoubleOrNull()
                     if (amount == null || !amount.isFinite() || amount <= 0) {
                         pendingWatchError = "Введите положительную цену"
@@ -1795,7 +1795,7 @@ class MainActivity : ComponentActivity() {
                 if (editionLoading) Text("Загружаем издания Steam…", style = MaterialTheme.typography.bodySmall)
                 else if (steamEditions.isEmpty()) Text("Steam не вернул список изданий; доступен обычный поиск по названию игры.", style = MaterialTheme.typography.bodySmall)
                 Box {
-                    OutlinedButton(onClick = { editionMenuExpanded = true }, enabled = !editionLoading) {
+                    OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { editionMenuExpanded = true }, enabled = !editionLoading) {
                         Text("Издание: ${selectedSteamEdition?.name ?: "Все издания"}")
                     }
                     DropdownMenu(expanded = editionMenuExpanded, onDismissRequest = { editionMenuExpanded = false }) {
@@ -1899,7 +1899,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             Text("Основная игра должна быть явно распознана до показа. Недоступные товары и неподтверждённые цены вариантов скрываются.", style = MaterialTheme.typography.bodySmall)
-            OutlinedButton(onClick = { startCatalogSearch() },
+            OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { startCatalogSearch() },
                 enabled = query.isNotBlank() && !searching && !suggestionBusy && manualFilters.valid) {
                 Text(if (searching) "Ищем..." else selectedSteamEdition?.let { "Искать ${it.name}" } ?: "Искать")
             }
@@ -1917,7 +1917,7 @@ class MainActivity : ComponentActivity() {
             if (activeTab == 1 && !settingsOpen) {
             OutlinedTextField(entry, { entry = it }, label = { Text("Ссылка Plati или ID товара") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = {
+                OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = {
                     val raw = entry.trim()
                     val id = if (raw.all { it.isDigit() }) raw else {
                         val uri = runCatching { Uri.parse(raw) }.getOrNull()
@@ -1941,7 +1941,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }) { Text("Добавить") }
-                OutlinedButton(onClick = { refresh() }, enabled = !busy && items.isNotEmpty()) { Text(if (busy) "Обновление..." else "Обновить цены") }
+                OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { refresh() }, enabled = !busy && items.isNotEmpty()) { Text(if (busy) "Обновление..." else "Обновить цены") }
             }
             if (message.isNotBlank()) OutlinedCard(Modifier.fillMaxWidth(),
                 border = BorderStroke(1.dp, Color(0xFFDCE2E8)),
@@ -1973,9 +1973,9 @@ class MainActivity : ComponentActivity() {
                                     Text(item.price?.let { String.format(Locale("ru", "RU"), "%.2f ₽", it) } ?: "Цена недоступна",
                                         style = MaterialTheme.typography.titleMedium, maxLines = 1)
                                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                        OutlinedButton(onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.url))) },
+                                        OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.url))) },
                                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) { Text("Открыть") }
-                                        OutlinedButton(onClick = {
+                                        OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = {
                                             items = items.filterNot { it.storageKey == item.storageKey }
                                             saveIds(items.map { it.storageKey })
                                             prefs.edit().remove("product_cache_${item.storageKey}").remove("product_cache_${item.id}").apply()
@@ -1989,7 +1989,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             if (sortedTrackedItems.size > trackedVisibleLimit) {
-                OutlinedButton(onClick = { trackedVisibleLimit += 30 }, modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { trackedVisibleLimit += 30 }, modifier = Modifier.fillMaxWidth()) {
                     Text("Показать ещё · ${minOf(trackedVisibleLimit, sortedTrackedItems.size)} из ${sortedTrackedItems.size}")
                 }
             }
@@ -2122,13 +2122,13 @@ class MainActivity : ComponentActivity() {
                         if (checkedAt > 0L) Text("Проверено ${monitorDate.format(java.util.Date(checkedAt))}",
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            OutlinedButton(onClick = { diagnosticsExpanded = !diagnosticsExpanded },
+                            OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { diagnosticsExpanded = !diagnosticsExpanded },
                                 modifier = Modifier.weight(1f).heightIn(min = 40.dp),
                                 contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
                                 Text(if (diagnosticsExpanded) "Скрыть детали проверки" else "Детали проверки",
                                     maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, fontSize = 11.sp)
                             }
-                            OutlinedButton(onClick = { resultsExpanded = !resultsExpanded },
+                            OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { resultsExpanded = !resultsExpanded },
                                 modifier = Modifier.weight(1f).heightIn(min = 40.dp),
                                 contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
                                 Text(if (resultsExpanded) "Скрыть цены" else "3 лучшие цены (${bestOffers.length()})",
@@ -2226,13 +2226,13 @@ class MainActivity : ComponentActivity() {
                         val history=WatchHistory.points(w.optJSONArray("history") ?: JSONArray())
                         var historyExpanded by remember(w.optString("name")) {mutableStateOf(false)}
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            OutlinedButton(onClick={historyExpanded=!historyExpanded},
+                            OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick={historyExpanded=!historyExpanded},
                                 modifier = Modifier.weight(1f).heightIn(min = 40.dp),
                                 contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
                                 Text(if(historyExpanded) "Скрыть историю" else "История цен (${history.size})",
                                     maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, fontSize = 11.sp)
                             }
-                            OutlinedButton(onClick = { ioExecutor.execute { WatchStore.remove(this@MainActivity, wi); runOnUiThread { reloadWatches() } } },
+                            OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { ioExecutor.execute { WatchStore.remove(this@MainActivity, wi); runOnUiThread { reloadWatches() } } },
                                 modifier = Modifier.weight(1f).heightIn(min = 40.dp),
                                 contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
                                 Text("Убрать игру", maxLines = 1, softWrap = false, fontSize = 11.sp)
@@ -2369,13 +2369,13 @@ class MainActivity : ComponentActivity() {
                                         (if (offer.variablePrice) "Цена варианта не подтверждена" else offer.edition),
                                         style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        OutlinedButton(onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(
+                                        OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(
                                             offer.productUrl.ifBlank { "https://plati.market/itm/${offer.id}" }
                                         ))) }, modifier = Modifier.weight(1f).height(32.dp),
                                             contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
                                             Text("Открыть", maxLines = 1, style = MaterialTheme.typography.labelSmall)
                                         }
-                                        OutlinedButton(onClick = {
+                                        OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = {
                                             val tracked=TrackedPriceCache.fromOffer(offer.copy(
                                                 canonical=offer.canonical.ifBlank { selectedGame?.name ?: query },
                                                 steamAppId=offer.steamAppId.takeIf { it>0 } ?: selectedGame?.appId ?: 0
@@ -2398,14 +2398,14 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        OutlinedButton(onClick = {
+                                        OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = {
                                             IgnoredStore.add(this@MainActivity, offer.id, offer.name)
                                             ignoredIds = IgnoredStore.ids(this@MainActivity)
                                         }, modifier = Modifier.weight(1f).height(32.dp),
                                             contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp)) {
                                             Text("Игнорировать", maxLines = 1, style = MaterialTheme.typography.labelSmall)
                                         }
-                                        OutlinedButton(onClick = {
+                                        OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = {
                                             GameRuleStore.add(this@MainActivity, query, "blocked", offer.name)
                                             rulesRevision++
                                         }, modifier = Modifier.weight(1f).height(32.dp),
@@ -2418,7 +2418,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     if (visibleCount > visibleOfferLimit) {
-                        OutlinedButton(onClick = { visibleOfferLimit += 30 }, modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { visibleOfferLimit += 30 }, modifier = Modifier.fillMaxWidth()) {
                             Text("Показать ещё 30 · отображено ${minOf(visibleOfferLimit, visibleCount)} из $visibleCount")
                         }
                     }
@@ -2657,12 +2657,12 @@ class MainActivity : ComponentActivity() {
                         onMonitor = { openGameMonitoring(game.appId, game.title) })
                 }
                 if (visibleTopGames.size > leaderVisibleLimit) {
-                    OutlinedButton(onClick = { leaderVisibleLimit += 20 }, modifier = Modifier.fillMaxWidth()) {
+                    OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { leaderVisibleLimit += 20 }, modifier = Modifier.fillMaxWidth()) {
                         Text("Показать ещё · ${minOf(leaderVisibleLimit, visibleTopGames.size)} из ${visibleTopGames.size}")
                     }
                 }
                 if (sectionHasMore) {
-                    OutlinedButton(
+                    OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), 
                         onClick = { loadMoreLeaderGames() },
                         enabled = !loadMoreBusy && !topBusy,
                         modifier = Modifier.fillMaxWidth()
@@ -2715,7 +2715,7 @@ class MainActivity : ComponentActivity() {
                 }
                 HorizontalDivider()
                 Spacer(Modifier.height(12.dp))
-                OutlinedButton(onClick = { showDirectory = true }, modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { showDirectory = true }, modifier = Modifier.fillMaxWidth()) {
                     Text("Справочник игр и правила DLC")
                 }
                 Text("Сохранённые правила справочника продолжают работать в поиске и мониторинге.", style = MaterialTheme.typography.bodySmall)
@@ -2740,7 +2740,7 @@ class MainActivity : ComponentActivity() {
                 if (localSuggestions.isNotEmpty()) {
                     Text("Совпадения в истории и справочнике", style = MaterialTheme.typography.labelMedium)
                     localSuggestions.forEach { candidate ->
-                        OutlinedButton(onClick = {
+                        OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = {
                             directoryGame = candidate
                             directoryCanonical = GameRuleStore.read(this@MainActivity, candidate).optString("canonical")
                             directoryGameInfo = null
@@ -2752,7 +2752,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-                OutlinedButton(onClick = {
+                OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = {
                     val term = directoryGame.trim()
                     directoryBusy = true
                     directoryMessage = "Ищем игры в Steam…"
@@ -2768,7 +2768,7 @@ class MainActivity : ComponentActivity() {
                     }.start()
                 }, enabled = directoryGame.isNotBlank() && !directoryBusy) { Text("Найти название в Steam") }
                 directorySuggestions.forEach { candidate ->
-                    OutlinedButton(onClick = {
+                    OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = {
                         directoryGame = candidate.name
                         directorySelectedAppId = candidate.id
                         directoryCanonical = GameRuleStore.read(this@MainActivity, candidate.name).optString("canonical")
@@ -2783,7 +2783,7 @@ class MainActivity : ComponentActivity() {
                 if (savedGames.isNotEmpty()) {
                     Text("Ранее изменённые игры", style = MaterialTheme.typography.titleSmall)
                     savedGames.forEach { saved ->
-                        OutlinedButton(onClick = {
+                        OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = {
                             directoryGame = saved
                             directorySelectedAppId = null
                             directoryCanonical = GameRuleStore.read(this@MainActivity, saved).optString("canonical")
@@ -2794,7 +2794,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-                OutlinedButton(onClick = {
+                OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = {
                     val name = directoryGame.trim()
                     val appId = directorySelectedAppId
                     directoryCanonical = GameRuleStore.read(this@MainActivity, name).optString("canonical")
@@ -2824,7 +2824,7 @@ class MainActivity : ComponentActivity() {
                     Text("Официальное название: ${directoryGameInfo?.canonical ?: "ещё не загружено"}")
                     OutlinedTextField(directoryCanonical, { directoryCanonical = it },
                         label = { Text("Название основной игры (ручная правка)") }, modifier = Modifier.fillMaxWidth())
-                    OutlinedButton(onClick = {
+                    OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = {
                         val data = GameRuleStore.read(this@MainActivity, directoryGame)
                         data.put("canonical", directoryCanonical.trim())
                         GameRuleStore.save(this@MainActivity, directoryGame, data)
@@ -2861,7 +2861,7 @@ class MainActivity : ComponentActivity() {
                     }
                     OutlinedTextField(directoryInput, { directoryInput = it }, label = { Text("Название или отличительная часть") },
                         modifier = Modifier.fillMaxWidth())
-                    OutlinedButton(onClick = {
+                    OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = {
                         GameRuleStore.add(this@MainActivity, directoryGame, directoryField, directoryInput)
                         directoryInput = ""
                         rulesRevision++
@@ -2887,7 +2887,7 @@ class MainActivity : ComponentActivity() {
                 Row(Modifier.height(36.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("Фильтры игр", modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.labelLarge, color = Color(0xFF17212D))
-                    OutlinedButton(onClick = { onInput(input.copy(expanded = !input.expanded)) },
+                    OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { onInput(input.copy(expanded = !input.expanded)) },
                         modifier = Modifier.height(30.dp), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
                         border = BorderStroke(1.dp, Color(0xFFD2D9E1)),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF344253))) {
@@ -2976,7 +2976,7 @@ class MainActivity : ComponentActivity() {
         var menuExpanded by remember { mutableStateOf(false) }
         Text("Жанры Steam · выберите один или несколько", style = MaterialTheme.typography.labelMedium)
         Box {
-            OutlinedButton(onClick = { menuExpanded = true }, enabled = availableGenres.isNotEmpty()) {
+            OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { menuExpanded = true }, enabled = availableGenres.isNotEmpty()) {
                 Text(when {
                     input.selectedGenres.isNotEmpty() -> "Выбрано жанров: ${input.selectedGenres.size}"
                     availableGenres.isNotEmpty() -> "Выбрать жанры (${availableGenres.size})"
@@ -3089,7 +3089,7 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier.fillMaxWidth()
         )
         val selected = profiles.firstOrNull { it.steamId64 == selectedId }
-        OutlinedButton(onClick = onImport, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = onImport, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
             Text(if (busy) "Загружаем из Steam…" else if (input.isBlank() && selected != null)
                 "Обновить «${selected.displayName}» · Steam RU" else "Загрузить и закрепить профиль")
         }
@@ -3187,7 +3187,7 @@ class MainActivity : ComponentActivity() {
             }
         }
         if (visibleGames.size > visibleLimit) {
-            OutlinedButton(onClick = onShowMore, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = onShowMore, modifier = Modifier.fillMaxWidth()) {
                 Text("Показать ещё · ${minOf(visibleLimit, visibleGames.size)} из ${visibleGames.size}")
             }
         }
@@ -3245,7 +3245,7 @@ private fun WatchListControls(
     ) {
         Text("Показано $visibleCount из $totalCount", style = MaterialTheme.typography.bodySmall)
         Box {
-            OutlinedButton(onClick = { sortMenuOpen = true }) {
+            OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { sortMenuOpen = true }) {
                 Text("Сортировка: ${when (sort) {
                     WatchListPresentation.Sort.ATTENTION -> "внимание"
                     WatchListPresentation.Sort.LOWEST_PRICE -> "цена"
