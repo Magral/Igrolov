@@ -43,8 +43,8 @@ class FullRedesignScreenshotsTest {
             device.takeScreenshot(File(out, "redesign-$name.png"))
         }
         capture("search")
-        val tabs = listOf("Товары", "Мониторинг", "Желания", "Лидеры", "Справочник")
-        val files = listOf("products", "monitoring", "wishlist", "leaders", "directory")
+        val tabs = listOf("Товары", "Мониторинг", "Желания", "Лидеры")
+        val files = listOf("products", "monitoring", "wishlist", "leaders")
         tabs.zip(files).forEach { (tab, file) ->
             compose.onAllNodesWithText(tab).onFirst()
                 .performSemanticsAction(SemanticsActions.OnClick) { it() }
@@ -53,6 +53,17 @@ class FullRedesignScreenshotsTest {
             }
             capture(file)
         }
+        compose.onAllNodesWithText("Настройки").onFirst()
+            .performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitUntil(10000) {
+            compose.onAllNodesWithText("Справочник игр и правила DLC").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onAllNodesWithText("Справочник игр и правила DLC").onFirst()
+            .performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitUntil(10000) {
+            compose.onAllNodesWithText("Справочник игр").fetchSemanticsNodes().isNotEmpty()
+        }
+        capture("directory")
         context.getSharedPreferences("tracked_products", 0).edit().putString("ids", "")
             .remove("product_cache_Plati:123456").commit()
         GameRuleStore.remove(context, "Stellaris", "blocked", "DLC")
