@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T06:01:38.146Z
+- Обновлено (UTC): 2026-10-25T06:01:46.238Z
 - Ветка: `main`.
-- HEAD: [`54418a1e5d65`](https://github.com/Magral/Igrolov/commit/54418a1e5d65635b375833acdcc526bc49c76fff).
+- HEAD: [`f132b927d4c2`](https://github.com/Magral/Igrolov/commit/f132b927d4c211d86abb03fb487f9018c2407a52).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [31b046b](https://github.com/Magral/Igrolov/commit/31b046b22dcd5ce37a9cb7ac76040e18a984a7fd) — test: target compact card action without tab collision
 - [54418a1](https://github.com/Magral/Igrolov/commit/54418a1e5d65635b375833acdcc526bc49c76fff) — ui: clarify compact wishlist card action
 - [f6aeb7f](https://github.com/Magral/Igrolov/commit/f6aeb7f7623a8fe63206e318c885756865a9aff8) — test: align card actions with compact labels
 - [8f6d059](https://github.com/Magral/Igrolov/commit/8f6d059230180786787ad8c106a0fde8f9f09c6c) — test: align card actions with compact labels
-- [955f6ea](https://github.com/Magral/Igrolov/commit/955f6ea0919183c4f555eebc1cda24f70e99c1e4) — ui: tighten typography and card action labels
 <!-- AUTO_CONTEXT_END -->
