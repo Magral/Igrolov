@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T02:07:58.197Z
+- Обновлено (UTC): 2026-10-25T02:16:23.815Z
 - Ветка: `main`.
-- HEAD: [`c60282f86982`](https://github.com/Magral/Igrolov/commit/c60282f86982b57150efe98fd0cd168d85861eaa).
+- HEAD: [`79942bc5d938`](https://github.com/Magral/Igrolov/commit/79942bc5d9383975945d5e88bc8568460977bf9b).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [79942bc](https://github.com/Magral/Igrolov/commit/79942bc5d9383975945d5e88bc8568460977bf9b) — test: use Compose semantics for monitor game selection
 - [c60282f](https://github.com/Magral/Igrolov/commit/c60282f86982b57150efe98fd0cd168d85861eaa) — ui: align shared screens with redesign reference
 - [f41c552](https://github.com/Magral/Igrolov/commit/f41c55240ca2b770b57e40023420cc211642af04) — test: keep monitor activity active during Steam suggestions
 - [df8cc4e](https://github.com/Magral/Igrolov/commit/df8cc4ea1beb6a2827326371294cee5eeaa41a42) — test: dismiss IME before checking Steam suggestions
-- [539f1dd](https://github.com/Magral/Igrolov/commit/539f1ddb1804699ef66f81fc608832974991be02) — test: reveal expanded history using viewport swipes
 <!-- AUTO_CONTEXT_END -->
