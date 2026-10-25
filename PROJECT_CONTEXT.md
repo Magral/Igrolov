@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T06:21:42.345Z
+- Обновлено (UTC): 2026-10-25T06:22:26.183Z
 - Ветка: `main`.
-- HEAD: [`9a2d53f35878`](https://github.com/Magral/Igrolov/commit/9a2d53f3587888bfdab40432165e77ee90309730).
+- HEAD: [`729bcd3475f4`](https://github.com/Magral/Igrolov/commit/729bcd3475f44f6967f21153af812e3427e9111c).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [729bcd3](https://github.com/Magral/Igrolov/commit/729bcd3475f44f6967f21153af812e3427e9111c) — test: use populated app screens for redesign evidence
 - [9a2d53f](https://github.com/Magral/Igrolov/commit/9a2d53f3587888bfdab40432165e77ee90309730) — test: copy seeded screenshots after card scenario
 - [c016f7f](https://github.com/Magral/Igrolov/commit/c016f7f27633b114d97ed0dfd2871d73ba7dc694) — test: capture redesign screens before scenario tests
 - [b37b8ff](https://github.com/Magral/Igrolov/commit/b37b8ff489adceea76f94700af0ce50604528ad2) — ui: redesign search results as compact game cards
-- [c3f7306](https://github.com/Magral/Igrolov/commit/c3f7306dadf4bf36961707720714dffd85a6cb78) — ui: add artwork to monitored game cards
 <!-- AUTO_CONTEXT_END -->
