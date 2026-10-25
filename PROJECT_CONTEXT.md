@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T07:18:21.895Z
+- Обновлено (UTC): 2026-10-25T07:26:04.242Z
 - Ветка: `main`.
-- HEAD: [`23f45ef98486`](https://github.com/Magral/Igrolov/commit/23f45ef98486e6474fc29e13cb9a7a0b2c7c9283).
+- HEAD: [`da4c7237b6dc`](https://github.com/Magral/Igrolov/commit/da4c7237b6dc6db4b463c8e469c5d3639de93fd3).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [da4c723](https://github.com/Magral/Igrolov/commit/da4c7237b6dc6db4b463c8e469c5d3639de93fd3) — test: target the named game search field on every device
 - [23f45ef](https://github.com/Magral/Igrolov/commit/23f45ef98486e6474fc29e13cb9a7a0b2c7c9283) — test: keep working UiAutomator search field input
 - [c510209](https://github.com/Magral/Igrolov/commit/c5102090ffc6761334a664b94f08092634fb75d1) — test: enter tracked game through Compose search field
 - [af07929](https://github.com/Magral/Igrolov/commit/af07929c05fe358d105a71954389876595b5ac89) — test: remove API 26 device swipe from tracked price flow
-- [98253eb](https://github.com/Magral/Igrolov/commit/98253eb92ae465b4985b9ba3be17e4845a555064) — test: import Compose rule for transfer regression
 <!-- AUTO_CONTEXT_END -->
