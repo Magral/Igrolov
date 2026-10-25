@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T07:29:17.054Z
+- Обновлено (UTC): 2026-10-25T07:36:55.518Z
 - Ветка: `main`.
-- HEAD: [`0d4903c029f8`](https://github.com/Magral/Igrolov/commit/0d4903c029f825574368418a893ffa768500265d).
+- HEAD: [`da931a5850be`](https://github.com/Magral/Igrolov/commit/da931a5850be2a6cf65abb6fbf8570f6762204aa).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [da931a5](https://github.com/Magral/Igrolov/commit/da931a5850be2a6cf65abb6fbf8570f6762204aa) — test: capture search state before tracked game suggestion
 - [0d4903c](https://github.com/Magral/Igrolov/commit/0d4903c029f825574368418a893ffa768500265d) — test: fix Compose search-field matcher import
 - [da4c723](https://github.com/Magral/Igrolov/commit/da4c7237b6dc6db4b463c8e469c5d3639de93fd3) — test: target the named game search field on every device
 - [23f45ef](https://github.com/Magral/Igrolov/commit/23f45ef98486e6474fc29e13cb9a7a0b2c7c9283) — test: keep working UiAutomator search field input
-- [c510209](https://github.com/Magral/Igrolov/commit/c5102090ffc6761334a664b94f08092634fb75d1) — test: enter tracked game through Compose search field
 <!-- AUTO_CONTEXT_END -->
