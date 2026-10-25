@@ -6,8 +6,6 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
-import androidx.compose.ui.test.hasSetTextAction
-import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
@@ -89,8 +87,7 @@ class TrackedTransferUiRegressionTest {
         MonitorRoomStore.writeTrackedProduct(context,key("123456"),null)
         ManualSearchSettings.save(context,ManualSearchFilters())
         val device=open()
-        compose.onAllNodes(hasSetTextAction()).onFirst().performTextReplacement("Stellaris")
-        compose.waitForIdle()
+        device.findObject(By.clazz("android.widget.EditText")).text="Stellaris"
         assertTrue(device.wait(Until.hasObject(By.text("Stellaris · Steam #281990")),15000))
         clickText("Stellaris · Steam #281990")
         // The selected tab hides the soft keyboard without leaving the search form.
