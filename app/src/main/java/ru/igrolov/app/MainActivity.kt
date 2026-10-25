@@ -870,6 +870,7 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                         OutlinedButton(onClick = onDetails, modifier = Modifier.fillMaxWidth().height(32.dp),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
                             contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
                             border = BorderStroke(1.dp, Color(0xFFD2D9E1)), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF344253))) {
                             Text("Подробнее", style = MaterialTheme.typography.labelMedium, color = Color(0xFF344253), maxLines = 1)
@@ -3165,6 +3166,7 @@ class MainActivity : ComponentActivity() {
                                 prices?.plati?.price ?: game.lowestPlatiPrice,
                                 prices?.ggsel?.price ?: game.lowestGgselPrice)
                             OutlinedButton(onClick = { onDetails(game) }, modifier = Modifier.fillMaxWidth().height(32.dp),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
                                 contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp), border = BorderStroke(1.dp, Color(0xFFD2D9E1)), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF344253))) {
                                 Text("Подробнее", style = MaterialTheme.typography.labelMedium, color = Color(0xFF344253), maxLines = 1)
                             }
