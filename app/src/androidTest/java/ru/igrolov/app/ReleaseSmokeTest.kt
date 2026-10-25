@@ -83,8 +83,8 @@ class ReleaseSmokeTest {
         compose.waitForIdle()
         compose.onNodeWithText("Поиск").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
-        UiTestScroll.reveal(compose,"Поиск игры по названию")
-        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Поиск игры по названию")) })
+        UiTestScroll.reveal(compose,"Поиск игры")
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Поиск игры")) })
         assertTrue(device.hasObject(By.text("GGSEL")))
         assertTrue(device.hasObject(By.text("Plati")))
         UiTestScroll.reveal(compose,"Искать")
@@ -153,7 +153,7 @@ class ReleaseSmokeTest {
         assertTrue(device.hasObject(By.text("900 ₽")))
         compose.onNodeWithText("Stellaris").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
-        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Поиск игры по названию")) })
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Поиск игры")) })
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.textContains("Автопоиск цен")) })
         assertFalse(device.hasObject(By.text("Искать Plati")))
         prefs.edit().remove("wishlist_profiles").remove("wishlist_selected_profile").remove("wishlist_profile")
