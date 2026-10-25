@@ -70,6 +70,9 @@ class StellarisUiRegressionTest {
         assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Stellaris · Steam #281990")) })
         compose.onNodeWithText("Stellaris · Steam #281990").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
+        // The active tab clears focus while preserving the selected Steam game.
+        device.findObject(By.text("Поиск")).click()
+        device.waitForIdle()
         UiTestScroll.reveal(compose,"Искать")
         compose.onNodeWithText("Искать").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
@@ -85,6 +88,7 @@ class StellarisUiRegressionTest {
         price.performScrollTo()
         compose.waitForIdle()
         price.assertIsDisplayed()
+        UiTestScroll.reveal(compose,"Stellaris Steam Key РФ", contains = true)
         device.takeScreenshot(File(context.getExternalFilesDir(null),"stellaris-result.png"))
     }
 }
