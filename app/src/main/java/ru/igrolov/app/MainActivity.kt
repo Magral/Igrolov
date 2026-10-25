@@ -1125,11 +1125,17 @@ class MainActivity : ComponentActivity() {
                 suggestionBusy=true
                 delay(450)
                 val local=ManualSearchSettings.games(this@MainActivity)
-                suggestionExecutor.execute {
-                    val suggestions=GameSearchResolver.suggest(requested,local,{suggestionGeneration.get()==generation}) { term ->
-                        SteamGameReference.searchGames(term).map {GameSearchResolver.Candidate(it.id,it.name)}
+                val exact=GameSearchResolver.exact(requested,local+GameSearchResolver.seeds)
+                if(exact!=null) {
+                    gameSuggestions=listOf(exact)
+                    suggestionBusy=false
+                } else {
+                    suggestionExecutor.execute {
+                        val suggestions=GameSearchResolver.suggest(requested,local,{suggestionGeneration.get()==generation}) { term ->
+                            SteamGameReference.searchGames(term).map {GameSearchResolver.Candidate(it.id,it.name)}
+                        }
+                        runOnUiThread {if(suggestionGeneration.get()==generation) {gameSuggestions=suggestions;suggestionBusy=false}}
                     }
-                    runOnUiThread {if(suggestionGeneration.get()==generation) {gameSuggestions=suggestions;suggestionBusy=false}}
                 }
             }
         }
