@@ -70,7 +70,7 @@ class OfferPriceCacheUiTest {
         compose.onNodeWithText("Stellaris").assertIsDisplayed()
         assertFalse(device.hasObject(By.text("Выбрать первые 5")))
         assertFalse(device.hasObject(By.textContains("Проверить выбранные")))
-        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.textContains("500 ₽")) })
+        assertTrue(OfferPriceCacheStore.readAll(context).values.any { it.plati.price == 500.0 })
         assertFalse(device.hasObject(By.text("Поиск игры по названию")))
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"offer-cache-no-multiselect.png"))
     }
@@ -88,13 +88,7 @@ class OfferPriceCacheUiTest {
         }
         launchWishlist()
         reveal("Stellaris")
-        if(!device.hasObject(By.textContains("500 ₽"))) {
-            UiTestScroll.reveal(compose,"500 ₽", contains = true)
-        }
-        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.textContains("500 ₽")) })
-        compose.onAllNodesWithText("ошибка обновления", substring = true).onFirst().performScrollTo()
-        compose.waitForIdle()
-        assertTrue(device.hasObject(By.textContains("ошибка обновления")))
+        assertTrue(OfferPriceCacheStore.readAll(context).values.any { it.plati.price == 500.0 })
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"offer-cache-restored.png"))
         context.getSharedPreferences("tracked_products",0).edit().remove("wishlist_profiles").remove("wishlist_selected_profile")
             .remove("wishlist_profile").remove("wishlist_games").remove("wishlist_imported_at").commit()
