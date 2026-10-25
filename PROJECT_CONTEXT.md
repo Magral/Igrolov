@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T13:30:19.959Z
+- Обновлено (UTC): 2026-10-25T13:35:46.496Z
 - Ветка: `main`.
-- HEAD: [`7a36a1dea414`](https://github.com/Magral/Igrolov/commit/7a36a1dea414060ee4b14be7c2cc9481fa378d35).
+- HEAD: [`1f7532a5bee2`](https://github.com/Magral/Igrolov/commit/1f7532a5bee2000a0f601b6a22e681b01067186b).
 - Последний опубликованный стабильный GitHub Release: [v1.5.0](https://github.com/Magral/Igrolov/releases/tag/v1.5.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [1f7532a](https://github.com/Magral/Igrolov/commit/1f7532a5bee2000a0f601b6a22e681b01067186b) — release: Игролов 1.5.1 — читаемые карточки (обновить versionCode тест)
 - [7a36a1d](https://github.com/Magral/Igrolov/commit/7a36a1dea414060ee4b14be7c2cc9481fa378d35) — release: Игролов 1.5.1 — читаемые карточки (исправление тестов)
 - [0a7fe8f](https://github.com/Magral/Igrolov/commit/0a7fe8f61234cd5bdd1c8c22b907f4656ee6c375) — release: Игролов 1.5.1 — читаемые карточки (исправление UI-теста)
 - [be53aba](https://github.com/Magral/Igrolov/commit/be53abac55a848abe7a7925a5fc4dac54c2df60f) — release: Игролов 1.5.1 — читаемые карточки (сборка проходит)
-- [13d8f1b](https://github.com/Magral/Igrolov/commit/13d8f1bf11771177274272b68b35eab436c842da) — release: Игролов 1.5.1 — читаемые карточки (исправление сборки)
 <!-- AUTO_CONTEXT_END -->
