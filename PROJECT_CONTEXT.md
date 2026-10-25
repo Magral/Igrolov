@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T06:47:55.970Z
+- Обновлено (UTC): 2026-10-25T06:48:24.603Z
 - Ветка: `main`.
-- HEAD: [`77d2b1340636`](https://github.com/Magral/Igrolov/commit/77d2b1340636c732c2a488f54901e8aac847278d).
+- HEAD: [`34678b579ad0`](https://github.com/Magral/Igrolov/commit/34678b579ad0c2dba4bb795e1038a996ec63111c).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [34678b5](https://github.com/Magral/Igrolov/commit/34678b579ad0c2dba4bb795e1038a996ec63111c) — test: center populated search result in redesign screenshot
 - [d732074](https://github.com/Magral/Igrolov/commit/d732074ed822d7c75f61162c0da8801428660a93) — test: tidy device screenshot capture sequence
 - [4bf2368](https://github.com/Magral/Igrolov/commit/4bf23686f5863418e620a221d0ba5796990d5937) — ui: wrap leader availability filters without clipping
 - [47fad0e](https://github.com/Magral/Igrolov/commit/47fad0e2b948763a4ed2a615b087a1194859ee44) — ui: standardize outlined button corners across tabs
-- [3bd8c1b](https://github.com/Magral/Igrolov/commit/3bd8c1b31f1c3a1dc95ceb0a28fedcc809124312) — ui: place monitoring actions in one compact row
 <!-- AUTO_CONTEXT_END -->
