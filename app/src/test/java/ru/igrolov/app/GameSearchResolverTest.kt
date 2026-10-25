@@ -23,8 +23,17 @@ class GameSearchResolverTest {
     }
     @Test fun staleSuggestionsAreCancelledAndNetworkFailurePreservesLocalAliases() {
         var active=true
-        assertTrue(GameSearchResolver.suggest("Stellaris",emptyList(),{active}) {active=false;emptyList()}.isEmpty())
+        assertTrue(GameSearchResolver.suggest("Stelaris",emptyList(),{active}) {active=false;emptyList()}.isEmpty())
         assertEquals(281990,GameSearchResolver.suggest("Стелларис",emptyList(),{true}) {throw java.io.IOException()}.first().appId)
+    }
+    @Test fun exactKnownGamesAreSuggestedWithoutWaitingForSteam() {
+        var fetched=false
+        val result=GameSearchResolver.suggest("Stellaris",emptyList(),{true}) {
+            fetched=true
+            emptyList()
+        }
+        assertEquals(281990,result.single().appId)
+        assertFalse(fetched)
     }
     @Test fun aliasesDoNotTurnSequelsOrNamedAddonsIntoBaseGames() {
         val game=ManualGameReference.Game("Cities: Skylines",255710,aliases=GameSearchResolver.aliases(255710,"Cities: Skylines"))
