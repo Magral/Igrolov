@@ -595,7 +595,6 @@ class MainActivity : ComponentActivity() {
                     imageUrl = fallbackUrl
                 }
             }
-        }
 
         Box(
             modifier
@@ -725,7 +724,6 @@ class MainActivity : ComponentActivity() {
                         color = Color(0xFF17212D), maxLines = 1)
                 }
             }
-        }
     }
 
     @Composable
@@ -3171,7 +3169,6 @@ class MainActivity : ComponentActivity() {
                                 color = if (status.startsWith("Ошибка")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
                         } }
                     }
-                }
             }
         }
         if (visibleGames.size > visibleLimit) {
