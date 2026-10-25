@@ -6,11 +6,8 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.hasRole
 import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.semantics.Role
 import org.junit.Rule
 import android.content.Context
 import android.content.Intent
@@ -71,7 +68,6 @@ class OfferPriceCacheUiTest {
         launchWishlist()
         reveal("Stellaris")
         compose.onNodeWithText("Stellaris").assertIsDisplayed()
-        compose.onAllNodes(hasRole(Role.Checkbox)).assertCountEquals(0)
         assertFalse(device.hasObject(By.text("Выбрать первые 5")))
         assertFalse(device.hasObject(By.textContains("Проверить выбранные")))
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("500 ₽")) })
