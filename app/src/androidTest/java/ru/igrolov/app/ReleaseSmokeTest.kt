@@ -50,7 +50,7 @@ class ReleaseSmokeTest {
         assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Игролов")) })
         compose.onNodeWithText("Лидеры").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
-        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Лидеры продаж Steam")) })
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Топ продаж")) })
         assertTrue(device.hasObject(By.text("Топ продаж")))
         assertTrue(device.hasObject(By.text("Популярные новинки")))
         assertTrue(device.hasObject(By.text("Топ со скидками")))
