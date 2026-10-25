@@ -2021,37 +2021,41 @@ class MainActivity : ComponentActivity() {
                 Checkbox(checked = watchRf, onCheckedChange = { }, enabled = false)
                 Text("Только с указанием РФ")
             }
-            OutlinedButton(onClick = {
-                val amount = targetPrice.replace(',', '.').toDoubleOrNull()
-                if (watchGame.isBlank() || amount == null || !amount.isFinite() || amount <= 0) {
-                    watchMessage = "Введите название игры и положительную желаемую цену"
-                } else {
-                    val identity=watchSelection ?: GameSearchResolver.exact(watchGame,watchSuggestions+GameSearchResolver.seeds)
-                    if(identity==null && watchSuggestions.isNotEmpty()) {
-                        watchMessage="Выберите точную игру Steam"
-                        return@OutlinedButton
-                    }
-                    watchMessage="Добавляем игру…"
-                    ioExecutor.execute {
-                        WatchStore.add(this@MainActivity,identity?.name ?: watchGame.trim(),watchType,amount,watchRf,identity?.appId)
-                        runOnUiThread {
-                            WatchScheduler.start(this@MainActivity)
-                            WatchScheduler.checkNow(this@MainActivity)
-                            if (Build.VERSION.SDK_INT >= 33) askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
-                            reloadWatches()
-                            watchMessage = "Игра добавлена. Проверка запрошена; фоновые проверки — примерно раз в час."
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = {
+                    val amount = targetPrice.replace(',', '.').toDoubleOrNull()
+                    if (watchGame.isBlank() || amount == null || !amount.isFinite() || amount <= 0) {
+                        watchMessage = "Введите название игры и положительную желаемую цену"
+                    } else {
+                        val identity=watchSelection ?: GameSearchResolver.exact(watchGame,watchSuggestions+GameSearchResolver.seeds)
+                        if(identity==null && watchSuggestions.isNotEmpty()) {
+                            watchMessage="Выберите точную игру Steam"
+                            return@OutlinedButton
+                        }
+                        watchMessage="Добавляем игру…"
+                        ioExecutor.execute {
+                            WatchStore.add(this@MainActivity,identity?.name ?: watchGame.trim(),watchType,amount,watchRf,identity?.appId)
+                            runOnUiThread {
+                                WatchScheduler.start(this@MainActivity)
+                                WatchScheduler.checkNow(this@MainActivity)
+                                if (Build.VERSION.SDK_INT >= 33) askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                reloadWatches()
+                                watchMessage = "Игра добавлена. Проверка запрошена; фоновые проверки — примерно раз в час."
+                            }
                         }
                     }
+                }, enabled = !watchSuggesting, modifier = Modifier.weight(1f),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)) {
+                    Text("Отслеживать игру", maxLines = 1)
                 }
-            },enabled=!watchSuggesting) { Text("Отслеживать игру") }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = {
                     WatchScheduler.checkNow(this@MainActivity)
                     watchMessage = "Проверка запущена..."
-                }, enabled = !checkingNow && JSONArray(watches).length() > 0) {
-                    Text(if (checkingNow) "Проверяем..." else "Проверить сейчас")
+                }, enabled = !checkingNow && JSONArray(watches).length() > 0,
+                    modifier = Modifier.weight(1f),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)) {
+                    Text(if (checkingNow) "Проверяем..." else "Проверить сейчас", maxLines = 1)
                 }
-
             }
             if (checkingNow) {
                 LinearProgressIndicator(progress = { if (monitorTotal > 0) monitorDone.toFloat() / monitorTotal else 0f }, modifier = Modifier.fillMaxWidth())
