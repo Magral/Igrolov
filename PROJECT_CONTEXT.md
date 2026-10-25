@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T06:17:36.065Z
+- Обновлено (UTC): 2026-10-25T06:18:10.495Z
 - Ветка: `main`.
-- HEAD: [`b304f701fea4`](https://github.com/Magral/Igrolov/commit/b304f701fea4a588a19fa1bc27e7e67a92e007a7).
+- HEAD: [`3996cb6d5bed`](https://github.com/Magral/Igrolov/commit/3996cb6d5bed0d1a25434463e0f94fbb722c4b64).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [3996cb6](https://github.com/Magral/Igrolov/commit/3996cb6d5bed0d1a25434463e0f94fbb722c4b64) — ui: give handbook choices clear borders
 - [b304f70](https://github.com/Magral/Igrolov/commit/b304f701fea4a588a19fa1bc27e7e67a92e007a7) — test: assert the leader edition action label
 - [f7599c4](https://github.com/Magral/Igrolov/commit/f7599c47e36ef084187ccec71281f42c6c52ca2d) — ui: add a bordered empty state to products
 - [1975004](https://github.com/Magral/Igrolov/commit/19750043505bd8d8aba4bcc6f6340b19a70d6968) — ui: compact monitoring copy and price columns
-- [156b790](https://github.com/Magral/Igrolov/commit/156b79074d0ec09e695ec608373b06a76b21b40b) — test: follow the current leader card action
 <!-- AUTO_CONTEXT_END -->
