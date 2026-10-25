@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T05:50:24.923Z
+- Обновлено (UTC): 2026-10-25T05:56:22.686Z
 - Ветка: `main`.
-- HEAD: [`955f6ea09191`](https://github.com/Magral/Igrolov/commit/955f6ea0919183c4f555eebc1cda24f70e99c1e4).
+- HEAD: [`f6aeb7f7623a`](https://github.com/Magral/Igrolov/commit/f6aeb7f7623a8fe63206e318c885756865a9aff8).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [f6aeb7f](https://github.com/Magral/Igrolov/commit/f6aeb7f7623a8fe63206e318c885756865a9aff8) — test: align card actions with compact labels
+- [8f6d059](https://github.com/Magral/Igrolov/commit/8f6d059230180786787ad8c106a0fde8f9f09c6c) — test: align card actions with compact labels
 - [955f6ea](https://github.com/Magral/Igrolov/commit/955f6ea0919183c4f555eebc1cda24f70e99c1e4) — ui: tighten typography and card action labels
 - [466e664](https://github.com/Magral/Igrolov/commit/466e664b82be1efded91fe144924f8bed71fd432) — ui: fix monitor button label after outline migration
-- [5c64196](https://github.com/Magral/Igrolov/commit/5c641967533e86f3c450a53ede271faa84c569db) — test: remove duplicate screenshot copies
-- [b8198e3](https://github.com/Magral/Igrolov/commit/b8198e393e5e973362e778a0105718c445710df5) — test: preserve seeded card previews before later checks
 <!-- AUTO_CONTEXT_END -->
