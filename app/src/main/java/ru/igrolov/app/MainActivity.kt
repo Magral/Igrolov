@@ -2068,15 +2068,25 @@ class MainActivity : ComponentActivity() {
                 val wi = watchEntry.originalIndex
                 val w = watchEntry.game
                 OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
-                    Column(Modifier.padding(10.dp)) {
-                        Text(w.optString("name"), style = MaterialTheme.typography.titleSmall, maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                        Text(listOfNotNull(w.optString("kind"), w.optString("steamEditionName").takeIf { it.isNotBlank() },
-                            "цель ${w.optDouble("limit").toInt()} ₽", "РФ ${if (w.optBoolean("rf",true)) "да" else "не обязательно"}").joinToString(" · "),
-                            style = MaterialTheme.typography.bodySmall, maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                        Text(if (w.optDouble("last", -1.0) > 0) "Минимум: ${w.optDouble("last").toInt()} ₽" else "Подходящих цен пока нет",
-                            style = MaterialTheme.typography.bodyMedium)
+                    Column(Modifier.padding(8.dp)) {
+                        val watchAppId = w.optInt("steamAppId", w.optInt("appId", 0))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically) {
+                            if (watchAppId > 0) SteamArtwork(
+                                "https://cdn.akamai.steamstatic.com/steam/apps/${watchAppId}/library_600x900.jpg",
+                                Modifier.size(48.dp, 72.dp), appId = watchAppId
+                            )
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(w.optString("name"), style = MaterialTheme.typography.titleSmall, maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                Text(listOfNotNull(w.optString("kind"), w.optString("steamEditionName").takeIf { it.isNotBlank() },
+                                    "цель ${w.optDouble("limit").toInt()} ₽", "РФ ${if (w.optBoolean("rf",true)) "да" else "не обязательно"}").joinToString(" · "),
+                                    style = MaterialTheme.typography.bodySmall, maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                Text(if (w.optDouble("last", -1.0) > 0) "Минимум: ${w.optDouble("last").toInt()} ₽" else "Подходящих цен пока нет",
+                                    style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
                         WatchHistory.priceChange(w.optJSONArray("history") ?: JSONArray())?.let { change ->
                             val difference = kotlin.math.abs(change.difference)
                             val changeText = when {
