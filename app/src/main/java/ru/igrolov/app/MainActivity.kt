@@ -939,7 +939,7 @@ class MainActivity : ComponentActivity() {
                 }
             },
             confirmButton = {
-                Button(enabled = !pendingWatchSaving, onClick = {
+                OutlinedButton(enabled = !pendingWatchSaving, onClick = {
                     val amount = pendingWatchPrice.trim().replace(',', '.').toDoubleOrNull()
                     if (amount == null || !amount.isFinite() || amount <= 0) {
                         pendingWatchError = "Введите положительную цену"
@@ -1891,7 +1891,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             Text("Основная игра должна быть явно распознана до показа. Недоступные товары и неподтверждённые цены вариантов скрываются.", style = MaterialTheme.typography.bodySmall)
-            Button(onClick = { startCatalogSearch() },
+            OutlinedButton(onClick = { startCatalogSearch() },
                 enabled = query.isNotBlank() && !searching && !suggestionBusy && manualFilters.valid) {
                 Text(if (searching) "Ищем..." else selectedSteamEdition?.let { "Искать ${it.name}" } ?: "Искать")
             }
@@ -1909,7 +1909,7 @@ class MainActivity : ComponentActivity() {
             if (activeTab == 1 && !settingsOpen) {
             OutlinedTextField(entry, { entry = it }, label = { Text("Ссылка Plati или ID товара") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = {
+                OutlinedButton(onClick = {
                     val raw = entry.trim()
                     val id = if (raw.all { it.isDigit() }) raw else {
                         val uri = runCatching { Uri.parse(raw) }.getOrNull()
@@ -2001,7 +2001,7 @@ class MainActivity : ComponentActivity() {
                 Checkbox(checked = watchRf, onCheckedChange = { }, enabled = false)
                 Text("Только с указанием РФ")
             }
-            Button(onClick = {
+            OutlinedButton(onClick = {
                 val amount = targetPrice.replace(',', '.').toDoubleOrNull()
                 if (watchGame.isBlank() || amount == null || !amount.isFinite() || amount <= 0) {
                     watchMessage = "Введите название игры и положительную желаемую цену"
@@ -2698,7 +2698,7 @@ class MainActivity : ComponentActivity() {
                         }) { Text(candidate) }
                     }
                 }
-                Button(onClick = {
+                OutlinedButton(onClick = {
                     val term = directoryGame.trim()
                     directoryBusy = true
                     directoryMessage = "Ищем игры в Steam…"
@@ -2733,7 +2733,7 @@ class MainActivity : ComponentActivity() {
                         }) { Text(saved) }
                     }
                 }
-                Button(onClick = {
+                OutlinedButton(onClick = {
                     val name = directoryGame.trim()
                     val appId = directorySelectedAppId
                     directoryCanonical = GameRuleStore.read(this@MainActivity, name).optString("canonical")
@@ -2759,7 +2759,7 @@ class MainActivity : ComponentActivity() {
                     Text("Официальное название: ${directoryGameInfo?.canonical ?: "ещё не загружено"}")
                     OutlinedTextField(directoryCanonical, { directoryCanonical = it },
                         label = { Text("Название основной игры (ручная правка)") }, modifier = Modifier.fillMaxWidth())
-                    Button(onClick = {
+                    OutlinedButton(onClick = {
                         val data = GameRuleStore.read(this@MainActivity, directoryGame)
                         data.put("canonical", directoryCanonical.trim())
                         GameRuleStore.save(this@MainActivity, directoryGame, data)
@@ -2796,7 +2796,7 @@ class MainActivity : ComponentActivity() {
                     }
                     OutlinedTextField(directoryInput, { directoryInput = it }, label = { Text("Название или отличительная часть") },
                         modifier = Modifier.fillMaxWidth())
-                    Button(onClick = {
+                    OutlinedButton(onClick = {
                         GameRuleStore.add(this@MainActivity, directoryGame, directoryField, directoryInput)
                         directoryInput = ""
                         rulesRevision++
@@ -3024,7 +3024,7 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier.fillMaxWidth()
         )
         val selected = profiles.firstOrNull { it.steamId64 == selectedId }
-        Button(onClick = onImport, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = onImport, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
             Text(if (busy) "Загружаем из Steam…" else if (input.isBlank() && selected != null)
                 "Обновить «${selected.displayName}» · Steam RU" else "Загрузить и закрепить профиль")
         }
