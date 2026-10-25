@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T00:09:20.527Z
+- Обновлено (UTC): 2026-10-25T00:15:28.590Z
 - Ветка: `main`.
-- HEAD: [`ef959acfbdab`](https://github.com/Magral/Igrolov/commit/ef959acfbdaba54006683292dc03f63591ab6cf2).
+- HEAD: [`12d9c10cf652`](https://github.com/Magral/Igrolov/commit/12d9c10cf652a2a8e14cb340b81c6dc9b99aa2c9).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [12d9c10](https://github.com/Magral/Igrolov/commit/12d9c10cf652a2a8e14cb340b81c6dc9b99aa2c9) — test: follow renamed wishlist price action
 - [ef959ac](https://github.com/Magral/Igrolov/commit/ef959acfbdaba54006683292dc03f63591ab6cf2) — test: assert compact leaders tab label
 - [339121b](https://github.com/Magral/Igrolov/commit/339121bd527445951208eabcd81f22f9d6c74707) — ui: match catalogue filters to reference style
 - [f8a86a3](https://github.com/Magral/Igrolov/commit/f8a86a36583d0c88f3c1269a5ffed7d55eac1be8) — fix: align filters and settings UI test with redesign
-- [7368f14](https://github.com/Magral/Igrolov/commit/7368f144b9a27b22ab2f39c17bde4d863124c067) — ui: redesign app to match reference layout
 <!-- AUTO_CONTEXT_END -->
