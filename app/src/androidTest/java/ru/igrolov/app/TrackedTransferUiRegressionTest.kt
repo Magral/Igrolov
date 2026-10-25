@@ -151,7 +151,9 @@ class TrackedTransferUiRegressionTest {
         context.getSharedPreferences("tracked_products",0).edit().putString("ids","123456,123457")
             .putString("product_cache_123457",JSONObject().put("proofSchema",106).put("name",title).put("price",JSONObject.NULL).toString()).commit()
         val device=open();clickText("Товары")
-        assertTrue(device.wait(Until.hasObject(By.text("5300,00 ₽")),10000))
+        compose.waitUntil(10000) {
+            compose.onAllNodesWithText("5300,00 ₽").fetchSemanticsNodes().isNotEmpty()
+        }
         val deadline=android.os.SystemClock.uptimeMillis()+10000
         while((cached("123457").price!=5300.0 || cached("123456").price!=5300.0) && android.os.SystemClock.uptimeMillis()<deadline)Thread.sleep(100)
         assertEquals(5300.0,cached("123456").price!!,0.001)
