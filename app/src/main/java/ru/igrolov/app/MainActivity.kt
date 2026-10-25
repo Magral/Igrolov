@@ -1037,8 +1037,8 @@ class MainActivity : ComponentActivity() {
                     tint = Color(0xFF17212D), modifier = Modifier.size(22.dp))
             }
         }
-        val tabs = listOf("Поиск", "Товары", "Мониторинг", "Желания", "Лидеры", "Справочник")
-        val icons = listOf(R.drawable.ic_search, R.drawable.ic_grid, R.drawable.ic_pulse, R.drawable.ic_heart, R.drawable.ic_trophy, R.drawable.ic_book)
+        val tabs = listOf("Поиск", "Товары", "Мониторинг", "Желания", "Лидеры")
+        val icons = listOf(R.drawable.ic_search, R.drawable.ic_grid, R.drawable.ic_pulse, R.drawable.ic_heart, R.drawable.ic_trophy)
         Row(Modifier.fillMaxWidth().height(54.dp).background(Color.White), verticalAlignment = Alignment.CenterVertically) {
             tabs.forEachIndexed { index, title ->
                 val selected = activeTab == index
@@ -1752,7 +1752,7 @@ class MainActivity : ComponentActivity() {
                 GameMonitoringDialog(game, onDismiss = { pendingWatchGame = null },
                     onSaved = { saved -> watches = saved; pendingWatchGame = null })
             }
-            NavigationHeader(if (settingsOpen && showDirectory) 5 else activeTab, settingsOpen,
+            NavigationHeader(activeTab, settingsOpen,
                 onSettings = {
                     keyboardController?.hide()
                     focusManager.clearFocus()
@@ -1762,14 +1762,9 @@ class MainActivity : ComponentActivity() {
                 onTab = {
                     keyboardController?.hide()
                     focusManager.clearFocus()
-                    if (it == 5) {
-                        settingsOpen = true
-                        showDirectory = true
-                    } else {
-                        activeTab = it
-                        settingsOpen = false
-                        showDirectory = false
-                    }
+                    activeTab = it
+                    settingsOpen = false
+                    showDirectory = false
                 })
             PriceBatchStatus(catalogueUi.priceBatch, onStop = { stopPriceBatch() })
             Column(Modifier.fillMaxSize().background(Color(0xFFF4F6F8)).verticalScroll(if (settingsOpen) directoryScroll else when(activeTab) { 0 -> searchScroll; 1 -> productsScroll; 2 -> watchScroll; else -> directoryScroll }).padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -2539,18 +2534,13 @@ class MainActivity : ComponentActivity() {
                             label = { Text(section.label, maxLines = 1, style = MaterialTheme.typography.labelSmall) })
                     }
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("Все игры", "Доступны в Steam RU").forEach { filter ->
-                            FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = topAvailabilityFilter == filter,
-                                onClick = { catalogueUi.selectedLeaderIds = emptySet(); topAvailabilityFilter = filter },
-                                label = { Text(filter, maxLines = 1, style = MaterialTheme.typography.labelSmall) })
-                        }
+                SteamRuAvailabilityFilter(
+                    selected = topAvailabilityFilter,
+                    onSelected = { filter ->
+                        catalogueUi.selectedLeaderIds = emptySet()
+                        topAvailabilityFilter = filter
                     }
-                    FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = topAvailabilityFilter == "Недоступны в Steam RU",
-                        onClick = { catalogueUi.selectedLeaderIds = emptySet(); topAvailabilityFilter = "Недоступны в Steam RU" },
-                        label = { Text("Недоступны в Steam RU", maxLines = 1, style = MaterialTheme.typography.labelSmall) })
-                }
+                )
                 val sectionGames = remember(leaderSection, newReleaseGames, topGames, discountedExtraGames) {
                     when (leaderSection) {
                         SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseGames
@@ -2884,93 +2874,120 @@ class MainActivity : ComponentActivity() {
         } // экран с вкладками
     }
     @Composable
+    private fun SteamRuAvailabilityFilter(selected: String, onSelected: (String) -> Unit) {
+        var expanded by remember { mutableStateOf(false) }
+        val choices = listOf("Все игры", "Доступны в Steam RU", "Недоступны в Steam RU")
+        Box {
+            OutlinedButton(
+                onClick = { expanded = true },
+                modifier = Modifier.height(32.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                border = BorderStroke(1.dp, Color(0xFFD2D9E1))
+            ) {
+                Text(
+                    when (selected) {
+                        "Доступны в Steam RU" -> "Steam RU · Да"
+                        "Недоступны в Steam RU" -> "Steam RU · Нет"
+                        else -> "Steam RU · Все"
+                    },
+                    maxLines = 1,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                choices.forEach { choice ->
+                    DropdownMenuItem(text = { Text(choice) }, onClick = { onSelected(choice); expanded = false })
+                }
+            }
+        }
+    }
+
+    @Composable
     private fun SteamLeaderFiltersPanel(
         input: SteamLeaderFilterInput,
         onInput: (SteamLeaderFilterInput) -> Unit,
         includeReviewFilters: Boolean = true,
         availableGenres: List<String> = emptyList()
     ) {
-        OutlinedCard(Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, Color(0xFFDCE2E8)),
-            colors = CardDefaults.outlinedCardColors(containerColor = Color.White)) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 3.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(Modifier.height(36.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Фильтры игр", modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.labelLarge, color = Color(0xFF17212D))
-                    OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { onInput(input.copy(expanded = !input.expanded)) },
-                        modifier = Modifier.height(30.dp), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                        border = BorderStroke(1.dp, Color(0xFFD2D9E1)),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF344253))) {
-                        Text(if (input.expanded) "Скрыть" else
-                            if (input.activeFilterCount > 0) "Настроить · ${input.activeFilterCount}" else "Настроить",
-                            style = MaterialTheme.typography.labelSmall, maxLines = 1)
-                    }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SteamFeatureFilterChoices(input, onInput)
+                SteamGenreFilterChoices(input, onInput, availableGenres)
+                OutlinedButton(
+                    onClick = { onInput(input.copy(expanded = !input.expanded)) },
+                    modifier = Modifier.height(32.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                    border = BorderStroke(1.dp, Color(0xFFD2D9E1))
+                ) {
+                    val activeCount = listOf(
+                        input.titleQuery.isNotBlank(),
+                        input.maxPriceText.isNotBlank(),
+                        input.minimumDiscountText.isNotBlank(),
+                        input.minimumReviewText.isNotBlank(),
+                        input.minimumReviewCountText.isNotBlank()
+                    ).count { it }
+                    Text(if (input.expanded) "Скрыть" else if (activeCount > 0) "Ещё · $activeCount" else "Ещё",
+                        maxLines = 1, style = MaterialTheme.typography.labelSmall)
                 }
-                if (input.expanded) {
-                    OutlinedTextField(
-                        value = input.titleQuery,
-                        onValueChange = { onInput(input.copy(titleQuery = it)) },
-                        label = { Text("Название содержит") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = input.maxPriceText,
-                            onValueChange = { onInput(input.copy(maxPriceText = it)) },
-                            label = { Text("Цена до, ₽", maxLines = 1) },
-                            singleLine = true,
-                            isError = input.maxPriceText.isNotBlank() &&
-                                input.maxPriceText.trim().replace(',', '.').toDoubleOrNull()?.let { it > 0.0 } != true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = input.minimumDiscountText,
-                            onValueChange = { onInput(input.copy(minimumDiscountText = it)) },
-                            label = { Text("Скидка от, %", maxLines = 1) },
-                            singleLine = true,
-                            isError = input.minimumDiscountText.isNotBlank() &&
-                                input.minimumDiscountText.toIntOrNull()?.let { it in 0..100 } != true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    if (includeReviewFilters) {
+            }
+            if (input.expanded) {
+                OutlinedCard(
+                    Modifier.fillMaxWidth(),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, Color(0xFFDCE2E8)),
+                    colors = CardDefaults.outlinedCardColors(containerColor = Color.White)
+                ) {
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        OutlinedTextField(value = input.titleQuery,
+                            onValueChange = { onInput(input.copy(titleQuery = it)) },
+                            label = { Text("Название содержит") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedTextField(
-                                value = input.minimumReviewText,
-                                onValueChange = { onInput(input.copy(minimumReviewText = it)) },
-                                label = { Text("Рейтинг от, %", maxLines = 1) },
-                                singleLine = true,
-                                isError = input.minimumReviewText.isNotBlank() &&
-                                    input.minimumReviewText.toIntOrNull()?.let { it in 0..100 } != true,
+                            OutlinedTextField(value = input.maxPriceText,
+                                onValueChange = { onInput(input.copy(maxPriceText = it)) },
+                                label = { Text("Цена до, ₽", maxLines = 1) }, singleLine = true,
+                                isError = input.maxPriceText.isNotBlank() &&
+                                    input.maxPriceText.trim().replace(',', '.').toDoubleOrNull()?.let { it > 0.0 } != true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                modifier = Modifier.weight(1f))
+                            OutlinedTextField(value = input.minimumDiscountText,
+                                onValueChange = { onInput(input.copy(minimumDiscountText = it)) },
+                                label = { Text("Скидка от, %", maxLines = 1) }, singleLine = true,
+                                isError = input.minimumDiscountText.isNotBlank() &&
+                                    input.minimumDiscountText.toIntOrNull()?.let { it in 0..100 } != true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                modifier = Modifier.weight(1f)
-                            )
-                            OutlinedTextField(
-                                value = input.minimumReviewCountText,
-                                onValueChange = { onInput(input.copy(minimumReviewCountText = it)) },
-                                label = { Text("Отзывов от, шт.", maxLines = 1) },
-                                singleLine = true,
-                                isError = input.minimumReviewCountText.isNotBlank() &&
-                                    input.minimumReviewCountText.trim().toLongOrNull()?.let { it > 0 } != true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                modifier = Modifier.weight(1f)
-                            )
+                                modifier = Modifier.weight(1f))
                         }
-                    }
-                    SteamFeatureFilterChoices(input, onInput)
-                    SteamGenreFilterChoices(input, onInput, availableGenres)
-                    if (input.hasInvalidInput) {
-                        Text("Цена и число отзывов должны быть больше 0, проценты — от 0 до 100.",
+                        if (includeReviewFilters) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(value = input.minimumReviewText,
+                                    onValueChange = { onInput(input.copy(minimumReviewText = it)) },
+                                    label = { Text("Рейтинг от, %", maxLines = 1) }, singleLine = true,
+                                    isError = input.minimumReviewText.isNotBlank() &&
+                                        input.minimumReviewText.toIntOrNull()?.let { it in 0..100 } != true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    modifier = Modifier.weight(1f))
+                                OutlinedTextField(value = input.minimumReviewCountText,
+                                    onValueChange = { onInput(input.copy(minimumReviewCountText = it)) },
+                                    label = { Text("Отзывов от, шт.", maxLines = 1) }, singleLine = true,
+                                    isError = input.minimumReviewCountText.isNotBlank() &&
+                                        input.minimumReviewCountText.trim().toLongOrNull()?.let { it > 0 } != true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    modifier = Modifier.weight(1f))
+                            }
+                        }
+                        if (input.hasInvalidInput) Text(
+                            "Цена и число отзывов должны быть больше 0, проценты — от 0 до 100.",
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
-                    }
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        TextButton(onClick = { onInput(SteamLeaderFilterInput(expanded = true)) },
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)) {
-                            Text("Сбросить фильтры")
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            TextButton(onClick = { onInput(SteamLeaderFilterInput(expanded = true)) },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)) { Text("Сбросить") }
                         }
                     }
                 }
@@ -2985,37 +3002,27 @@ class MainActivity : ComponentActivity() {
         availableGenres: List<String>
     ) {
         var menuExpanded by remember { mutableStateOf(false) }
-        Text("Жанры Steam · выберите один или несколько", style = MaterialTheme.typography.labelMedium)
+        val selectedLabel = if (input.selectedGenres.isEmpty()) "Жанры" else "Жанры · ${input.selectedGenres.size}"
         Box {
-            OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { menuExpanded = true }, enabled = availableGenres.isNotEmpty()) {
-                Text(when {
-                    input.selectedGenres.isNotEmpty() -> "Выбрано жанров: ${input.selectedGenres.size}"
-                    availableGenres.isNotEmpty() -> "Выбрать жанры (${availableGenres.size})"
-                    else -> "Жанры загружаются из Steam"
-                })
+            OutlinedButton(onClick = { menuExpanded = true }, enabled = availableGenres.isNotEmpty(),
+                modifier = Modifier.height(32.dp), shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
+                Text(if (availableGenres.isEmpty()) "Жанры · …" else selectedLabel,
+                    maxLines = 1, style = MaterialTheme.typography.labelSmall)
             }
-            DropdownMenu(
-                expanded = menuExpanded,
-                onDismissRequest = { menuExpanded = false },
-                modifier = Modifier.heightIn(max = 360.dp)
-            ) {
+            DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false },
+                modifier = Modifier.heightIn(max = 360.dp)) {
                 availableGenres.forEach { genre ->
-                    DropdownMenuItem(
-                        text = { Text(genre) },
-                        onClick = {
-                            val next = input.selectedGenres.toMutableSet().apply {
-                                if (!add(genre)) remove(genre)
-                            }
-                            onInput(input.copy(selectedGenres = next))
-                        },
-                        leadingIcon = { Checkbox(checked = genre in input.selectedGenres, onCheckedChange = null) }
-                    )
+                    DropdownMenuItem(text = { Text(genre) }, onClick = {
+                        val next = input.selectedGenres.toMutableSet().apply { if (!add(genre)) remove(genre) }
+                        onInput(input.copy(selectedGenres = next))
+                    }, leadingIcon = { Checkbox(checked = genre in input.selectedGenres, onCheckedChange = null) })
                 }
                 if (input.selectedGenres.isNotEmpty()) {
                     HorizontalDivider()
                     DropdownMenuItem(text = { Text("Очистить выбор") }, onClick = {
-                        onInput(input.copy(selectedGenres = emptySet()))
-                        menuExpanded = false
+                        onInput(input.copy(selectedGenres = emptySet())); menuExpanded = false
                     })
                 }
             }
@@ -3024,29 +3031,54 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun SteamFeatureFilterChoices(input: SteamLeaderFilterInput, onInput: (SteamLeaderFilterInput) -> Unit) {
-        Text("Русский язык", style = MaterialTheme.typography.labelMedium)
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf(
-                null to "Любой",
-                SteamRussianLocalization.SUPPORTED to "Русский есть",
-                SteamRussianLocalization.NOT_SUPPORTED to "Русский не найден в списке Steam",
-                SteamRussianLocalization.UNKNOWN to "Не указано"
-            ).forEach { (value, label) ->
-                FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = input.russianLocalization == value,
-                    onClick = { onInput(input.copy(russianLocalization = value)) }, label = { Text(label, maxLines = 1) })
+        var languageExpanded by remember { mutableStateOf(false) }
+        var controllerExpanded by remember { mutableStateOf(false) }
+        val languageLabel = when (input.russianLocalization) {
+            SteamRussianLocalization.SUPPORTED -> "Русский · Да"
+            SteamRussianLocalization.NOT_SUPPORTED -> "Русский · Нет"
+            SteamRussianLocalization.UNKNOWN -> "Русский · ?"
+            null -> "Русский"
+        }
+        val controllerLabel = when (input.controllerSupport) {
+            SteamControllerSupport.FULL -> "Геймпад · Полная"
+            SteamControllerSupport.PARTIAL -> "Геймпад · Частичная"
+            SteamControllerSupport.NONE -> "Геймпад · Нет"
+            SteamControllerSupport.UNKNOWN -> "Геймпад · ?"
+            null -> "Геймпад"
+        }
+        Box {
+            OutlinedButton(onClick = { languageExpanded = true }, modifier = Modifier.height(32.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
+                Text(languageLabel, maxLines = 1, style = MaterialTheme.typography.labelSmall)
+            }
+            DropdownMenu(expanded = languageExpanded, onDismissRequest = { languageExpanded = false }) {
+                listOf(null to "Любой", SteamRussianLocalization.SUPPORTED to "Русский есть",
+                    SteamRussianLocalization.NOT_SUPPORTED to "Русского нет",
+                    SteamRussianLocalization.UNKNOWN to "Не указано").forEach { (value, label) ->
+                    DropdownMenuItem(text = { Text(label) }, onClick = {
+                        onInput(input.copy(russianLocalization = value)); languageExpanded = false
+                    })
+                }
             }
         }
-        Text("Поддержка геймпада", style = MaterialTheme.typography.labelMedium)
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf(
-                null to "Любая",
-                SteamControllerSupport.FULL to "Полная",
-                SteamControllerSupport.PARTIAL to "Частичная",
-                SteamControllerSupport.NONE to "Нет",
-                SteamControllerSupport.UNKNOWN to "Не указано"
-            ).forEach { (value, label) ->
-                FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = input.controllerSupport == value,
-                    onClick = { onInput(input.copy(controllerSupport = value)) }, label = { Text(label, maxLines = 1) })
+        Box {
+            OutlinedButton(onClick = { controllerExpanded = true }, modifier = Modifier.height(32.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
+                Text(controllerLabel, maxLines = 1, style = MaterialTheme.typography.labelSmall)
+            }
+            DropdownMenu(expanded = controllerExpanded, onDismissRequest = { controllerExpanded = false }) {
+                listOf(null to "Любой", SteamControllerSupport.FULL to "Полная поддержка",
+                    SteamControllerSupport.PARTIAL to "Частичная поддержка",
+                    SteamControllerSupport.NONE to "Нет поддержки",
+                    SteamControllerSupport.UNKNOWN to "Не указано").forEach { (value, label) ->
+                    DropdownMenuItem(text = { Text(label) }, onClick = {
+                        onInput(input.copy(controllerSupport = value)); controllerExpanded = false
+                    })
+                }
             }
         }
     }
