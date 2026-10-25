@@ -1975,9 +1975,8 @@ class MainActivity : ComponentActivity() {
             }
             ScreenSection {
             if (activeTab == 2 && !settingsOpen) {
-            Text("Автоматическое отслеживание игр", style = MaterialTheme.typography.titleLarge)
-            Text("Каждый кандидат проверяется: основная игра, Gift/Key, РФ, наличие и цена выбранного варианта. Затем выбираются три минимальные цены.", style = MaterialTheme.typography.bodySmall)
-            Text("Проверяет примерно раз в час при наличии сети. Сообщает о новых предложениях до вашей цены и дальнейшем снижении уже найденной цены. Android может задерживать проверки.", style = MaterialTheme.typography.bodySmall)
+            Text("Мониторинг цен", style = MaterialTheme.typography.titleLarge)
+            Text("Проверяем активные Gift/Key для РФ и сообщаем о новых предложениях и снижении цены.", style = MaterialTheme.typography.bodySmall)
             OutlinedTextField(watchGame, { watchGame = it;watchSelection=null }, label = { Text("Название игры") },
                 singleLine = true, modifier = Modifier.fillMaxWidth())
             if(watchSuggesting) Text("Подбираем игру Steam…",style=MaterialTheme.typography.bodySmall)
