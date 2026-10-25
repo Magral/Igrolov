@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 mkdir -p device-results
-trap 'adb logcat -d > device-results/logcat.txt; adb shell screencap -p /sdcard/igrolov.png; adb pull /sdcard/igrolov.png device-results/screen.png || true; adb pull /sdcard/Android/data/ru.igrolov.app/files/wishlist.png device-results/wishlist.png || true; adb pull /sdcard/Android/data/ru.igrolov.app/files/game-card-last.png device-results/game-card-last.png || true; adb pull /sdcard/Android/data/ru.igrolov.app/files/offer-cache-last.png device-results/offer-cache-last.png || true; adb pull /sdcard/Android/data/ru.igrolov.app/files/offer-cache-last.xml device-results/offer-cache-last.xml || true' EXIT
+trap 'adb logcat -d > device-results/logcat.txt; adb shell screencap -p /sdcard/igrolov.png; adb pull /sdcard/igrolov.png device-results/screen.png || true; adb pull /sdcard/Android/data/ru.igrolov.app/files/wishlist.png device-results/wishlist.png || true; adb pull /sdcard/Android/data/ru.igrolov.app/files/game-card-last.png device-results/game-card-last.png || true; adb pull /sdcard/Android/data/ru.igrolov.app/files/offer-cache-last.png device-results/offer-cache-last.png || true; adb pull /sdcard/Android/data/ru.igrolov.app/files/offer-cache-last.xml device-results/offer-cache-last.xml || true; adb pull /sdcard/Android/data/ru.igrolov.app/files/tracked-search-suggestions.png device-results/tracked-search-suggestions.png || true; adb pull /sdcard/Android/data/ru.igrolov.app/files/tracked-search-suggestions.xml device-results/tracked-search-suggestions.xml || true' EXIT
 baseline_apk=$(find baseline -type f -name '*.apk' -print -quit)
 current_apk=$(find current -type f -name '*.apk' -print -quit)
 test_apk=$(find tests -type f -name '*.apk' -print -quit)
