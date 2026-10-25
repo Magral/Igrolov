@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T11:24:38.215Z
+- Обновлено (UTC): 2026-10-25T11:31:34.116Z
 - Ветка: `main`.
-- HEAD: [`b0e1f3205fe0`](https://github.com/Magral/Igrolov/commit/b0e1f3205fe08d16a5df1c3444933e79a7f2139b).
+- HEAD: [`f1406eded27a`](https://github.com/Magral/Igrolov/commit/f1406eded27a83b4d05770586991f7ac402c066a).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [f1406ed](https://github.com/Magral/Igrolov/commit/f1406eded27a83b4d05770586991f7ac402c066a) — Update compact search heading smoke test
 - [b0e1f32](https://github.com/Magral/Igrolov/commit/b0e1f3205fe08d16a5df1c3444933e79a7f2139b) — Trim repeated search and monitoring helper text
 - [a9c3b69](https://github.com/Magral/Igrolov/commit/a9c3b696e6b4a9d144a5c09cb2bd27bb4aac0e51) — Reduce search screen visual clutter
 - [eccc9fe](https://github.com/Magral/Igrolov/commit/eccc9feef61b47d443b619c8a959fa0603ef6ce4) — Tighten search and monitoring card layouts
-- [ee5f84c](https://github.com/Magral/Igrolov/commit/ee5f84c649e2fc0bd4f118415cb21572e9eb5297) — Clear active tab highlight in settings
 <!-- AUTO_CONTEXT_END -->
