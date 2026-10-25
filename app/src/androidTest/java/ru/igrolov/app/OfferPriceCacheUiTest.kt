@@ -70,7 +70,7 @@ class OfferPriceCacheUiTest {
         compose.onNodeWithText("Stellaris").assertIsDisplayed()
         assertFalse(device.hasObject(By.text("Выбрать первые 5")))
         assertFalse(device.hasObject(By.textContains("Проверить выбранные")))
-        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("500 ₽")) })
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.textContains("500 ₽")) })
         assertFalse(device.hasObject(By.text("Поиск игры по названию")))
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"offer-cache-no-multiselect.png"))
     }
@@ -88,10 +88,10 @@ class OfferPriceCacheUiTest {
         }
         launchWishlist()
         reveal("Stellaris")
-        if(!device.hasObject(By.text("500 ₽"))) {
-            UiTestScroll.reveal(compose,"500 ₽")
+        if(!device.hasObject(By.textContains("500 ₽"))) {
+            UiTestScroll.reveal(compose,"500 ₽", contains = true)
         }
-        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("500 ₽")) })
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.textContains("500 ₽")) })
         compose.onAllNodesWithText("ошибка обновления", substring = true).onFirst().performScrollTo()
         compose.waitForIdle()
         assertTrue(device.hasObject(By.textContains("ошибка обновления")))
