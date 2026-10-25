@@ -135,10 +135,8 @@ class ReleaseSmokeTest {
         // does not expose this nested Text as an exact standalone accessibility node.
         UiTestScroll.reveal(compose,"−50%")
         compose.onNodeWithText("750 ₽").assertIsDisplayed()
-        if (!device.hasObject(By.text("Искать цены"))) {
-            UiTestScroll.reveal(compose, "Искать цены")
-        }
-        assertTrue(device.hasObject(By.text("Искать цены")))
+        UiTestScroll.reveal(compose, "Искать цены")
+        compose.onNodeWithText("Искать цены").assertIsDisplayed()
         assertFalse(device.hasObject(By.text("Искать Plati")))
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"wishlist.png"))
         compose.onNodeWithText("Искать цены").performSemanticsAction(SemanticsActions.OnClick) { it() }

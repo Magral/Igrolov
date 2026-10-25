@@ -838,7 +838,7 @@ class MainActivity : ComponentActivity() {
                                 SteamRuAvailability.UNKNOWN -> null
                             }
                         )
-                        OutlinedButton(onClick = onDetails, modifier = Modifier.fillMaxWidth().height(27.dp),
+                        OutlinedButton(onClick = onDetails, modifier = Modifier.fillMaxWidth().height(32.dp),
                             contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
                             border = BorderStroke(1.dp, Color(0xFFD2D9E1)), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF344253))) {
                             Text("Подробнее", style = MaterialTheme.typography.labelMedium, color = Color(0xFF344253), maxLines = 1)
@@ -850,7 +850,7 @@ class MainActivity : ComponentActivity() {
                         color = if (marketplacePrices?.checking == true) Color(0xFF416C9A) else MaterialTheme.colorScheme.error,
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                Row(Modifier.fillMaxWidth().height(25.dp), verticalAlignment = Alignment.CenterVertically,
+                Row(Modifier.fillMaxWidth().height(30.dp), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onSearchPrice, enabled = searchEnabled && marketplacePrices?.checking != true,
                         contentPadding = PaddingValues(horizontal = 5.dp, vertical = 0.dp)) {
@@ -3050,7 +3050,7 @@ class MainActivity : ComponentActivity() {
                             DealPriceStrip(game.steamPrice, game.discountPercent,
                                 prices?.plati?.price ?: game.lowestPlatiPrice,
                                 prices?.ggsel?.price ?: game.lowestGgselPrice)
-                            OutlinedButton(onClick = { onDetails(game) }, modifier = Modifier.fillMaxWidth().height(27.dp),
+                            OutlinedButton(onClick = { onDetails(game) }, modifier = Modifier.fillMaxWidth().height(32.dp),
                                 contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp), border = BorderStroke(1.dp, Color(0xFFD2D9E1)), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF344253))) {
                                 Text("Подробнее", style = MaterialTheme.typography.labelMedium, color = Color(0xFF344253), maxLines = 1)
                             }
@@ -3063,9 +3063,9 @@ class MainActivity : ComponentActivity() {
                         Text(status, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis,
                             color = if (status.startsWith("Ошибка")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
                     } }
-                    Row(Modifier.fillMaxWidth().height(25.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End) {
+                    Row(Modifier.fillMaxWidth().height(30.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End) {
                         OutlinedButton(onClick = { onSearchPrice(game) }, enabled = searchEnabled && searchKey != null && searchKey !in searchingKeys,
-                            contentPadding = PaddingValues(horizontal = 5.dp, vertical = 0.dp), modifier = Modifier.height(23.dp)) {
+                            contentPadding = PaddingValues(horizontal = 5.dp, vertical = 0.dp), modifier = Modifier.height(30.dp)) {
                             Text(if (searchKey != null && searchKey in searchingKeys) "Ищем…" else "Искать цены",
                                 style = MaterialTheme.typography.labelSmall, maxLines = 1)
                         }
