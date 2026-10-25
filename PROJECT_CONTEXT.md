@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T02:30:43.829Z
+- Обновлено (UTC): 2026-10-25T02:38:40.613Z
 - Ветка: `main`.
-- HEAD: [`8515650a7f16`](https://github.com/Magral/Igrolov/commit/8515650a7f165c80d192e3725ccfaafb105990cb).
+- HEAD: [`99cbe97f7d4e`](https://github.com/Magral/Igrolov/commit/99cbe97f7d4e5f7d8cb1a1bfac1e906a1b70a51f).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [99cbe97](https://github.com/Magral/Igrolov/commit/99cbe97f7d4e5f7d8cb1a1bfac1e906a1b70a51f) — test: switch monitor section through Compose semantics
 - [8515650](https://github.com/Magral/Igrolov/commit/8515650a7f165c80d192e3725ccfaafb105990cb) — test: import Compose semantics matcher
 - [b5e65af](https://github.com/Magral/Igrolov/commit/b5e65afa531bc75e72240678779aca4d43e5c07d) — ui: compact filters and preserve wishlist actions
 - [891c79f](https://github.com/Magral/Igrolov/commit/891c79f029cb22df618f91e96c45c7b142ab9660) — ui: align Steam cards to compact reference layout
-- [79942bc](https://github.com/Magral/Igrolov/commit/79942bc5d9383975945d5e88bc8568460977bf9b) — test: use Compose semantics for monitor game selection
 <!-- AUTO_CONTEXT_END -->
