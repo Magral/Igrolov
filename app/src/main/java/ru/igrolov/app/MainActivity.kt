@@ -2008,7 +2008,7 @@ class MainActivity : ComponentActivity() {
                     val identity=watchSelection ?: GameSearchResolver.exact(watchGame,watchSuggestions+GameSearchResolver.seeds)
                     if(identity==null && watchSuggestions.isNotEmpty()) {
                         watchMessage="Выберите точную игру Steam"
-                        return@Button
+                        return@OutlinedButton
                     }
                     watchMessage="Добавляем игру…"
                     ioExecutor.execute {
