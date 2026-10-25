@@ -63,6 +63,11 @@ class TrackedTransferUiRegressionTest {
         assertTrue(device.wait(Until.hasObject(By.text("Игролов")),15000))
         return device
     }
+    private fun tapText(device:UiDevice,text:String) {
+        val bounds=device.findObject(By.text(text)).visibleBounds
+        device.click(bounds.centerX(),bounds.centerY())
+        device.waitForIdle()
+    }
     private fun key(id:String)=TrackedPriceCache.storageKey("Plati",id)
     private fun cached(id:String)=TrackedPriceCache.decode(key(id),context.getSharedPreferences("tracked_products",0).getString("product_cache_${key(id)}",null))
     private fun cachedFromRoom(id:String)=TrackedPriceCache.decode(key(id),MonitorRoomStore.readTrackedProduct(context,key(id)))
@@ -76,9 +81,9 @@ class TrackedTransferUiRegressionTest {
         val device=open()
         device.findObject(By.clazz("android.widget.EditText")).text="Stellaris"
         assertTrue(device.wait(Until.hasObject(By.text("Stellaris · Steam #281990")),15000))
-        device.findObject(By.text("Stellaris · Steam #281990")).click()
+        tapText(device, "Stellaris · Steam #281990")
         // The selected tab hides the soft keyboard without leaving the search form.
-        device.findObject(By.text("Поиск")).click()
+        tapText(device, "Поиск")
         device.waitForIdle()
         // Swipe the visible page viewport directly. UiScrollable can select a
         // nested Compose scroll container on API 26 and fail to reach the search
@@ -88,7 +93,7 @@ class TrackedTransferUiRegressionTest {
             device.swipe(device.displayWidth/2,device.displayHeight*3/4,device.displayWidth/2,device.displayHeight/3,12)
         }
         assertTrue(device.hasObject(By.text("Искать")))
-        device.findObject(By.text("Искать")).click()
+        tapText(device, "Искать")
         val scroll=UiScrollable(UiSelector().className("android.widget.ScrollView").scrollable(true)).setMaxSearchSwipes(30)
         assertTrue(device.wait(Until.hasObject(By.textContains("Проверено:")),15000))
         // Compose may expose a nested scrollable (for example, the search history
@@ -100,9 +105,9 @@ class TrackedTransferUiRegressionTest {
         }
         assertTrue(device.hasObject(By.text("Отслеживать")))
         assertTrue(device.hasObject(By.textContains("4914,00 ₽")))
-        device.findObject(By.text("Отслеживать")).click()
+        tapText(device, "Отслеживать")
         assertTrue(device.wait(Until.hasObject(By.text("Товары")),5000))
-        device.findObject(By.text("Товары")).click()
+        tapText(device, "Товары")
         // API 26 can take longer to expose newly added tracked rows after a tab
         // switch. Keep waiting for the persisted price while bringing it into view.
         val productDeadline=android.os.SystemClock.uptimeMillis()+20000
@@ -119,10 +124,10 @@ class TrackedTransferUiRegressionTest {
         assertEquals(4914.0,cachedFromRoom("123456").price!!,0.001)
         price.set(5200)
         if(!device.hasObject(By.text("Обновить цены")))assertTrue(scroll.scrollTextIntoView("Обновить цены"))
-        device.findObject(By.text("Обновить цены")).click()
+        tapText(device, "Обновить цены")
         assertTrue(device.wait(Until.hasObject(By.text("5200,00 ₽")),10000))
         offline.set(true)
-        device.findObject(By.text("Обновить цены")).click()
+        tapText(device, "Обновить цены")
         assertTrue(device.wait(Until.hasObject(By.textContains("Нет связи")),10000))
         assertTrue(device.hasObject(By.text("5200,00 ₽")))
         device.takeScreenshot(File(context.getExternalFilesDir(null),"tracked-transfer.png"))
@@ -134,7 +139,7 @@ class TrackedTransferUiRegressionTest {
         assertEquals(5200.0,cached("123456").price!!,0.001)
         context.getSharedPreferences("tracked_products",0).edit().putString("ids","123456,123457")
             .putString("product_cache_123457",JSONObject().put("proofSchema",106).put("name",title).put("price",JSONObject.NULL).toString()).commit()
-        val device=open();device.findObject(By.text("Товары")).click()
+        val device=open();tapText(device, "Товары")
         assertTrue(device.wait(Until.hasObject(By.text("5300,00 ₽")),10000))
         val deadline=android.os.SystemClock.uptimeMillis()+10000
         while((cached("123457").price!=5300.0 || cached("123456").price!=5300.0) && android.os.SystemClock.uptimeMillis()<deadline)Thread.sleep(100)
