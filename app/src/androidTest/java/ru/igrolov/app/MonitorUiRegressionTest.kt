@@ -117,7 +117,7 @@ class MonitorUiRegressionTest {
         }
         assertFalse(device.hasObject(By.text("1,00 ₽")))
         compose.onNodeWithText("Мониторинг").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        scroll.scrollToBeginning(30)
+        compose.onAllNodes(hasSetTextAction()).onFirst().performScrollTo()
         compose.onAllNodes(hasSetTextAction()).onFirst().performTextInput("Стелларис")
         compose.waitUntil(15000) {
             compose.onAllNodesWithText("Stellaris · Steam #281990").fetchSemanticsNodes().isNotEmpty()
