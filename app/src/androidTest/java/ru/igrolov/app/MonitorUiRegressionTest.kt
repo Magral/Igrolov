@@ -94,6 +94,8 @@ class MonitorUiRegressionTest {
         device.findObject(By.text("Мониторинг")).click()
         scroll.scrollToBeginning(30)
         device.findObject(By.clazz("android.widget.EditText")).text="Стелларис"
+        // Keep Steam suggestions unobscured on API 26/29 while UIAutomator waits.
+        device.pressBack()
         assertTrue(device.wait(Until.hasObject(By.text("Stellaris · Steam #281990")),15000))
         device.findObject(By.text("Stellaris · Steam #281990")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Выбрано: Stellaris · Steam #281990")),5000))
