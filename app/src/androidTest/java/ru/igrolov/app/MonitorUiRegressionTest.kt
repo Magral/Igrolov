@@ -79,7 +79,12 @@ class MonitorUiRegressionTest {
         }
         device.findObject(By.textStartsWith("История цен (")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Скрыть историю")),5000))
-        assertTrue(scroll.scrollIntoView(UiSelector().textStartsWith("Диапазон:")))
+        var historyAttempts=0
+        while(!device.hasObject(By.textStartsWith("Диапазон:")) && historyAttempts++<12) {
+            device.swipe(device.displayWidth/2,device.displayHeight*3/4,device.displayWidth/2,device.displayHeight/3,12)
+            Thread.sleep(250)
+        }
+        assertTrue(device.hasObject(By.textStartsWith("Диапазон:")))
         assertTrue(device.findObject(By.textStartsWith("Диапазон:")).text.contains("800"))
         // Missing-price history gaps are covered by WatchHistory unit tests; UI focuses on the visible chart range.
         device.takeScreenshot(File(context.getExternalFilesDir(null),"monitor-history.png"))
