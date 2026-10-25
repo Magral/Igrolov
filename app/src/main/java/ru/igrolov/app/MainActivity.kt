@@ -23,7 +23,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
@@ -829,11 +828,16 @@ class MainActivity : ComponentActivity() {
                         SteamFeatureBadges(game.features)
                         Row(Modifier.fillMaxWidth().heightIn(min = 22.dp), verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text("Цены", Modifier.clickable(enabled = searchEnabled && marketplacePrices?.checking != true, onClick = onSearchPrice)
-                                .padding(horizontal = 3.dp), style = MaterialTheme.typography.labelSmall, color = Color(0xFFF0A928), maxLines = 1)
-                            Text(if (monitored) "Ещё издание" else "В мониторинг",
-                                Modifier.clickable(onClick = onMonitor).padding(horizontal = 3.dp), style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFFF0A928), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            TextButton(onClick = onSearchPrice, enabled = searchEnabled && marketplacePrices?.checking != true,
+                                modifier = Modifier.height(26.dp), contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp)) {
+                                Text(if (marketplacePrices?.checking == true) "Ищем…" else "Цены",
+                                    style = MaterialTheme.typography.labelSmall, maxLines = 1, color = Color(0xFFF0A928))
+                            }
+                            TextButton(onClick = onMonitor, modifier = Modifier.height(26.dp),
+                                contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp)) {
+                                Text(if (monitored) "Ещё издание" else "В мониторинг", style = MaterialTheme.typography.labelSmall,
+                                    color = Color(0xFFF0A928), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
                             Checkbox(selected, { onToggle() }, enabled = selectionEnabled, modifier = Modifier.size(24.dp))
                         }
                     }
@@ -2795,16 +2799,21 @@ class MainActivity : ComponentActivity() {
         includeReviewFilters: Boolean = true,
         availableGenres: List<String> = emptyList()
     ) {
-        OutlinedCard(Modifier.fillMaxWidth()) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
+        OutlinedCard(Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, Color(0xFFDCE2E8)),
+            colors = CardDefaults.outlinedCardColors(containerColor = Color.White)) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 3.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.height(36.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("Фильтры игр", modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleSmall)
-                    TextButton(onClick = { onInput(input.copy(expanded = !input.expanded)) },
-                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)) {
+                        style = MaterialTheme.typography.labelLarge, color = Color(0xFF17212D))
+                    OutlinedButton(onClick = { onInput(input.copy(expanded = !input.expanded)) },
+                        modifier = Modifier.height(30.dp), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                        border = BorderStroke(1.dp, Color(0xFFD2D9E1)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF344253))) {
                         Text(if (input.expanded) "Скрыть" else
-                            if (input.activeFilterCount > 0) "Настроить · ${input.activeFilterCount}" else "Настроить")
+                            if (input.activeFilterCount > 0) "Настроить · ${input.activeFilterCount}" else "Настроить",
+                            style = MaterialTheme.typography.labelSmall, maxLines = 1)
                     }
                 }
                 if (input.expanded) {
@@ -3054,11 +3063,17 @@ class MainActivity : ComponentActivity() {
                             SteamFeatureBadges(game.features)
                             Row(Modifier.fillMaxWidth().heightIn(min = 22.dp), verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text("Искать цены", Modifier.clickable(enabled = searchEnabled && selectedId != null && "$selectedId:${game.appId}" !in searchingKeys, onClick = { onSearchPrice(game) })
-                                    .padding(horizontal = 3.dp), style = MaterialTheme.typography.labelSmall, color = Color(0xFFF0A928), maxLines = 1)
-                                Text(if (isMonitored(game)) "Ещё издание" else "В мониторинг",
-                                    Modifier.clickable(enabled = game.appId > 0, onClick = { onMonitor(game) }).padding(horizontal = 3.dp),
-                                    style = MaterialTheme.typography.labelSmall, color = Color(0xFFF0A928), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                TextButton(onClick = { onSearchPrice(game) },
+                                    enabled = searchEnabled && selectedId != null && "$selectedId:${game.appId}" !in searchingKeys,
+                                    modifier = Modifier.height(26.dp), contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp)) {
+                                    Text(if (selectedId != null && "$selectedId:${game.appId}" in searchingKeys) "Ищем…" else "Искать цены",
+                                        style = MaterialTheme.typography.labelSmall, color = Color(0xFFF0A928), maxLines = 1)
+                                }
+                                TextButton(onClick = { onMonitor(game) }, enabled = game.appId > 0,
+                                    modifier = Modifier.height(26.dp), contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp)) {
+                                    Text(if (isMonitored(game)) "Ещё издание" else "В мониторинг",
+                                        style = MaterialTheme.typography.labelSmall, color = Color(0xFFF0A928), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
                                 Checkbox(game.appId in selectedIds, { onToggleSelection(game) }, enabled = selectionEnabled, modifier = Modifier.size(24.dp))
                             }
                         }

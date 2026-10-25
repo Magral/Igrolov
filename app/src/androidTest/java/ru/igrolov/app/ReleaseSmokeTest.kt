@@ -141,7 +141,9 @@ class ReleaseSmokeTest {
         device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"wishlist.png"))
         compose.onNodeWithText("Искать цены").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
-        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.textContains("Ищем минимальную цену")) })
+        compose.waitUntil(5000) {
+            compose.onAllNodesWithText("Ищем минимальную цену", substring = true).fetchSemanticsNodes().isNotEmpty()
+        }
         assertTrue(device.hasObject(By.text("900 ₽")))
         compose.onNodeWithText("Stellaris").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
