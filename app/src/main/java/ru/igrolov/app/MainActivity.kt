@@ -135,12 +135,12 @@ class MainActivity : ComponentActivity() {
                 onSurfaceVariant = Color(0xFF566273)
             ), typography = Typography().run {
                 copy(
-                    bodySmall = bodySmall.copy(fontSize = 11.sp),
-                    bodyMedium = bodyMedium.copy(fontSize = 13.sp),
-                    bodyLarge = bodyLarge.copy(fontSize = 14.sp),
-                    titleSmall = titleSmall.copy(fontSize = 14.sp),
-                    titleMedium = titleMedium.copy(fontSize = 16.sp),
-                    titleLarge = titleLarge.copy(fontSize = 18.sp),
+                    bodySmall = bodySmall.copy(fontSize = 9.sp),
+                    bodyMedium = bodyMedium.copy(fontSize = 10.sp),
+                    bodyLarge = bodyLarge.copy(fontSize = 11.sp),
+                    titleSmall = titleSmall.copy(fontSize = 10.sp),
+                    titleMedium = titleMedium.copy(fontSize = 12.sp),
+                    titleLarge = titleLarge.copy(fontSize = 14.sp),
                     headlineSmall = headlineSmall.copy(fontSize = 24.sp)
                 )
             }, shapes = Shapes(
@@ -3080,12 +3080,12 @@ class MainActivity : ComponentActivity() {
                                 TextButton(onClick = { onSearchPrice(game) },
                                     enabled = searchEnabled && selectedId != null && "$selectedId:${game.appId}" !in searchingKeys,
                                     modifier = Modifier.height(26.dp), contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp)) {
-                                    Text(if (selectedId != null && "$selectedId:${game.appId}" in searchingKeys) "Ищем…" else "Искать цены",
+                                    Text(if (selectedId != null && "$selectedId:${game.appId}" in searchingKeys) "Ищем…" else "Цены",
                                         style = MaterialTheme.typography.labelSmall, color = Color(0xFFF0A928), maxLines = 1)
                                 }
                                 TextButton(onClick = { onMonitor(game) }, enabled = game.appId > 0,
                                     modifier = Modifier.height(26.dp), contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp)) {
-                                    Text(if (isMonitored(game)) "Ещё издание" else "В мониторинг",
+                                    Text(if (isMonitored(game)) "Издание +" else "Мониторинг",
                                         style = MaterialTheme.typography.labelSmall, color = Color(0xFFF0A928), maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                                 Checkbox(game.appId in selectedIds, { onToggleSelection(game) }, enabled = selectionEnabled, modifier = Modifier.size(24.dp))
