@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T08:25:45.874Z
+- Обновлено (UTC): 2026-10-25T08:25:57.675Z
 - Ветка: `main`.
-- HEAD: [`b63692513672`](https://github.com/Magral/Igrolov/commit/b636925136729ff60c3a653fa5e2864ce54896ed).
+- HEAD: [`b08eba4aad53`](https://github.com/Magral/Igrolov/commit/b08eba4aad53a3131c8e8b06a7a49d3c4a710ec0).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [b08eba4](https://github.com/Magral/Igrolov/commit/b08eba4aad53a3131c8e8b06a7a49d3c4a710ec0) — test: populate tracked products redesign screenshot
 - [b636925](https://github.com/Magral/Igrolov/commit/b636925136729ff60c3a653fa5e2864ce54896ed) — test: verify restored Compose price consistently
 - [d4599da](https://github.com/Magral/Igrolov/commit/d4599da48299a67e26a6b338c68c2f67da80b803) — test: capture search result failure and use Compose assertions
 - [d03e323](https://github.com/Magral/Igrolov/commit/d03e323cfe90843b30896992213f96fa0866d65e) — test: wait for game suggestions through Compose semantics
-- [77f351f](https://github.com/Magral/Igrolov/commit/77f351f00e0578d10f531af7236033f67c460bf4) — fix: show exact game suggestion before network lookup
 <!-- AUTO_CONTEXT_END -->
