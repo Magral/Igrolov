@@ -111,8 +111,10 @@ class MonitorUiRegressionTest {
         assertTrue(device.findObject(By.textStartsWith("Диапазон:")).text.contains("800"))
         // Missing-price history gaps are covered by WatchHistory unit tests; UI focuses on the visible chart range.
         device.takeScreenshot(File(context.getExternalFilesDir(null),"monitor-history.png"))
-        device.findObject(By.text("Товары")).click()
-        assertTrue(device.wait(Until.hasObject(By.text("450,00 ₽")),10000))
+        compose.onNodeWithText("Товары").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitUntil(10000) {
+            compose.onAllNodesWithText("450,00 ₽").fetchSemanticsNodes().isNotEmpty()
+        }
         assertFalse(device.hasObject(By.text("1,00 ₽")))
         compose.onNodeWithText("Мониторинг").performSemanticsAction(SemanticsActions.OnClick) { it() }
         scroll.scrollToBeginning(30)
