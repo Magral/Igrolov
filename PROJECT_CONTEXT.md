@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T00:35:17.820Z
+- Обновлено (UTC): 2026-10-25T00:43:06.778Z
 - Ветка: `main`.
-- HEAD: [`a7dc5fee9749`](https://github.com/Magral/Igrolov/commit/a7dc5fee9749ed8434674b5b459fa9f98ed2683c).
+- HEAD: [`6fe4204bb7b0`](https://github.com/Magral/Igrolov/commit/6fe4204bb7b03c6fc3c32d04daa7a21de2005acc).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [6fe4204](https://github.com/Magral/Igrolov/commit/6fe4204bb7b03c6fc3c32d04daa7a21de2005acc) — test: reveal tracked product with viewport swipes
 - [a7dc5fe](https://github.com/Magral/Igrolov/commit/a7dc5fee9749ed8434674b5b459fa9f98ed2683c) — fix: restore complete MainActivity source
 - [42b4965](https://github.com/Magral/Igrolov/commit/42b4965b6225f5166d411d0e0d750f7a7ec3cc4c) — ui: unify wishlist card action colors
 - [3557f3c](https://github.com/Magral/Igrolov/commit/3557f3c9fc30e314b9bc21d94fb441256d2c484a) — test: scroll tracked products into view
-- [867660f](https://github.com/Magral/Igrolov/commit/867660fead54be0ae9147dbf218540dbed09a11c) — test: dismiss keyboard before switching tabs
 <!-- AUTO_CONTEXT_END -->
