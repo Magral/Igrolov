@@ -93,6 +93,9 @@ class TrackedTransferUiRegressionTest {
         compose.onNode(hasText("Например, Cyberpunk 2077") and hasSetTextAction())
             .performTextReplacement("Stellaris")
         compose.waitForIdle()
+        val debugOut=context.getExternalFilesDir(null)!!
+        device.takeScreenshot(File(debugOut,"tracked-search-suggestions.png"))
+        device.dumpWindowHierarchy(File(debugOut,"tracked-search-suggestions.xml"))
         assertTrue(device.wait(Until.hasObject(By.text("Stellaris · Steam #281990")),15000))
         clickText("Stellaris · Steam #281990")
         // The selected tab hides the soft keyboard without leaving the search form.
