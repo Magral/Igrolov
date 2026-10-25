@@ -77,8 +77,16 @@ class TrackedTransferUiRegressionTest {
         device.findObject(By.clazz("android.widget.EditText")).text="Stellaris"
         assertTrue(device.wait(Until.hasObject(By.text("Stellaris · Steam #281990")),15000))
         device.findObject(By.text("Stellaris · Steam #281990")).click()
+        // Swipe the visible page viewport directly. UiScrollable can select a
+        // nested Compose scroll container on API 26 and fail to reach the search
+        // action even though it is present lower on the screen.
+        var searchAttempts=0
+        while(!device.hasObject(By.text("Искать")) && searchAttempts++<12) {
+            device.swipe(device.displayWidth/2,device.displayHeight*3/4,device.displayWidth/2,device.displayHeight/3,12)
+        }
+        assertTrue(device.hasObject(By.text("Искать")))
+        device.findObject(By.text("Искать")).click()
         val scroll=UiScrollable(UiSelector().className("android.widget.ScrollView").scrollable(true)).setMaxSearchSwipes(30)
-        assertTrue(scroll.scrollTextIntoView("Искать"));device.findObject(By.text("Искать")).click()
         assertTrue(device.wait(Until.hasObject(By.textContains("Проверено:")),15000))
         // Compose may expose a nested scrollable (for example, the search history
         // field) before the page container. Swipe the page viewport directly so
