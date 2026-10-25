@@ -69,14 +69,15 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T06:59:48.225Z
+- Обновлено (UTC): 2026-10-25T06:59:56.110Z
 - Ветка: `main`.
-- HEAD: [`7639914ac57c`](https://github.com/Magral/Igrolov/commit/7639914ac57c95514500975f38d383bbf43bc18b).
+- HEAD: [`ba6b8d53f445`](https://github.com/Magral/Igrolov/commit/ba6b8d53f4459d92f30ad54911a66ad78c567e5e).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [ba6b8d5](https://github.com/Magral/Igrolov/commit/ba6b8d53f4459d92f30ad54911a66ad78c567e5e) — test: remove mock GGSEL error from redesign screenshot
+- [1b437df](https://github.com/Magral/Igrolov/commit/1b437dfa9f1a40cbb6b0600d5522947c2782c33e) — test: clean up Compose price-flow regression
 - [7639914](https://github.com/Magral/Igrolov/commit/7639914ac57c95514500975f38d383bbf43bc18b) — test: use Compose semantics for API 26 price-check flow
 - [8a1cb87](https://github.com/Magral/Igrolov/commit/8a1cb878c080cab86d78355aa619fdd5053be2a5) — test: tap visible Compose buttons reliably on API 26
 - [34678b5](https://github.com/Magral/Igrolov/commit/34678b579ad0c2dba4bb795e1038a996ec63111c) — test: center populated search result in redesign screenshot
-- [d732074](https://github.com/Magral/Igrolov/commit/d732074ed822d7c75f61162c0da8801428660a93) — test: tidy device screenshot capture sequence
 <!-- AUTO_CONTEXT_END -->
