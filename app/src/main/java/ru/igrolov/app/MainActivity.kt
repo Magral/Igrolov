@@ -1752,7 +1752,7 @@ class MainActivity : ComponentActivity() {
                 GameMonitoringDialog(game, onDismiss = { pendingWatchGame = null },
                     onSaved = { saved -> watches = saved; pendingWatchGame = null })
             }
-            NavigationHeader(activeTab, settingsOpen,
+            NavigationHeader(if (settingsOpen) -1 else activeTab, settingsOpen,
                 onSettings = {
                     keyboardController?.hide()
                     focusManager.clearFocus()
