@@ -145,11 +145,11 @@ class MainActivity : ComponentActivity() {
                     headlineSmall = headlineSmall.copy(fontSize = 24.sp)
                 )
             }, shapes = Shapes(
-                extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
-                small = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
-                medium = androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
-                large = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
-                extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
+                extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
+                small = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
+                medium = androidx.compose.foundation.shape.RoundedCornerShape(9.dp),
+                large = androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
+                extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(20.dp)
             )) { Screen() }
         }
     }
