@@ -8,7 +8,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.hasSetTextAction
-import androidx.compose.ui.test.onNode
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
