@@ -69,14 +69,15 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T05:40:47.421Z
+- Обновлено (UTC): 2026-10-25T05:40:56.160Z
 - Ветка: `main`.
-- HEAD: [`a3ebe6370648`](https://github.com/Magral/Igrolov/commit/a3ebe637064870f867451cdcc9da1c5801740eeb).
+- HEAD: [`5c641967533e`](https://github.com/Magral/Igrolov/commit/5c641967533e86f3c450a53ede271faa84c569db).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [5c64196](https://github.com/Magral/Igrolov/commit/5c641967533e86f3c450a53ede271faa84c569db) — test: remove duplicate screenshot copies
+- [b8198e3](https://github.com/Magral/Igrolov/commit/b8198e393e5e973362e778a0105718c445710df5) — test: preserve seeded card previews before later checks
 - [a3ebe63](https://github.com/Magral/Igrolov/commit/a3ebe637064870f867451cdcc9da1c5801740eeb) — test: clean screenshot collection and use seeded game cards
 - [4d4c898](https://github.com/Magral/Igrolov/commit/4d4c8987419c929fb6522024ee70786454033900) — ui: compact monitoring intro to match shared screens
 - [15dd110](https://github.com/Magral/Igrolov/commit/15dd1100d981b7b8fbafb5b069ed20c14a367bfd) — ui: use outlined action buttons consistently
-- [46b7e85](https://github.com/Magral/Igrolov/commit/46b7e8529e52bd7eef3625575ede81ff7a5b1829) — ui: compact typography across all screens
 <!-- AUTO_CONTEXT_END -->
