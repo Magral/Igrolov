@@ -69,14 +69,15 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T07:44:18.538Z
+- Обновлено (UTC): 2026-10-25T07:52:55.719Z
 - Ветка: `main`.
-- HEAD: [`c0e9b7a1c28c`](https://github.com/Magral/Igrolov/commit/c0e9b7a1c28c9663c392900e046ea2bb73d709d8).
+- HEAD: [`e69e09930f37`](https://github.com/Magral/Igrolov/commit/e69e09930f37ae5a14582cf1b78c2a0f8376db7e).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [e69e099](https://github.com/Magral/Igrolov/commit/e69e09930f37ae5a14582cf1b78c2a0f8376db7e) — test: cover immediate exact game suggestions
+- [f6da2b8](https://github.com/Magral/Igrolov/commit/f6da2b86933a1aaa23a712da54851c8349d56626) — search: show exact known game matches without network delay
 - [c0e9b7a](https://github.com/Magral/Igrolov/commit/c0e9b7a1c28c9663c392900e046ea2bb73d709d8) — test: retain failed tracked-search form diagnostics
 - [da931a5](https://github.com/Magral/Igrolov/commit/da931a5850be2a6cf65abb6fbf8570f6762204aa) — test: capture search state before tracked game suggestion
 - [0d4903c](https://github.com/Magral/Igrolov/commit/0d4903c029f825574368418a893ffa768500265d) — test: fix Compose search-field matcher import
-- [da4c723](https://github.com/Magral/Igrolov/commit/da4c7237b6dc6db4b463c8e469c5d3639de93fd3) — test: target the named game search field on every device
 <!-- AUTO_CONTEXT_END -->
