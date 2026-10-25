@@ -1019,8 +1019,8 @@ class MainActivity : ComponentActivity() {
                     tint = Color(0xFF17212D), modifier = Modifier.size(22.dp))
             }
         }
-        val tabs = listOf("Поиск", "Товары", "Мониторинг", "Желания", "Лидеры")
-        val icons = listOf(R.drawable.ic_search, R.drawable.ic_grid, R.drawable.ic_pulse, R.drawable.ic_heart, R.drawable.ic_trophy)
+        val tabs = listOf("Поиск", "Товары", "Мониторинг", "Желания", "Лидеры", "Справочник")
+        val icons = listOf(R.drawable.ic_search, R.drawable.ic_grid, R.drawable.ic_pulse, R.drawable.ic_heart, R.drawable.ic_trophy, R.drawable.ic_book)
         Row(Modifier.fillMaxWidth().height(54.dp).background(Color.White), verticalAlignment = Alignment.CenterVertically) {
             tabs.forEachIndexed { index, title ->
                 val selected = activeTab == index
@@ -1034,7 +1034,7 @@ class MainActivity : ComponentActivity() {
                     Icon(painterResource(icons[index]), contentDescription = null,
                         tint = if (selected) Color(0xFF17212D) else Color(0xFF596575), modifier = Modifier.size(19.dp))
                     Spacer(Modifier.height(1.dp))
-                    Text(title, maxLines = 1, softWrap = false, fontSize = 10.sp,
+                    Text(title, maxLines = 1, softWrap = false, fontSize = 9.sp,
                         fontWeight = if (selected) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Normal,
                         color = if (selected) Color(0xFF17212D) else Color(0xFF596575))
                     Spacer(Modifier.weight(1f))
@@ -1738,12 +1738,17 @@ class MainActivity : ComponentActivity() {
                 onTab = {
                     keyboardController?.hide()
                     focusManager.clearFocus()
-                    activeTab = it
-                    settingsOpen = false
-                    showDirectory = false
+                    if (it == 5) {
+                        settingsOpen = true
+                        showDirectory = true
+                    } else {
+                        activeTab = it
+                        settingsOpen = false
+                        showDirectory = false
+                    }
                 })
             PriceBatchStatus(catalogueUi.priceBatch, onStop = { stopPriceBatch() })
-            Column(Modifier.fillMaxSize().background(Color(0xFFF4F6F8)).verticalScroll(if (settingsOpen) directoryScroll else when(activeTab) { 0 -> searchScroll; 1 -> productsScroll; 2 -> watchScroll; else -> directoryScroll }).padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(Modifier.fillMaxSize().background(Color(0xFFF4F6F8)).verticalScroll(if (settingsOpen) directoryScroll else when(activeTab) { 0 -> searchScroll; 1 -> productsScroll; 2 -> watchScroll; else -> directoryScroll }).padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             ScreenSection {
             if (activeTab == 0 && !settingsOpen) {
             Text("Поиск предложений Steam · RUB", style = MaterialTheme.typography.bodySmall)
