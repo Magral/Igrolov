@@ -58,9 +58,14 @@ class MonitorUiRegressionTest {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         assertTrue(device.wait(Until.hasObject(By.text("Игролов")),15000))
-        device.findObject(By.text("Мониторинг")).click()
+        compose.onNodeWithText("Мониторинг").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitForIdle()
         val scroll=UiScrollable(UiSelector().className("android.widget.ScrollView").scrollable(true)).setMaxSearchSwipes(30)
-        assertTrue(scroll.scrollIntoView(UiSelector().text("Показано 1 из 1")))
+        compose.waitUntil(15000) {
+            compose.onAllNodesWithText("Показано 1 из 1").fetchSemanticsNodes().isNotEmpty()
+        }
+        UiTestScroll.reveal(compose, "Показано 1 из 1")
+        assertTrue(device.hasObject(By.text("Показано 1 из 1")))
         assertTrue(device.hasObject(By.text("Ниже цели")))
         assertTrue(device.hasObject(By.text("С ошибкой")))
         assertTrue(device.hasObject(By.text("Сортировка: внимание")))
