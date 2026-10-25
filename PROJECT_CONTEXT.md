@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T01:23:54.442Z
+- Обновлено (UTC): 2026-10-25T01:32:37.251Z
 - Ветка: `main`.
-- HEAD: [`78049f9dfa91`](https://github.com/Magral/Igrolov/commit/78049f9dfa919ab4fe852763e2109fa362299653).
+- HEAD: [`803b911e636e`](https://github.com/Magral/Igrolov/commit/803b911e636e364aa2a40959e24b0d166e367f2b).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [803b911](https://github.com/Magral/Igrolov/commit/803b911e636e364aa2a40959e24b0d166e367f2b) — test: wait for expanded price history before scrolling
 - [78049f9](https://github.com/Magral/Igrolov/commit/78049f9dfa919ab4fe852763e2109fa362299653) — fix: dismiss keyboard when switching app sections
 - [ae80d3d](https://github.com/Magral/Igrolov/commit/ae80d3d45a3b1538c48f72dc2ef611b75bf0b547) — test: wait for tracked price on slower API 26 devices
 - [a428db8](https://github.com/Magral/Igrolov/commit/a428db894cb1482118d535a74925808da6032d7f) — ui: improve compact action touch targets
-- [6db93b1](https://github.com/Magral/Igrolov/commit/6db93b1c134e60bae41ac69d68e725a2d6cb78e9) — test: verify compact cards through Compose semantics
 <!-- AUTO_CONTEXT_END -->
