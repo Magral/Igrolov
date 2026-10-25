@@ -54,6 +54,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalFocusManager
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -1046,6 +1048,8 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun Screen() {
+        val keyboardController = LocalSoftwareKeyboardController.current
+        val focusManager = LocalFocusManager.current
         val savedFilters = remember {ManualSearchSettings.read(this@MainActivity)}
         var gameSuggestions by remember {mutableStateOf<List<GameSearchResolver.Candidate>>(emptyList())}
         var selectedGame by remember {mutableStateOf<GameSearchResolver.Candidate?>(null)}
@@ -1725,8 +1729,19 @@ class MainActivity : ComponentActivity() {
                     onSaved = { saved -> watches = saved; pendingWatchGame = null })
             }
             NavigationHeader(activeTab, settingsOpen,
-                onSettings = { settingsOpen = !settingsOpen; showDirectory = false },
-                onTab = { activeTab = it; settingsOpen = false; showDirectory = false })
+                onSettings = {
+                    keyboardController?.hide()
+                    focusManager.clearFocus()
+                    settingsOpen = !settingsOpen
+                    showDirectory = false
+                },
+                onTab = {
+                    keyboardController?.hide()
+                    focusManager.clearFocus()
+                    activeTab = it
+                    settingsOpen = false
+                    showDirectory = false
+                })
             PriceBatchStatus(catalogueUi.priceBatch, onStop = { stopPriceBatch() })
             Column(Modifier.fillMaxSize().verticalScroll(if (settingsOpen) directoryScroll else when(activeTab) { 0 -> searchScroll; 1 -> productsScroll; 2 -> watchScroll; else -> directoryScroll }).padding(16.dp)) {
             ScreenSection {
