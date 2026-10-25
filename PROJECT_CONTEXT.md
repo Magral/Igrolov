@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T11:24:11.936Z
+- Обновлено (UTC): 2026-10-25T11:24:38.215Z
 - Ветка: `main`.
-- HEAD: [`a9c3b696e6b4`](https://github.com/Magral/Igrolov/commit/a9c3b696e6b4a9d144a5c09cb2bd27bb4aac0e51).
+- HEAD: [`b0e1f3205fe0`](https://github.com/Magral/Igrolov/commit/b0e1f3205fe08d16a5df1c3444933e79a7f2139b).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [b0e1f32](https://github.com/Magral/Igrolov/commit/b0e1f3205fe08d16a5df1c3444933e79a7f2139b) — Trim repeated search and monitoring helper text
 - [a9c3b69](https://github.com/Magral/Igrolov/commit/a9c3b696e6b4a9d144a5c09cb2bd27bb4aac0e51) — Reduce search screen visual clutter
 - [eccc9fe](https://github.com/Magral/Igrolov/commit/eccc9feef61b47d443b619c8a959fa0603ef6ce4) — Tighten search and monitoring card layouts
 - [ee5f84c](https://github.com/Magral/Igrolov/commit/ee5f84c649e2fc0bd4f118415cb21572e9eb5297) — Clear active tab highlight in settings
-- [c7f412b](https://github.com/Magral/Igrolov/commit/c7f412bbdd1a41bb660917885a7c06801c5bea73) — Align Steam filter chips in one compact row
 <!-- AUTO_CONTEXT_END -->
