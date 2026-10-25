@@ -106,11 +106,20 @@ class TrackedTransferUiRegressionTest {
         UiTestScroll.reveal(compose,"Искать")
         compose.onNodeWithText("Искать").assertExists()
         clickText("Искать")
-        assertTrue(device.wait(Until.hasObject(By.textContains("Проверено:")),15000))
+        val searchCompleted=runCatching {
+            compose.waitUntil(15000) {
+                compose.onAllNodesWithText("Проверено:",substring=true).fetchSemanticsNodes().isNotEmpty()
+            }
+        }.isSuccess
+        if(!searchCompleted) {
+            device.takeScreenshot(File(debugOut,"tracked-search-result-timeout.png"))
+            device.dumpWindowHierarchy(File(debugOut,"tracked-search-result-timeout.xml"))
+        }
+        assertTrue(searchCompleted)
         // Compose semantics keep the scroll target stable as the search form grows.
         UiTestScroll.reveal(compose,"Отслеживать")
         compose.onNodeWithText("Отслеживать").assertExists()
-        assertTrue(device.hasObject(By.textContains("4914,00 ₽")))
+        assertTrue(compose.onAllNodesWithText("4914,00 ₽",substring=true).fetchSemanticsNodes().isNotEmpty())
         clickText("Отслеживать")
         assertTrue(device.wait(Until.hasObject(By.text("Товары")),5000))
         clickText("Товары")
@@ -118,8 +127,8 @@ class TrackedTransferUiRegressionTest {
         // switch. Keep waiting for the persisted price while bringing it into view.
         UiTestScroll.reveal(compose,"4914,00 ₽",contains=true)
         assertTrue(device.hasObject(By.textContains("4914,00 ₽")))
-        assertTrue(device.hasObject(By.text("Открыть")))
-        assertTrue(device.hasObject(By.text("Удалить")))
+        assertTrue(compose.onAllNodesWithText("Открыть").fetchSemanticsNodes().isNotEmpty())
+        assertTrue(compose.onAllNodesWithText("Удалить").fetchSemanticsNodes().isNotEmpty())
         assertEquals("Stellaris",cached("123456").canonical);assertEquals(281990,cached("123456").steamAppId)
         val roomDeadline=android.os.SystemClock.uptimeMillis()+10000
         while(cachedFromRoom("123456").price!=4914.0 && android.os.SystemClock.uptimeMillis()<roomDeadline)Thread.sleep(100)
