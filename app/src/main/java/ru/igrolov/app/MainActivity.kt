@@ -1681,8 +1681,7 @@ class MainActivity : ComponentActivity() {
                 if (!backgroundSearch) {
                     val summary = if (failure.isNotBlank() && found.isEmpty()) "Ошибка поиска: $failure" else
                         (if (failure.isNotBlank()) "Часть каталогов недоступна ($failure). " else "") +
-                        "Проверено: ${results.size} · основная игра с подтверждёнными наличием и ценой: $ready. " +
-                            "Скрыто без подтверждённого наличия: $unavailable; без точной цены варианта: $uncertainPrice." +
+                        "Проверено ${results.size} · подходят $ready · скрыто без наличия $unavailable / без точной цены $uncertainPrice." +
                             if (wishlistSearch) {
                                 if (hasWishlistMinimum) " Подтверждённые минимумы сохранены: " +
                                     listOfNotNull(
@@ -1770,12 +1769,13 @@ class MainActivity : ComponentActivity() {
             Column(Modifier.fillMaxSize().background(Color(0xFFF4F6F8)).verticalScroll(if (settingsOpen) directoryScroll else when(activeTab) { 0 -> searchScroll; 1 -> productsScroll; 2 -> watchScroll; else -> directoryScroll }).padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             ScreenSection {
             if (activeTab == 0 && !settingsOpen) {
-            Text("Поиск предложений Steam · RUB", style = MaterialTheme.typography.bodySmall)
+            Text("Цены на игры Steam · ₽", style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (searchMessage.startsWith("Автопоиск цен")) {
                 Text(searchMessage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
             }
-            Spacer(Modifier.height(12.dp))
-            Text("Поиск игры по названию", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(4.dp))
+            Text("Поиск игры", style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(query, {
                 query = it
                 selectedGame = null
@@ -1909,9 +1909,9 @@ class MainActivity : ComponentActivity() {
                 Text("Страниц обработано: $searchPage / $searchTotalPages · найдено кандидатов: $searchFound", style = MaterialTheme.typography.bodySmall)
             }
             Text(searchMessage, style = MaterialTheme.typography.bodySmall)
-            Text("Поиск по Plati (до $catalogLimit товаров) и GGSEL (активные предложения каталога). Цена источника указана у результата.", style = MaterialTheme.typography.bodySmall)
-            Spacer(Modifier.height(10.dp))
-            Spacer(Modifier.height(12.dp))
+            Text("Plati · до $catalogLimit предложений     GGSEL · активный каталог",
+                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(4.dp))
             } // конец настроек поиска
             }
             ScreenSection {
@@ -2316,9 +2316,10 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-            Spacer(Modifier.height(12.dp))
-            Text("Результаты поиска Steam Gift / Key", style = MaterialTheme.typography.titleMedium)
-            Text("Показаны только карточки с подтверждёнными наличием и ценой. Нерассчитанные варианты скрыты.", style = MaterialTheme.typography.bodySmall)
+            Spacer(Modifier.height(4.dp))
+            Text("Результаты поиска", style = MaterialTheme.typography.titleMedium)
+            Text("В результатах — активные товары с подтверждённой ценой и регионом.",
+                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
             if (offers.isNotEmpty()) {
                 val currentRules = remember(query, rulesRevision) { GameRuleStore.read(this@MainActivity, query) }
