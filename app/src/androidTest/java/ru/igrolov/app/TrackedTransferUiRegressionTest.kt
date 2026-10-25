@@ -92,10 +92,12 @@ class TrackedTransferUiRegressionTest {
         device.findObject(By.text("Отслеживать")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Товары")),5000))
         device.findObject(By.text("Товары")).click()
-        var productAttempts=0
-        while(!device.hasObject(By.text("4914,00 ₽")) && productAttempts++<12) {
+        // API 26 can take longer to expose newly added tracked rows after a tab
+        // switch. Keep waiting for the persisted price while bringing it into view.
+        val productDeadline=android.os.SystemClock.uptimeMillis()+20000
+        while(!device.hasObject(By.text("4914,00 ₽")) && android.os.SystemClock.uptimeMillis()<productDeadline) {
             device.swipe(device.displayWidth/2,device.displayHeight*3/4,device.displayWidth/2,device.displayHeight/3,12)
-            Thread.sleep(250)
+            Thread.sleep(500)
         }
         assertTrue(device.hasObject(By.text("4914,00 ₽")))
         assertTrue(device.hasObject(By.text("Открыть")))
