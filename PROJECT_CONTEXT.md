@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T05:43:05.994Z
+- Обновлено (UTC): 2026-10-25T05:50:24.923Z
 - Ветка: `main`.
-- HEAD: [`466e664b82be`](https://github.com/Magral/Igrolov/commit/466e664b82be1efded91fe144924f8bed71fd432).
+- HEAD: [`955f6ea09191`](https://github.com/Magral/Igrolov/commit/955f6ea0919183c4f555eebc1cda24f70e99c1e4).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [955f6ea](https://github.com/Magral/Igrolov/commit/955f6ea0919183c4f555eebc1cda24f70e99c1e4) — ui: tighten typography and card action labels
 - [466e664](https://github.com/Magral/Igrolov/commit/466e664b82be1efded91fe144924f8bed71fd432) — ui: fix monitor button label after outline migration
 - [5c64196](https://github.com/Magral/Igrolov/commit/5c641967533e86f3c450a53ede271faa84c569db) — test: remove duplicate screenshot copies
 - [b8198e3](https://github.com/Magral/Igrolov/commit/b8198e393e5e973362e778a0105718c445710df5) — test: preserve seeded card previews before later checks
-- [a3ebe63](https://github.com/Magral/Igrolov/commit/a3ebe637064870f867451cdcc9da1c5801740eeb) — test: clean screenshot collection and use seeded game cards
 <!-- AUTO_CONTEXT_END -->
