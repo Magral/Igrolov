@@ -998,30 +998,30 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun NavigationHeader(activeTab: Int, settingsOpen: Boolean,
                                  onSettings: () -> Unit, onTab: (Int) -> Unit) {
-        Row(Modifier.fillMaxWidth().background(Color.White).padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
+        Row(Modifier.fillMaxWidth().background(Color.White).padding(start = 12.dp, end = 6.dp, top = 3.dp, bottom = 0.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Icon(painterResource(R.drawable.ic_gamepad), contentDescription = null,
-                    tint = Color(0xFF17212D), modifier = Modifier.size(38.dp))
-                Column(verticalArrangement = Arrangement.spacedBy((-2).dp)) {
-                    Text("Игролов", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold),
+                    tint = Color(0xFF17212D), modifier = Modifier.size(32.dp))
+                Column(verticalArrangement = Arrangement.spacedBy((-3).dp)) {
+                    Text("Игролов", style = MaterialTheme.typography.headlineSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold),
                         color = Color(0xFF17212D), maxLines = 1)
-                    Text("Сравнивай. Выбирай. Играй выгодно.", style = MaterialTheme.typography.labelMedium,
+                    Text("Сравнивай. Выбирай. Играй выгодно.", style = MaterialTheme.typography.labelSmall,
                         color = Color(0xFF566273), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
-            IconButton(onClick = { onTab(0) }, modifier = Modifier.size(44.dp)) {
-                Icon(painterResource(R.drawable.ic_search), contentDescription = "Поиск", tint = Color(0xFF17212D), modifier = Modifier.size(25.dp))
+            IconButton(onClick = { onTab(0) }, modifier = Modifier.size(38.dp)) {
+                Icon(painterResource(R.drawable.ic_search), contentDescription = "Поиск", tint = Color(0xFF17212D), modifier = Modifier.size(22.dp))
             }
-            IconButton(onClick = onSettings, modifier = Modifier.size(44.dp)) {
+            IconButton(onClick = onSettings, modifier = Modifier.size(38.dp)) {
                 Icon(painterResource(R.drawable.ic_settings), contentDescription = if (settingsOpen) "Закрыть настройки" else "Настройки",
-                    tint = Color(0xFF17212D), modifier = Modifier.size(25.dp))
+                    tint = Color(0xFF17212D), modifier = Modifier.size(22.dp))
             }
         }
         val tabs = listOf("Поиск", "Товары", "Мониторинг", "Желания", "Лидеры")
         val icons = listOf(R.drawable.ic_search, R.drawable.ic_grid, R.drawable.ic_pulse, R.drawable.ic_heart, R.drawable.ic_trophy)
-        Row(Modifier.fillMaxWidth().height(66.dp).background(Color.White), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().height(54.dp).background(Color.White), verticalAlignment = Alignment.CenterVertically) {
             tabs.forEachIndexed { index, title ->
                 val selected = activeTab == index
                 Column(
@@ -1030,11 +1030,11 @@ class MainActivity : ComponentActivity() {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Top
                 ) {
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(4.dp))
                     Icon(painterResource(icons[index]), contentDescription = null,
-                        tint = if (selected) Color(0xFF17212D) else Color(0xFF596575), modifier = Modifier.size(22.dp))
-                    Spacer(Modifier.height(3.dp))
-                    Text(title, maxLines = 1, softWrap = false, fontSize = 11.sp,
+                        tint = if (selected) Color(0xFF17212D) else Color(0xFF596575), modifier = Modifier.size(19.dp))
+                    Spacer(Modifier.height(1.dp))
+                    Text(title, maxLines = 1, softWrap = false, fontSize = 10.sp,
                         fontWeight = if (selected) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Normal,
                         color = if (selected) Color(0xFF17212D) else Color(0xFF596575))
                     Spacer(Modifier.weight(1f))
@@ -1743,7 +1743,7 @@ class MainActivity : ComponentActivity() {
                     showDirectory = false
                 })
             PriceBatchStatus(catalogueUi.priceBatch, onStop = { stopPriceBatch() })
-            Column(Modifier.fillMaxSize().verticalScroll(if (settingsOpen) directoryScroll else when(activeTab) { 0 -> searchScroll; 1 -> productsScroll; 2 -> watchScroll; else -> directoryScroll }).padding(16.dp)) {
+            Column(Modifier.fillMaxSize().background(Color(0xFFF4F6F8)).verticalScroll(if (settingsOpen) directoryScroll else when(activeTab) { 0 -> searchScroll; 1 -> productsScroll; 2 -> watchScroll; else -> directoryScroll }).padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             ScreenSection {
             if (activeTab == 0 && !settingsOpen) {
             Text("Поиск предложений Steam · RUB", style = MaterialTheme.typography.bodySmall)

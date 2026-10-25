@@ -93,8 +93,11 @@ class MonitorUiRegressionTest {
         assertFalse(device.hasObject(By.text("1,00 ₽")))
         device.findObject(By.text("Мониторинг")).click()
         scroll.scrollToBeginning(30)
-        device.findObject(By.clazz("android.widget.EditText")).text="Стелларис"
-        assertTrue(device.wait(Until.hasObject(By.text("Stellaris · Steam #281990")),15000))
+        assertTrue(scroll.scrollIntoView(UiSelector().className("android.widget.EditText")))
+        val watchInput=device.findObject(By.clazz("android.widget.EditText"))
+        watchInput.click()
+        watchInput.text="Стелларис"
+        assertTrue(scroll.scrollIntoView(UiSelector().text("Stellaris · Steam #281990")))
         device.findObject(By.text("Stellaris · Steam #281990")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Выбрано: Stellaris · Steam #281990")),5000))
         device.takeScreenshot(File(context.getExternalFilesDir(null),"monitor-selection.png"))
