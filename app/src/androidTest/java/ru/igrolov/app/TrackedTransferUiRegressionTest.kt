@@ -92,8 +92,11 @@ class TrackedTransferUiRegressionTest {
         device.findObject(By.text("Отслеживать")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Товары")),5000))
         device.findObject(By.text("Товары")).click()
-        val products=UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(20)
-        assertTrue(products.scrollTextIntoView("4914,00 ₽"))
+        var productAttempts=0
+        while(!device.hasObject(By.text("4914,00 ₽")) && productAttempts++<12) {
+            device.swipe(device.displayWidth/2,device.displayHeight*3/4,device.displayWidth/2,device.displayHeight/3,12)
+            Thread.sleep(250)
+        }
         assertTrue(device.hasObject(By.text("4914,00 ₽")))
         assertTrue(device.hasObject(By.text("Открыть")))
         assertTrue(device.hasObject(By.text("Удалить")))
