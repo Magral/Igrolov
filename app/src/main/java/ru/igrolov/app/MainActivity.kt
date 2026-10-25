@@ -1681,7 +1681,7 @@ class MainActivity : ComponentActivity() {
                 if (!backgroundSearch) {
                     val summary = if (failure.isNotBlank() && found.isEmpty()) "Ошибка поиска: $failure" else
                         (if (failure.isNotBlank()) "Часть каталогов недоступна ($failure). " else "") +
-                        "Проверено ${results.size} · подходят $ready · скрыто без наличия $unavailable / без точной цены $uncertainPrice." +
+                        "Проверено: ${results.size} · подходят $ready · скрыто без наличия $unavailable / без точной цены $uncertainPrice." +
                             if (wishlistSearch) {
                                 if (hasWishlistMinimum) " Подтверждённые минимумы сохранены: " +
                                     listOfNotNull(
