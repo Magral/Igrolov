@@ -65,6 +65,10 @@ object GameSearchResolver {
         return (listOfNotNull(matches.firstOrNull()?.name,query.trim(),keyboard(query).takeIf {it!=query.lowercase(Locale.ROOT)})).distinct().filter {it.length>=2}.take(3)
     }
     fun suggest(query:String,local:List<Candidate>,active:()->Boolean,fetch:(String)->List<Candidate>):List<Candidate> {
+        if(!active())return emptyList()
+        // Exact matches from the saved catalogue and common-game seeds are
+        // already unambiguous; show them immediately instead of waiting on Steam.
+        exact(query,local+seeds)?.let { return listOf(it) }
         val results=mutableListOf<Candidate>()
         for(term in queries(query,local)) {
             if(!active())return emptyList()
