@@ -77,6 +77,9 @@ class TrackedTransferUiRegressionTest {
         device.findObject(By.clazz("android.widget.EditText")).text="Stellaris"
         assertTrue(device.wait(Until.hasObject(By.text("Stellaris · Steam #281990")),15000))
         device.findObject(By.text("Stellaris · Steam #281990")).click()
+        // Dismiss the soft keyboard so the action controls can enter the viewport.
+        device.pressBack()
+        device.waitForIdle()
         // Swipe the visible page viewport directly. UiScrollable can select a
         // nested Compose scroll container on API 26 and fail to reach the search
         // action even though it is present lower on the screen.
