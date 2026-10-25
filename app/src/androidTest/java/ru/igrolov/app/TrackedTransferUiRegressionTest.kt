@@ -106,12 +106,8 @@ class TrackedTransferUiRegressionTest {
         clickText("Товары")
         // API 26 can take longer to expose newly added tracked rows after a tab
         // switch. Keep waiting for the persisted price while bringing it into view.
-        val productDeadline=android.os.SystemClock.uptimeMillis()+20000
-        while(!device.hasObject(By.text("4914,00 ₽")) && android.os.SystemClock.uptimeMillis()<productDeadline) {
-            device.swipe(device.displayWidth/2,device.displayHeight*3/4,device.displayWidth/2,device.displayHeight/3,12)
-            Thread.sleep(500)
-        }
-        assertTrue(device.hasObject(By.text("4914,00 ₽")))
+        UiTestScroll.reveal(compose,"4914,00 ₽",contains=true)
+        assertTrue(device.hasObject(By.textContains("4914,00 ₽")))
         assertTrue(device.hasObject(By.text("Открыть")))
         assertTrue(device.hasObject(By.text("Удалить")))
         assertEquals("Stellaris",cached("123456").canonical);assertEquals(281990,cached("123456").steamAppId)
@@ -123,7 +119,7 @@ class TrackedTransferUiRegressionTest {
         clickText("Обновить цены")
         assertTrue(device.wait(Until.hasObject(By.text("5200,00 ₽")),10000))
         offline.set(true)
-        tapText(device, "Обновить цены")
+        clickText("Обновить цены")
         assertTrue(device.wait(Until.hasObject(By.textContains("Нет связи")),10000))
         assertTrue(device.hasObject(By.text("5200,00 ₽")))
         device.takeScreenshot(File(context.getExternalFilesDir(null),"tracked-transfer.png"))
@@ -135,7 +131,7 @@ class TrackedTransferUiRegressionTest {
         assertEquals(5200.0,cached("123456").price!!,0.001)
         context.getSharedPreferences("tracked_products",0).edit().putString("ids","123456,123457")
             .putString("product_cache_123457",JSONObject().put("proofSchema",106).put("name",title).put("price",JSONObject.NULL).toString()).commit()
-        val device=open();tapText(device, "Товары")
+        val device=open();clickText("Товары")
         assertTrue(device.wait(Until.hasObject(By.text("5300,00 ₽")),10000))
         val deadline=android.os.SystemClock.uptimeMillis()+10000
         while((cached("123457").price!=5300.0 || cached("123456").price!=5300.0) && android.os.SystemClock.uptimeMillis()<deadline)Thread.sleep(100)
