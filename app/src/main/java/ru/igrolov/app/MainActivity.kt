@@ -839,15 +839,21 @@ class MainActivity : ComponentActivity() {
                         SteamFeatureBadges(game.features)
                         Row(Modifier.fillMaxWidth().heightIn(min = 22.dp), verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                            TextButton(onClick = onSearchPrice, enabled = searchEnabled && marketplacePrices?.checking != true,
-                                modifier = Modifier.height(26.dp), contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp)) {
-                                Text(if (marketplacePrices?.checking == true) "Ищем…" else "Цены",
-                                    style = MaterialTheme.typography.labelSmall, maxLines = 1, color = Color(0xFFF0A928))
+                            Surface(onClick = onSearchPrice, enabled = searchEnabled && marketplacePrices?.checking != true,
+                                modifier = Modifier.height(26.dp), shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
+                                color = Color.White, border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
+                                Box(Modifier.padding(horizontal = 5.dp), contentAlignment = Alignment.Center) {
+                                    Text(if (marketplacePrices?.checking == true) "Ищем…" else "Цены",
+                                        style = MaterialTheme.typography.labelSmall, maxLines = 1, color = Color(0xFFF0A928))
+                                }
                             }
-                            TextButton(onClick = onMonitor, modifier = Modifier.height(26.dp),
-                                contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp)) {
-                                Text(if (monitored) "Ещё издание" else "В мониторинг", style = MaterialTheme.typography.labelSmall,
-                                    color = Color(0xFFF0A928), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Surface(onClick = onMonitor, modifier = Modifier.height(26.dp),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
+                                color = Color.White, border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
+                                Box(Modifier.padding(horizontal = 5.dp), contentAlignment = Alignment.Center) {
+                                    Text(if (monitored) "Ещё издание" else "В мониторинг", style = MaterialTheme.typography.labelSmall,
+                                        color = Color(0xFFF0A928), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
                             }
                             Checkbox(selected, { onToggle() }, enabled = selectionEnabled, modifier = Modifier.size(24.dp))
                         }
@@ -3131,16 +3137,22 @@ class MainActivity : ComponentActivity() {
                             SteamFeatureBadges(game.features)
                             Row(Modifier.fillMaxWidth().heightIn(min = 22.dp), verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                TextButton(onClick = { onSearchPrice(game) },
+                                Surface(onClick = { onSearchPrice(game) },
                                     enabled = searchEnabled && selectedId != null && "$selectedId:${game.appId}" !in searchingKeys,
-                                    modifier = Modifier.height(26.dp), contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp)) {
-                                    Text(if (selectedId != null && "$selectedId:${game.appId}" in searchingKeys) "Ищем…" else "Цены",
-                                        style = MaterialTheme.typography.labelSmall, color = Color(0xFFF0A928), maxLines = 1)
+                                    modifier = Modifier.height(26.dp), shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
+                                    color = Color.White, border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
+                                    Box(Modifier.padding(horizontal = 5.dp), contentAlignment = Alignment.Center) {
+                                        Text(if (selectedId != null && "$selectedId:${game.appId}" in searchingKeys) "Ищем…" else "Цены",
+                                            style = MaterialTheme.typography.labelSmall, color = Color(0xFFF0A928), maxLines = 1)
+                                    }
                                 }
-                                TextButton(onClick = { onMonitor(game) }, enabled = game.appId > 0,
-                                    modifier = Modifier.height(26.dp), contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp)) {
-                                    Text(if (isMonitored(game)) "Издание" else "Следить",
-                                        style = MaterialTheme.typography.labelSmall, color = Color(0xFFF0A928), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Surface(onClick = { onMonitor(game) }, enabled = game.appId > 0,
+                                    modifier = Modifier.height(26.dp), shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
+                                    color = Color.White, border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
+                                    Box(Modifier.padding(horizontal = 5.dp), contentAlignment = Alignment.Center) {
+                                        Text(if (isMonitored(game)) "Издание" else "Следить",
+                                            style = MaterialTheme.typography.labelSmall, color = Color(0xFFF0A928), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    }
                                 }
                                 Checkbox(game.appId in selectedIds, { onToggleSelection(game) }, enabled = selectionEnabled, modifier = Modifier.size(24.dp))
                             }
