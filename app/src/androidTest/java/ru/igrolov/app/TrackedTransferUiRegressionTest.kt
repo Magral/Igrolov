@@ -90,9 +90,11 @@ class TrackedTransferUiRegressionTest {
         assertTrue(device.hasObject(By.text("Отслеживать")))
         assertTrue(device.hasObject(By.textContains("4914,00 ₽")))
         device.findObject(By.text("Отслеживать")).click()
-        device.pressBack() // Dismiss the IME before switching tabs on API 26.
+        assertTrue(device.wait(Until.hasObject(By.text("Товары")),5000))
         device.findObject(By.text("Товары")).click()
-        assertTrue(device.wait(Until.hasObject(By.text("4914,00 ₽")),10000))
+        val products=UiScrollable(UiSelector().scrollable(true)).setMaxSearchSwipes(20)
+        assertTrue(products.scrollTextIntoView("4914,00 ₽"))
+        assertTrue(device.hasObject(By.text("4914,00 ₽")))
         assertTrue(device.hasObject(By.text("Открыть")))
         assertTrue(device.hasObject(By.text("Удалить")))
         assertEquals("Stellaris",cached("123456").canonical);assertEquals(281990,cached("123456").steamAppId)
