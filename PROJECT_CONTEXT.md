@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T09:41:20.973Z
+- Обновлено (UTC): 2026-10-25T11:00:05.205Z
 - Ветка: `main`.
-- HEAD: [`c7f412bbdd1a`](https://github.com/Magral/Igrolov/commit/c7f412bbdd1a41bb660917885a7c06801c5bea73).
+- HEAD: [`ee5f84c649e2`](https://github.com/Magral/Igrolov/commit/ee5f84c649e2fc0bd4f118415cb21572e9eb5297).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [ee5f84c](https://github.com/Magral/Igrolov/commit/ee5f84c649e2fc0bd4f118415cb21572e9eb5297) — Clear active tab highlight in settings
 - [c7f412b](https://github.com/Magral/Igrolov/commit/c7f412bbdd1a41bb660917885a7c06801c5bea73) — Align Steam filter chips in one compact row
 - [817330f](https://github.com/Magral/Igrolov/commit/817330f5795f71505c7c9fb08f97f970f6541248) — Test compact Steam RU filter menu
 - [347c038](https://github.com/Magral/Igrolov/commit/347c0382cad0b94c1f75d1da1d25e8bbb8f61f11) — Use settings icon semantics in screenshot test
-- [fcdd07a](https://github.com/Magral/Igrolov/commit/fcdd07ab52dfbc8b93cacc5c66da24dc0d359c35) — Update leader section smoke expectations
 <!-- AUTO_CONTEXT_END -->
