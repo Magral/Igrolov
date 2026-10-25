@@ -1947,31 +1947,39 @@ class MainActivity : ComponentActivity() {
             val sortedTrackedItems = remember(items) { items.sortedBy { it.price ?: Double.MAX_VALUE } }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 sortedTrackedItems.take(trackedVisibleLimit).forEach { item ->
-                    OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
-                        Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(item.name, style = MaterialTheme.typography.titleSmall,
-                                maxLines = 2, overflow = TextOverflow.Ellipsis)
-                            Text("${item.marketplace} · ${item.status}", style = MaterialTheme.typography.bodySmall,
-                                maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically) {
-                                Text(item.price?.let { String.format(Locale("ru", "RU"), "%.2f ₽", it) } ?: "Цена недоступна",
-                                    style = MaterialTheme.typography.titleMedium, maxLines = 1)
-                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    OutlinedButton(onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.url))) },
-                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) { Text("Открыть") }
-                                    OutlinedButton(onClick = {
-                                        items = items.filterNot { it.storageKey == item.storageKey }
-                                        saveIds(items.map { it.storageKey })
-                                        prefs.edit().remove("product_cache_${item.storageKey}").remove("product_cache_${item.id}").apply()
-                                        ioExecutor.execute { MonitorRoomStore.writeTrackedProduct(this@MainActivity,item.storageKey,null) }
-                                    }, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) { Text("Удалить") }
+                    OutlinedCard(Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, Color(0xFFDCE2E8)),
+                        colors = CardDefaults.outlinedCardColors(containerColor = Color.White)) {
+                        Row(Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically) {
+                            if (item.steamAppId > 0) SteamArtwork(
+                                "https://cdn.akamai.steamstatic.com/steam/apps/${item.steamAppId}/library_600x900.jpg",
+                                Modifier.size(48.dp, 72.dp), appId = item.steamAppId
+                            )
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(item.name, style = MaterialTheme.typography.titleSmall,
+                                    maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                Text("${item.marketplace} · ${item.status}", style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically) {
+                                    Text(item.price?.let { String.format(Locale("ru", "RU"), "%.2f ₽", it) } ?: "Цена недоступна",
+                                        style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        OutlinedButton(onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.url))) },
+                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) { Text("Открыть") }
+                                        OutlinedButton(onClick = {
+                                            items = items.filterNot { it.storageKey == item.storageKey }
+                                            saveIds(items.map { it.storageKey })
+                                            prefs.edit().remove("product_cache_${item.storageKey}").remove("product_cache_${item.id}").apply()
+                                            ioExecutor.execute { MonitorRoomStore.writeTrackedProduct(this@MainActivity,item.storageKey,null) }
+                                        }, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) { Text("Удалить") }
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
             if (sortedTrackedItems.size > trackedVisibleLimit) {
                 OutlinedButton(onClick = { trackedVisibleLimit += 30 }, modifier = Modifier.fillMaxWidth()) {
                     Text("Показать ещё · ${minOf(trackedVisibleLimit, sortedTrackedItems.size)} из ${sortedTrackedItems.size}")
