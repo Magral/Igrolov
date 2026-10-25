@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T06:36:31.207Z
+- Обновлено (UTC): 2026-10-25T06:37:04.386Z
 - Ветка: `main`.
-- HEAD: [`3bd8c1b31f1c`](https://github.com/Magral/Igrolov/commit/3bd8c1b31f1c3a1dc95ceb0a28fedcc809124312).
+- HEAD: [`47fad0e2b948`](https://github.com/Magral/Igrolov/commit/47fad0e2b948763a4ed2a615b087a1194859ee44).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [47fad0e](https://github.com/Magral/Igrolov/commit/47fad0e2b948763a4ed2a615b087a1194859ee44) — ui: standardize outlined button corners across tabs
 - [3bd8c1b](https://github.com/Magral/Igrolov/commit/3bd8c1b31f1c3a1dc95ceb0a28fedcc809124312) — ui: place monitoring actions in one compact row
 - [9323941](https://github.com/Magral/Igrolov/commit/93239419f3f5332e8c7375ff24cd1f45f135f5a6) — ui: make details buttons square-cornered
 - [2b04066](https://github.com/Magral/Igrolov/commit/2b040665d20b0206cf6f6875108185b8f0375da6) — test: capture the populated monitoring card
-- [d9e2deb](https://github.com/Magral/Igrolov/commit/d9e2deb1b28a6dc6997c14e6443b4124f0bde488) — test: capture search results with the keyboard hidden
 <!-- AUTO_CONTEXT_END -->
