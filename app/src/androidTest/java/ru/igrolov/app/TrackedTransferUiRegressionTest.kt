@@ -95,11 +95,8 @@ class TrackedTransferUiRegressionTest {
         UiTestScroll.reveal(compose,"Искать")
         compose.onNodeWithText("Искать").assertExists()
         clickText("Искать")
-        val scroll=UiScrollable(UiSelector().className("android.widget.ScrollView").scrollable(true)).setMaxSearchSwipes(30)
         assertTrue(device.wait(Until.hasObject(By.textContains("Проверено:")),15000))
-        // Compose may expose a nested scrollable (for example, the search history
-        // field) before the page container. Swipe the page viewport directly so
-        // this regression remains reliable as search filters grow.
+        // Compose semantics keep the scroll target stable as the search form grows.
         UiTestScroll.reveal(compose,"Отслеживать")
         compose.onNodeWithText("Отслеживать").assertExists()
         assertTrue(device.hasObject(By.textContains("4914,00 ₽")))
