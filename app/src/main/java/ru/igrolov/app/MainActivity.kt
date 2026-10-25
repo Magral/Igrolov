@@ -1986,6 +1986,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+            }
             if (sortedTrackedItems.size > trackedVisibleLimit) {
                 OutlinedButton(onClick = { trackedVisibleLimit += 30 }, modifier = Modifier.fillMaxWidth()) {
                     Text("Показать ещё · ${minOf(trackedVisibleLimit, sortedTrackedItems.size)} из ${sortedTrackedItems.size}")
