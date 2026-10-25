@@ -82,8 +82,8 @@ class GameCardMonitoringTest {
         UiTestScroll.reveal(compose,"92%")
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("92%")) })
         assertTrue(device.hasObject(By.desc("Положительные отзывы")))
-        UiTestScroll.reveal(compose,"В мониторинг")
-        compose.onNodeWithText("В мониторинг").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        UiTestScroll.reveal(compose,"Мониторинг")
+        compose.onNodeWithText("Мониторинг").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Желаемая цена, ₽")) })
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.clazz("android.widget.EditText")) })
@@ -96,8 +96,8 @@ class GameCardMonitoringTest {
         compose.onNodeWithText("Добавить").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { !device.hasObject(By.text("Добавить")) })
-        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Ещё издание")) })
-        compose.onNodeWithText("Ещё издание").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Издание +")) })
+        compose.onNodeWithText("Издание +").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Желаемая цена, ₽")) })
         compose.onNodeWithText("Отмена").performSemanticsAction(SemanticsActions.OnClick) { it() }
@@ -119,8 +119,8 @@ class GameCardMonitoringTest {
         compose.onNodeWithText("Закрыть").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         UiTestScroll.reveal(compose,"Dead by Daylight")
-        UiTestScroll.reveal(compose,"В мониторинг")
-        compose.onNodeWithText("В мониторинг").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        UiTestScroll.reveal(compose,"Мониторинг")
+        compose.onNodeWithText("Мониторинг").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Желаемая цена, ₽")) })
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.clazz("android.widget.EditText")) })
@@ -130,7 +130,7 @@ class GameCardMonitoringTest {
         compose.onNodeWithText("Добавить").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { !device.hasObject(By.text("Добавить")) })
-        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Ещё издание")) })
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Издание +")) })
         WorkManager.getInstance(context).cancelAllWork().result.get()
         saved = WatchStore.read(context)
         assertEquals(2, saved.length())
