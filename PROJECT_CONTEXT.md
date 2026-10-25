@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T01:40:24.236Z
+- Обновлено (UTC): 2026-10-25T01:48:35.750Z
 - Ветка: `main`.
-- HEAD: [`539f1ddb1804`](https://github.com/Magral/Igrolov/commit/539f1ddb1804699ef66f81fc608832974991be02).
+- HEAD: [`df8cc4ea1beb`](https://github.com/Magral/Igrolov/commit/df8cc4ea1beb6a2827326371294cee5eeaa41a42).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [df8cc4e](https://github.com/Magral/Igrolov/commit/df8cc4ea1beb6a2827326371294cee5eeaa41a42) — test: dismiss IME before checking Steam suggestions
 - [539f1dd](https://github.com/Magral/Igrolov/commit/539f1ddb1804699ef66f81fc608832974991be02) — test: reveal expanded history using viewport swipes
 - [803b911](https://github.com/Magral/Igrolov/commit/803b911e636e364aa2a40959e24b0d166e367f2b) — test: wait for expanded price history before scrolling
 - [78049f9](https://github.com/Magral/Igrolov/commit/78049f9dfa919ab4fe852763e2109fa362299653) — fix: dismiss keyboard when switching app sections
-- [ae80d3d](https://github.com/Magral/Igrolov/commit/ae80d3d45a3b1538c48f72dc2ef611b75bf0b547) — test: wait for tracked price on slower API 26 devices
 <!-- AUTO_CONTEXT_END -->
