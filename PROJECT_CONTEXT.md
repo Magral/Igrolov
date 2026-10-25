@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T06:15:06.073Z
+- Обновлено (UTC): 2026-10-25T06:16:00.564Z
 - Ветка: `main`.
-- HEAD: [`156b79074d0e`](https://github.com/Magral/Igrolov/commit/156b79074d0ec09e695ec608373b06a76b21b40b).
+- HEAD: [`19750043505b`](https://github.com/Magral/Igrolov/commit/19750043505bd8d8aba4bcc6f6340b19a70d6968).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [1975004](https://github.com/Magral/Igrolov/commit/19750043505bd8d8aba4bcc6f6340b19a70d6968) — ui: compact monitoring copy and price columns
 - [156b790](https://github.com/Magral/Igrolov/commit/156b79074d0ec09e695ec608373b06a76b21b40b) — test: follow the current leader card action
 - [36588c8](https://github.com/Magral/Igrolov/commit/36588c84e149719a5f98879e1b6c5e4995e587b5) — test: click compact card action without nested scroll
 - [31b046b](https://github.com/Magral/Igrolov/commit/31b046b22dcd5ce37a9cb7ac76040e18a984a7fd) — test: target compact card action without tab collision
-- [54418a1](https://github.com/Magral/Igrolov/commit/54418a1e5d65635b375833acdcc526bc49c76fff) — ui: clarify compact wishlist card action
 <!-- AUTO_CONTEXT_END -->
