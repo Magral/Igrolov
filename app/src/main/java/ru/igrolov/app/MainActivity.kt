@@ -140,7 +140,8 @@ class MainActivity : ComponentActivity() {
                     bodyLarge = bodyLarge.copy(fontSize = 11.sp),
                     titleSmall = titleSmall.copy(fontSize = 10.sp),
                     titleMedium = titleMedium.copy(fontSize = 12.sp),
-                    titleLarge = titleLarge.copy(fontSize = 14.sp),
+                    titleLarge = titleLarge.copy(fontSize = 13.sp),
+                    labelLarge = labelLarge.copy(fontSize = 10.sp),
                     headlineSmall = headlineSmall.copy(fontSize = 24.sp)
                 )
             }, shapes = Shapes(
@@ -851,7 +852,7 @@ class MainActivity : ComponentActivity() {
                             Checkbox(selected, { onToggle() }, enabled = selectionEnabled, modifier = Modifier.size(24.dp))
                         }
                     }
-                    Column(Modifier.width(156.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                    Column(Modifier.width(140.dp), horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         DealPriceStrip(
                             steamPrice = game.steamPrice.ifBlank { "—" }, discountPercent = game.discountPercent,
@@ -1976,7 +1977,7 @@ class MainActivity : ComponentActivity() {
             ScreenSection {
             if (activeTab == 2 && !settingsOpen) {
             Text("Мониторинг цен", style = MaterialTheme.typography.titleLarge)
-            Text("Проверяем активные Gift/Key для РФ и сообщаем о новых предложениях и снижении цены.", style = MaterialTheme.typography.bodySmall)
+            Text("Уведомления о новых ценах Plati и GGSEL · только предложения для РФ.", style = MaterialTheme.typography.bodySmall)
             OutlinedTextField(watchGame, { watchGame = it;watchSelection=null }, label = { Text("Название игры") },
                 singleLine = true, modifier = Modifier.fillMaxWidth())
             if(watchSuggesting) Text("Подбираем игру Steam…",style=MaterialTheme.typography.bodySmall)
@@ -1990,7 +1991,6 @@ class MainActivity : ComponentActivity() {
             }
             OutlinedTextField(targetPrice, { targetPrice = it }, label = { Text("Желаемая цена, ₽") },
                 singleLine = true, modifier = Modifier.fillMaxWidth())
-            Text("Название игры и желаемая цена вводятся отдельно.", style = MaterialTheme.typography.bodySmall)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf("Все", "Gift", "Key").forEach { kind ->
                     FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = watchType == kind, onClick = { watchType = kind }, label = { Text(kind) })
@@ -2036,7 +2036,7 @@ class MainActivity : ComponentActivity() {
                 LinearProgressIndicator(progress = { if (monitorTotal > 0) monitorDone.toFloat() / monitorTotal else 0f }, modifier = Modifier.fillMaxWidth())
                 Text("Проверено игр: $monitorDone / $monitorTotal${if (monitorCurrent.isNotBlank()) " · Сейчас: $monitorCurrent" else ""}", style = MaterialTheme.typography.bodySmall)
             }
-            Text("Цены проверяются на Plati и GGSEL. В уведомления попадают только активные предложения с подтверждённой ценой и регионом РФ.",style=MaterialTheme.typography.bodySmall)
+            Text("Проверяем Plati и GGSEL; уведомляем только об активных предложениях с подтверждённой ценой и регионом РФ.",style=MaterialTheme.typography.bodySmall)
             Text(watchMessage, style = MaterialTheme.typography.bodySmall)
             if (watchEntries.isNotEmpty()) {
                 WatchListControls(
@@ -3091,7 +3091,7 @@ class MainActivity : ComponentActivity() {
                                 Checkbox(game.appId in selectedIds, { onToggleSelection(game) }, enabled = selectionEnabled, modifier = Modifier.size(24.dp))
                             }
                         }
-                        Column(Modifier.width(156.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                        Column(Modifier.width(140.dp), horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             val prices = cachedPrices(game)
                             DealPriceStrip(game.steamPrice, game.discountPercent,
