@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T05:30:08.457Z
+- Обновлено (UTC): 2026-10-25T05:30:16.509Z
 - Ветка: `main`.
-- HEAD: [`08a40257c0eb`](https://github.com/Magral/Igrolov/commit/08a40257c0eb4113e2e1e752735b24f47458a1c3).
+- HEAD: [`df7dc6e80967`](https://github.com/Magral/Igrolov/commit/df7dc6e809675f014b6b3605f497c2ca81c7082c).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [df7dc6e](https://github.com/Magral/Igrolov/commit/df7dc6e809675f014b6b3605f497c2ca81c7082c) — test: fix all-tabs screenshot assertion
 - [08a4025](https://github.com/Magral/Igrolov/commit/08a40257c0eb4113e2e1e752735b24f47458a1c3) — test: capture redesign tabs before legacy UI regressions
 - [58ed66a](https://github.com/Magral/Igrolov/commit/58ed66a2b101738e5331bd1982ce8c56d87fa3f8) — test: dismiss keyboard before scrolling search actions
 - [7f8326d](https://github.com/Magral/Igrolov/commit/7f8326d85891fd3514f1377c68b69e1161b076fc) — ui: highlight handbook tab while browsing directory
-- [f7838f4](https://github.com/Magral/Igrolov/commit/f7838f4417eb397484d4cbaf032641c39e2d4fbe) — test: correct screenshot result assertion
 <!-- AUTO_CONTEXT_END -->
