@@ -128,7 +128,7 @@ class GameCardMonitoringTest {
         compose.onNodeWithText("Добавить").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { !device.hasObject(By.text("Добавить")) })
-        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Издание")) })
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Добавить издание")) })
         WorkManager.getInstance(context).cancelAllWork().result.get()
         saved = WatchStore.read(context)
         assertEquals(2, saved.length())
