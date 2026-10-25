@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T07:00:03.787Z
+- Обновлено (UTC): 2026-10-25T07:00:15.017Z
 - Ветка: `main`.
-- HEAD: [`e1485d029adf`](https://github.com/Magral/Igrolov/commit/e1485d029adf68ef6802cd38af6966561e1ebf74).
+- HEAD: [`98253eb92ae4`](https://github.com/Magral/Igrolov/commit/98253eb92ae465b4985b9ba3be17e4845a555064).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [98253eb](https://github.com/Magral/Igrolov/commit/98253eb92ae465b4985b9ba3be17e4845a555064) — test: import Compose rule for transfer regression
 - [ba6b8d5](https://github.com/Magral/Igrolov/commit/ba6b8d53f4459d92f30ad54911a66ad78c567e5e) — test: remove mock GGSEL error from redesign screenshot
 - [1b437df](https://github.com/Magral/Igrolov/commit/1b437dfa9f1a40cbb6b0600d5522947c2782c33e) — test: clean up Compose price-flow regression
 - [7639914](https://github.com/Magral/Igrolov/commit/7639914ac57c95514500975f38d383bbf43bc18b) — test: use Compose semantics for API 26 price-check flow
-- [8a1cb87](https://github.com/Magral/Igrolov/commit/8a1cb878c080cab86d78355aa619fdd5053be2a5) — test: tap visible Compose buttons reliably on API 26
 <!-- AUTO_CONTEXT_END -->
