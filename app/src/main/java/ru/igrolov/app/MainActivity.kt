@@ -133,7 +133,17 @@ class MainActivity : ComponentActivity() {
                 outlineVariant = Color(0xFFE2E6EB),
                 onSurface = Color(0xFF17212D),
                 onSurfaceVariant = Color(0xFF566273)
-            ), shapes = Shapes(
+            ), typography = Typography().run {
+                copy(
+                    bodySmall = bodySmall.copy(fontSize = 11.sp),
+                    bodyMedium = bodyMedium.copy(fontSize = 13.sp),
+                    bodyLarge = bodyLarge.copy(fontSize = 14.sp),
+                    titleSmall = titleSmall.copy(fontSize = 14.sp),
+                    titleMedium = titleMedium.copy(fontSize = 16.sp),
+                    titleLarge = titleLarge.copy(fontSize = 18.sp),
+                    headlineSmall = headlineSmall.copy(fontSize = 24.sp)
+                )
+            }, shapes = Shapes(
                 extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
                 small = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
                 medium = androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
