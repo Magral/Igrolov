@@ -129,7 +129,7 @@ class ReleaseSmokeTest {
         if (!device.hasObject(By.text("750 ₽"))) {
             UiTestScroll.reveal(compose,"750 ₽")
         }
-        assertTrue(device.hasObject(By.text("900 руб.")))
+        assertTrue(device.hasObject(By.text("900 ₽")))
         // Compose's text matcher confirms the discount note is rendered; UIAutomator
         // does not expose this nested Text as an exact standalone accessibility node.
         UiTestScroll.reveal(compose,"−50%")
@@ -143,7 +143,7 @@ class ReleaseSmokeTest {
         compose.onNodeWithText("Искать").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.textContains("Ищем минимальную цену")) })
-        assertTrue(device.hasObject(By.text("900 руб.")))
+        assertTrue(device.hasObject(By.text("900 ₽")))
         compose.onNodeWithText("Stellaris").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Поиск игры по названию")) })

@@ -842,7 +842,7 @@ class MainActivity : ComponentActivity() {
                         )
                         OutlinedButton(onClick = onDetails, modifier = Modifier.fillMaxWidth().heightIn(min = 32.dp),
                             contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
-                            border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
+                            border = BorderStroke(1.dp, Color(0xFFD2D9E1)), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF344253))) {
                             Text("Подробнее", style = MaterialTheme.typography.labelMedium, color = Color(0xFF344253), maxLines = 1)
                         }
                     }
@@ -859,12 +859,12 @@ class MainActivity : ComponentActivity() {
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     OutlinedButton(onClick = onSearchPrice, enabled = searchEnabled && marketplacePrices?.checking != true,
-                        modifier = Modifier.weight(1f).heightIn(min = 34.dp), contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                        modifier = Modifier.weight(1f).heightIn(min = 34.dp), contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF344253))) {
                         Text(if (marketplacePrices?.checking == true) "Проверяем…" else if (cachedPrices != null) "Обновить цены" else "Проверить цены",
                             style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     OutlinedButton(onClick = onMonitor, modifier = Modifier.weight(1f).heightIn(min = 34.dp),
-                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF344253))) {
                         Text(if (monitored) "Ещё издание" else "В мониторинг", style = MaterialTheme.typography.labelSmall,
                             maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
@@ -928,7 +928,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxWidth(), enabled = !pendingWatchSaving)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf("Все", "Gift", "Key").forEach { kind ->
-                            FilterChip(selected = pendingWatchKind == kind, enabled = !pendingWatchSaving,
+                            FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = pendingWatchKind == kind, enabled = !pendingWatchSaving,
                                 onClick = { pendingWatchKind = kind }, label = { Text(kind) })
                         }
                     }
@@ -1850,24 +1850,24 @@ class MainActivity : ComponentActivity() {
             }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf("Все", "Gift", "Key").forEach { type ->
-                    FilterChip(selected = selectedType == type, onClick = { selectedType = type },
+                    FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = selectedType == type, onClick = { selectedType = type },
                         label = { Text(type) })
                 }
             }
             Text("Маркетплейс", style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf("Все", "Plati", "GGSEL").forEach { marketplace ->
-                    FilterChip(selected = selectedMarketplace == marketplace,
+                    FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = selectedMarketplace == marketplace,
                         onClick = { selectedMarketplace = marketplace }, label = { Text(marketplace) })
                 }
             }
-            FilterChip(selected=confirmedRf,onClick={confirmedRf=!confirmedRf},label={Text("Только подтверждённая РФ")})
+            FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected=confirmedRf,onClick={confirmedRf=!confirmedRf},label={Text("Только подтверждённая РФ")})
             OutlinedTextField(maxPrice,{maxPrice=it},label={Text("Цена до, ₽")},singleLine=true,
                 isError=!manualFilters.valid,supportingText={Text(if(manualFilters.valid) "Пустое поле — без ограничения" else "Укажите положительную цену")},modifier=Modifier.fillMaxWidth())
             Text("Состав товара", style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf("Игра", "Все", "DLC").forEach { edition ->
-                    FilterChip(selected = editionFilter == edition,
+                    FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = editionFilter == edition,
                         onClick = { editionFilter = edition }, label = { Text(edition) })
                 }
             }
@@ -1975,7 +1975,7 @@ class MainActivity : ComponentActivity() {
             Text("Название игры и желаемая цена вводятся отдельно.", style = MaterialTheme.typography.bodySmall)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf("Все", "Gift", "Key").forEach { kind ->
-                    FilterChip(selected = watchType == kind, onClick = { watchType = kind }, label = { Text(kind) })
+                    FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = watchType == kind, onClick = { watchType = kind }, label = { Text(kind) })
                 }
             }
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
@@ -2454,41 +2454,18 @@ class MainActivity : ComponentActivity() {
             }
             ScreenSection {
             if (activeTab == 4 && !settingsOpen) {
-                Text("Лидеры продаж Steam", style = MaterialTheme.typography.titleLarge)
-                Text(
-                    when (leaderSection) {
-                        SteamLeaderSection.TOP_SELLERS -> "Топ 100 популярных платных игр Steam. Цена и скидка проверяются для региона RU."
-                        SteamLeaderSection.POPULAR_NEW_RELEASES -> "Популярные новинки Steam для региона RU. Статус покупки и цена проверяются отдельно."
-                        SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> "Игры из топа продаж со скидкой Steam RU."
-                    },
-                    style = MaterialTheme.typography.bodySmall
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val sectionGames = when (leaderSection) {
-                        SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseGames
-                        SteamLeaderSection.TOP_SELLERS -> topGames
-                        SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> topGames + discountedExtraGames
-                    }
-                    val countLabel = when (leaderSection) {
-                        SteamLeaderSection.TOP_SELLERS -> "Загружено: ${sectionGames.size} из 100"
-                        SteamLeaderSection.POPULAR_NEW_RELEASES -> "Новинок: ${sectionGames.size}"
-                        SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> "Со скидкой: ${SteamLeaderSection.DISCOUNTED_TOP_SELLERS.filter(sectionGames).size}"
-                    }
-                    Text(countLabel, modifier = Modifier.weight(1f))
-                    TextButton(onClick = { refreshTop() }, enabled = !topBusy) { Text("Обновить") }
-                }
                 if (topBusy) LinearProgressIndicator(Modifier.fillMaxWidth())
                 if (topError.isNotBlank()) Text(topError, color = MaterialTheme.colorScheme.error)
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     SteamLeaderSection.values().forEach { section ->
-                        FilterChip(selected = leaderSection == section,
+                        FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = leaderSection == section,
                             onClick = { catalogueUi.selectedLeaderIds = emptySet(); leaderSection = section; topError = "" },
                             label = { Text(section.label, maxLines = 1, style = MaterialTheme.typography.labelSmall) })
                     }
                 }
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf("Все игры", "Доступны в Steam RU", "Недоступны в Steam RU").forEach { filter ->
-                        FilterChip(selected = topAvailabilityFilter == filter,
+                        FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = topAvailabilityFilter == filter,
                             onClick = { catalogueUi.selectedLeaderIds = emptySet(); topAvailabilityFilter = filter },
                             label = { Text(filter, maxLines = 1, style = MaterialTheme.typography.labelSmall) })
                     }
@@ -2500,9 +2477,15 @@ class MainActivity : ComponentActivity() {
                         SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> topGames + discountedExtraGames
                     }
                 }
+                val countLabel = when (leaderSection) {
+                    SteamLeaderSection.TOP_SELLERS -> "Загружено: ${sectionGames.size} из 100"
+                    SteamLeaderSection.POPULAR_NEW_RELEASES -> "Новинок: ${sectionGames.size}"
+                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> "Со скидкой: ${SteamLeaderSection.DISCOUNTED_TOP_SELLERS.filter(sectionGames).size}"
+                }
                 val availableLeaderGenres = remember(sectionGames) {
                     sectionGames.asSequence().flatMap { it.genres.asSequence() }.distinct().sorted().toList()
                 }
+                Text(countLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 SteamLeaderFiltersPanel(leaderFilterInput, { leaderFilterInput = it }, availableGenres = availableLeaderGenres)
                 val availabilityFilteredGames = remember(sectionGames, leaderSection, topAvailabilityFilter) {
                     leaderSection.filter(sectionGames).filter { game ->
@@ -2789,7 +2772,7 @@ class MainActivity : ComponentActivity() {
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf("blocked" to "DLC", "allowed" to "Издание").forEach { (field, label) ->
-                            FilterChip(selected = directoryField == field, onClick = { directoryField = field }, label = { Text(label) })
+                            FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = directoryField == field, onClick = { directoryField = field }, label = { Text(label) })
                         }
                     }
                     OutlinedTextField(directoryInput, { directoryInput = it }, label = { Text("Название или отличительная часть") },
@@ -2949,7 +2932,7 @@ class MainActivity : ComponentActivity() {
                 SteamRussianLocalization.NOT_SUPPORTED to "Русский не найден в списке Steam",
                 SteamRussianLocalization.UNKNOWN to "Не указано"
             ).forEach { (value, label) ->
-                FilterChip(selected = input.russianLocalization == value,
+                FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = input.russianLocalization == value,
                     onClick = { onInput(input.copy(russianLocalization = value)) }, label = { Text(label, maxLines = 1) })
             }
         }
@@ -2962,7 +2945,7 @@ class MainActivity : ComponentActivity() {
                 SteamControllerSupport.NONE to "Нет",
                 SteamControllerSupport.UNKNOWN to "Не указано"
             ).forEach { (value, label) ->
-                FilterChip(selected = input.controllerSupport == value,
+                FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = input.controllerSupport == value,
                     onClick = { onInput(input.copy(controllerSupport = value)) }, label = { Text(label, maxLines = 1) })
             }
         }
@@ -3085,7 +3068,7 @@ class MainActivity : ComponentActivity() {
                                 prices?.plati?.price ?: game.lowestPlatiPrice,
                                 prices?.ggsel?.price ?: game.lowestGgselPrice)
                             OutlinedButton(onClick = { onDetails(game) }, modifier = Modifier.fillMaxWidth().heightIn(min = 32.dp),
-                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp), border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp), border = BorderStroke(1.dp, Color(0xFFD2D9E1)), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF344253))) {
                                 Text("Подробнее", style = MaterialTheme.typography.labelMedium, color = Color(0xFF344253), maxLines = 1)
                             }
                         }
@@ -3099,7 +3082,7 @@ class MainActivity : ComponentActivity() {
                     } }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         OutlinedButton(onClick = { onSearchPrice(game) }, enabled = searchEnabled && searchKey != null && searchKey !in searchingKeys,
-                            modifier = Modifier.weight(1f).heightIn(min = 34.dp), contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                            modifier = Modifier.weight(1f).heightIn(min = 34.dp), contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF344253))) {
                             Text(if (searchKey != null && searchKey in searchingKeys) "Ищем…" else "Искать цены",
                                 style = MaterialTheme.typography.labelSmall, maxLines = 1)
                         }
@@ -3164,7 +3147,7 @@ private fun WatchListControls(
             WatchListPresentation.Filter.BELOW_TARGET to "Ниже цели",
             WatchListPresentation.Filter.ERRORS to "С ошибкой"
         ).forEach { (value, label) ->
-            FilterChip(selected = filter == value, onClick = { onFilter(value) }, label = { Text(label) })
+            FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = filter == value, onClick = { onFilter(value) }, label = { Text(label) })
         }
     }
     var sortMenuOpen by remember { mutableStateOf(false) }
