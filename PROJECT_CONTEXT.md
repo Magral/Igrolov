@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T05:56:29.311Z
+- Обновлено (UTC): 2026-10-25T06:01:38.146Z
 - Ветка: `main`.
-- HEAD: [`962a2f64e447`](https://github.com/Magral/Igrolov/commit/962a2f64e447252080772ec976b0cb532ef8783a).
+- HEAD: [`54418a1e5d65`](https://github.com/Magral/Igrolov/commit/54418a1e5d65635b375833acdcc526bc49c76fff).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [54418a1](https://github.com/Magral/Igrolov/commit/54418a1e5d65635b375833acdcc526bc49c76fff) — ui: clarify compact wishlist card action
 - [f6aeb7f](https://github.com/Magral/Igrolov/commit/f6aeb7f7623a8fe63206e318c885756865a9aff8) — test: align card actions with compact labels
 - [8f6d059](https://github.com/Magral/Igrolov/commit/8f6d059230180786787ad8c106a0fde8f9f09c6c) — test: align card actions with compact labels
 - [955f6ea](https://github.com/Magral/Igrolov/commit/955f6ea0919183c4f555eebc1cda24f70e99c1e4) — ui: tighten typography and card action labels
-- [466e664](https://github.com/Magral/Igrolov/commit/466e664b82be1efded91fe144924f8bed71fd432) — ui: fix monitor button label after outline migration
 <!-- AUTO_CONTEXT_END -->
