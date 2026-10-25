@@ -5,6 +5,12 @@ import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.test.uiautomator.*
 import org.json.JSONArray
 import org.json.JSONObject
@@ -24,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 /** Each method is invoked in its own instrumentation process by CI. */
 @RunWith(AndroidJUnit4::class)
 class TrackedTransferUiRegressionTest {
+    @get:Rule val compose = createEmptyComposeRule()
     private val context get()=ApplicationProvider.getApplicationContext<Context>()
     private val title="Stellaris +ВЫБОР STEAM Gift РФ"
     private fun installApi(price:AtomicInteger,offline:AtomicBoolean=AtomicBoolean(false)) {
@@ -63,10 +70,10 @@ class TrackedTransferUiRegressionTest {
         assertTrue(device.wait(Until.hasObject(By.text("Игролов")),15000))
         return device
     }
-    private fun tapText(device:UiDevice,text:String) {
-        val bounds=device.findObject(By.text(text)).visibleBounds
-        device.click(bounds.centerX(),bounds.centerY())
-        device.waitForIdle()
+    private fun clickText(text:String) {
+        compose.onAllNodesWithText(text).onFirst()
+            .performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitForIdle()
     }
     private fun key(id:String)=TrackedPriceCache.storageKey("Plati",id)
     private fun cached(id:String)=TrackedPriceCache.decode(key(id),context.getSharedPreferences("tracked_products",0).getString("product_cache_${key(id)}",null))
@@ -81,33 +88,24 @@ class TrackedTransferUiRegressionTest {
         val device=open()
         device.findObject(By.clazz("android.widget.EditText")).text="Stellaris"
         assertTrue(device.wait(Until.hasObject(By.text("Stellaris · Steam #281990")),15000))
-        tapText(device, "Stellaris · Steam #281990")
+        clickText("Stellaris · Steam #281990")
         // The selected tab hides the soft keyboard without leaving the search form.
-        tapText(device, "Поиск")
+        clickText("Поиск")
         device.waitForIdle()
-        // Swipe the visible page viewport directly. UiScrollable can select a
-        // nested Compose scroll container on API 26 and fail to reach the search
-        // action even though it is present lower on the screen.
-        var searchAttempts=0
-        while(!device.hasObject(By.text("Искать")) && searchAttempts++<12) {
-            device.swipe(device.displayWidth/2,device.displayHeight*3/4,device.displayWidth/2,device.displayHeight/3,12)
-        }
-        assertTrue(device.hasObject(By.text("Искать")))
-        tapText(device, "Искать")
+        UiTestScroll.reveal(compose,"Искать")
+        compose.onNodeWithText("Искать").assertExists()
+        clickText("Искать")
         val scroll=UiScrollable(UiSelector().className("android.widget.ScrollView").scrollable(true)).setMaxSearchSwipes(30)
         assertTrue(device.wait(Until.hasObject(By.textContains("Проверено:")),15000))
         // Compose may expose a nested scrollable (for example, the search history
         // field) before the page container. Swipe the page viewport directly so
         // this regression remains reliable as search filters grow.
-        var attempts=0
-        while(!device.hasObject(By.text("Отслеживать")) && attempts++<10) {
-            device.swipe(device.displayWidth/2,device.displayHeight*3/4,device.displayWidth/2,device.displayHeight/3,12)
-        }
-        assertTrue(device.hasObject(By.text("Отслеживать")))
+        UiTestScroll.reveal(compose,"Отслеживать")
+        compose.onNodeWithText("Отслеживать").assertExists()
         assertTrue(device.hasObject(By.textContains("4914,00 ₽")))
-        tapText(device, "Отслеживать")
+        clickText("Отслеживать")
         assertTrue(device.wait(Until.hasObject(By.text("Товары")),5000))
-        tapText(device, "Товары")
+        clickText("Товары")
         // API 26 can take longer to expose newly added tracked rows after a tab
         // switch. Keep waiting for the persisted price while bringing it into view.
         val productDeadline=android.os.SystemClock.uptimeMillis()+20000
@@ -123,8 +121,8 @@ class TrackedTransferUiRegressionTest {
         while(cachedFromRoom("123456").price!=4914.0 && android.os.SystemClock.uptimeMillis()<roomDeadline)Thread.sleep(100)
         assertEquals(4914.0,cachedFromRoom("123456").price!!,0.001)
         price.set(5200)
-        if(!device.hasObject(By.text("Обновить цены")))assertTrue(scroll.scrollTextIntoView("Обновить цены"))
-        tapText(device, "Обновить цены")
+        UiTestScroll.reveal(compose,"Обновить цены")
+        clickText("Обновить цены")
         assertTrue(device.wait(Until.hasObject(By.text("5200,00 ₽")),10000))
         offline.set(true)
         tapText(device, "Обновить цены")
