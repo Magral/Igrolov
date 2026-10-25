@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T06:37:04.386Z
+- Обновлено (UTC): 2026-10-25T06:47:47.898Z
 - Ветка: `main`.
-- HEAD: [`47fad0e2b948`](https://github.com/Magral/Igrolov/commit/47fad0e2b948763a4ed2a615b087a1194859ee44).
+- HEAD: [`4bf23686f586`](https://github.com/Magral/Igrolov/commit/4bf23686f5863418e620a221d0ba5796990d5937).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [4bf2368](https://github.com/Magral/Igrolov/commit/4bf23686f5863418e620a221d0ba5796990d5937) — ui: wrap leader availability filters without clipping
 - [47fad0e](https://github.com/Magral/Igrolov/commit/47fad0e2b948763a4ed2a615b087a1194859ee44) — ui: standardize outlined button corners across tabs
 - [3bd8c1b](https://github.com/Magral/Igrolov/commit/3bd8c1b31f1c3a1dc95ceb0a28fedcc809124312) — ui: place monitoring actions in one compact row
 - [9323941](https://github.com/Magral/Igrolov/commit/93239419f3f5332e8c7375ff24cd1f45f135f5a6) — ui: make details buttons square-cornered
-- [2b04066](https://github.com/Magral/Igrolov/commit/2b040665d20b0206cf6f6875108185b8f0375da6) — test: capture the populated monitoring card
 <!-- AUTO_CONTEXT_END -->
