@@ -18,9 +18,9 @@ adb install -r "$current_apk"
 run_test verifyUpgradeData
 
 adb shell am force-stop ru.igrolov.app
-adb shell am instrument -w -r -e class 'ru.igrolov.app.OfferPriceCacheUiTest#batchRetainsSuccessfulTimesOnSourceFailures' ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/offer-cache-batch.txt
+adb shell am instrument -w -r -e class 'ru.igrolov.app.OfferPriceCacheUiTest#multiSelectionIsRemovedAndCachedPricesRemainVisible' ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/offer-cache-batch.txt
 grep -E 'OK \(1 test\)' device-results/offer-cache-batch.txt
-adb pull /sdcard/Android/data/ru.igrolov.app/files/offer-cache-batch.png device-results/offer-cache-batch.png
+adb pull /sdcard/Android/data/ru.igrolov.app/files/offer-cache-no-multiselect.png device-results/offer-cache-no-multiselect.png
 adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class 'ru.igrolov.app.OfferPriceCacheUiTest#restartRestoresCachedPricesAndOriginalSuccessfulTime' ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/offer-cache-restored.txt
 grep -E 'OK \(1 test\)' device-results/offer-cache-restored.txt
