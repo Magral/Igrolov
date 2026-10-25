@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T05:39:15.073Z
+- Обновлено (UTC): 2026-10-25T05:39:25.796Z
 - Ветка: `main`.
-- HEAD: [`46b7e8529e52`](https://github.com/Magral/Igrolov/commit/46b7e8529e52bd7eef3625575ede81ff7a5b1829).
+- HEAD: [`15dd1100d981`](https://github.com/Magral/Igrolov/commit/15dd1100d981b7b8fbafb5b069ed20c14a367bfd).
 - Последний опубликованный стабильный GitHub Release: [v1.4.4](https://github.com/Magral/Igrolov/releases/tag/v1.4.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [15dd110](https://github.com/Magral/Igrolov/commit/15dd1100d981b7b8fbafb5b069ed20c14a367bfd) — ui: use outlined action buttons consistently
 - [46b7e85](https://github.com/Magral/Igrolov/commit/46b7e8529e52bd7eef3625575ede81ff7a5b1829) — ui: compact typography across all screens
 - [df7dc6e](https://github.com/Magral/Igrolov/commit/df7dc6e809675f014b6b3605f497c2ca81c7082c) — test: fix all-tabs screenshot assertion
 - [08a4025](https://github.com/Magral/Igrolov/commit/08a40257c0eb4113e2e1e752735b24f47458a1c3) — test: capture redesign tabs before legacy UI regressions
-- [58ed66a](https://github.com/Magral/Igrolov/commit/58ed66a2b101738e5331bd1982ce8c56d87fa3f8) — test: dismiss keyboard before scrolling search actions
 <!-- AUTO_CONTEXT_END -->
