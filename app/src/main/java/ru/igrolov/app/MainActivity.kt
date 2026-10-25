@@ -2533,12 +2533,17 @@ class MainActivity : ComponentActivity() {
                             label = { Text(section.label, maxLines = 1, style = MaterialTheme.typography.labelSmall) })
                     }
                 }
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("Все игры", "Доступны в Steam RU", "Недоступны в Steam RU").forEach { filter ->
-                        FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = topAvailabilityFilter == filter,
-                            onClick = { catalogueUi.selectedLeaderIds = emptySet(); topAvailabilityFilter = filter },
-                            label = { Text(filter, maxLines = 1, style = MaterialTheme.typography.labelSmall) })
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("Все игры", "Доступны в Steam RU").forEach { filter ->
+                            FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = topAvailabilityFilter == filter,
+                                onClick = { catalogueUi.selectedLeaderIds = emptySet(); topAvailabilityFilter = filter },
+                                label = { Text(filter, maxLines = 1, style = MaterialTheme.typography.labelSmall) })
+                        }
                     }
+                    FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = topAvailabilityFilter == "Недоступны в Steam RU",
+                        onClick = { catalogueUi.selectedLeaderIds = emptySet(); topAvailabilityFilter = "Недоступны в Steam RU" },
+                        label = { Text("Недоступны в Steam RU", maxLines = 1, style = MaterialTheme.typography.labelSmall) })
                 }
                 val sectionGames = remember(leaderSection, newReleaseGames, topGames, discountedExtraGames) {
                     when (leaderSection) {
