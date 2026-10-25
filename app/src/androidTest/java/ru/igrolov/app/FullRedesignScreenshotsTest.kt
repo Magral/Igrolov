@@ -9,6 +9,7 @@ import androidx.test.uiautomator.UiDevice
 import org.json.JSONObject
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.semantics.SemanticsActions
@@ -53,7 +54,7 @@ class FullRedesignScreenshotsTest {
             }
             capture(file)
         }
-        compose.onAllNodesWithText("Настройки").onFirst()
+        compose.onNodeWithContentDescription("Настройки")
             .performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitUntil(10000) {
             compose.onAllNodesWithText("Справочник игр и правила DLC").fetchSemanticsNodes().isNotEmpty()
