@@ -3,6 +3,7 @@ package ru.igrolov.app
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.assertIsDisplayed
@@ -145,7 +146,7 @@ class ReleaseSmokeTest {
         compose.onNodeWithText("Подробнее").assertIsDisplayed()
         assertTrue("Android must decode and display artwork after a broken cached URL",
             UiTestScroll.await(compose, 60000) {
-                device.hasObject(By.desc("Обложка Steam 281990 загружена"))
+                compose.onAllNodesWithContentDescription("Обложка Steam 281990 загружена", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
             })
         if (!device.hasObject(By.text("750 ₽"))) {
             UiTestScroll.reveal(compose,"750 ₽")
@@ -190,11 +191,11 @@ class ReleaseSmokeTest {
             compose.onNodeWithText("Желания").performSemanticsAction(SemanticsActions.OnClick) { it() }
             compose.waitForIdle()
             UiTestScroll.reveal(compose, "Подробнее")
-            assertTrue("Android failed to decode portrait for $artTitle ($artAppId)",
-                UiTestScroll.await(compose, 90000) {
-                    device.hasObject(By.desc("Обложка Steam $artAppId загружена"))
-                })
+            val decoded = UiTestScroll.await(compose, 90000) {
+                compose.onAllNodesWithContentDescription("Обложка Steam $artAppId загружена", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+            }
             device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"wishlist.png"))
+            assertTrue("Android failed to decode portrait for $artTitle ($artAppId)", decoded)
         }
         prefs.edit().remove("wishlist_profiles").remove("wishlist_selected_profile").remove("wishlist_profile")
             .remove("wishlist_games").remove("wishlist_imported_at").commit()
