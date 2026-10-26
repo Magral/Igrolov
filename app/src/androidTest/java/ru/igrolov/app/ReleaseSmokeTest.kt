@@ -172,6 +172,30 @@ class ReleaseSmokeTest {
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Поиск игры")) })
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.textContains("Автопоиск цен")) })
         assertFalse(device.hasObject(By.text("Искать Plati")))
+        for ((artAppId, artTitle) in listOf(
+            1771300 to "Kingdom Come: Deliverance II",
+            1091500 to "Cyberpunk 2077",
+            1245620 to "ELDEN RING"
+        )) {
+            val artProfile = WishlistProfile(steamId, "Artwork test", profile.input,
+                listOf(WishlistGame(artAppId, artTitle, "900 руб.")), System.currentTimeMillis())
+            prefs.edit().putString("wishlist_profiles", SteamWishlist.encodeProfiles(listOf(artProfile)))
+                .putString("wishlist_selected_profile", steamId)
+                .putString("wishlist_games", SteamWishlist.encode(artProfile.games)).commit()
+            context.getSharedPreferences("steam_artwork_urls",0).edit()
+                .putString("portrait_$artAppId", "https://shared.steamstatic.com/store_item_assets/steam/apps/$artAppId/igrolov-missing/library_600x900.jpg").commit()
+            context.startActivity(Intent(context,MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+            assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Игролов")) })
+            compose.onNodeWithText("Желания").performSemanticsAction(SemanticsActions.OnClick) { it() }
+            compose.waitForIdle()
+            UiTestScroll.reveal(compose, "Подробнее")
+            assertTrue("Android failed to decode portrait for $artTitle ($artAppId)",
+                UiTestScroll.await(compose, 90000) {
+                    device.hasObject(By.desc("Обложка Steam $artAppId загружена"))
+                })
+            device.takeScreenshot(java.io.File(context.getExternalFilesDir(null),"wishlist.png"))
+        }
         prefs.edit().remove("wishlist_profiles").remove("wishlist_selected_profile").remove("wishlist_profile")
             .remove("wishlist_games").remove("wishlist_imported_at").commit()
     }
