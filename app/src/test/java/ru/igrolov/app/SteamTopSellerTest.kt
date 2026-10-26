@@ -144,7 +144,7 @@ class SteamTopSellerTest {
             selectedGenres = setOf("RPG", "Стратегии")
         )
 
-        assertEquals(4, input.activeFilterCount)
+        assertEquals(3, input.activeFilterCount)
     }
 
     @Test fun wishlistGenreFilterUsesSteamDetailsAndCanBePersisted() {
@@ -297,19 +297,19 @@ class SteamTopSellerTest {
             SteamTopSellerParser.applyRuDetails(game, json, false).availability)
     }
 
-    @Test fun successfulDetailsWithoutRegionalPriceDoNotProveAvailability() {
+    @Test fun successfulDetailsWithoutRegionalPriceMarkGameUnavailable() {
         val game = SteamTopSeller(281990, "Stellaris")
         val result = SteamTopSellerParser.applyRuDetails(game,
             """{"281990":{"success":true,"data":{"type":"game","name":"Stellaris"}}}""", true)
-        assertEquals(SteamRuAvailability.UNKNOWN, result.availability)
+        assertEquals(SteamRuAvailability.UNAVAILABLE, result.availability)
         assertTrue(result.steamPrice.isBlank())
     }
 
-    @Test fun successfulDetailsWithEmptyPriceOverviewDoNotProveAvailability() {
+    @Test fun successfulDetailsWithEmptyPriceOverviewMarkGameUnavailable() {
         val game = SteamTopSeller(281990, "Stellaris")
         val result = SteamTopSellerParser.applyRuDetails(game,
             """{"281990":{"success":true,"data":{"type":"game","name":"Stellaris","price_overview":{"final_formatted":""}}}}""", null)
-        assertEquals(SteamRuAvailability.UNKNOWN, result.availability)
+        assertEquals(SteamRuAvailability.UNAVAILABLE, result.availability)
         assertTrue(result.steamPrice.isBlank())
     }
 
