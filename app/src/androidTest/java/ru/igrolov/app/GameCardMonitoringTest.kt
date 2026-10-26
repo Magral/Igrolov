@@ -3,6 +3,7 @@ package ru.igrolov.app
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.semantics.SemanticsActions
 import org.junit.Rule
@@ -82,7 +83,7 @@ class GameCardMonitoringTest {
         UiTestScroll.reveal(compose,"92%")
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("92%")) })
         assertTrue(device.hasObject(By.desc("Положительные отзывы")))
-        compose.onNodeWithText("Следить").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.onAllNodesWithText("Следить").onFirst().performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Желаемая цена, ₽")) })
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.clazz("android.widget.EditText")) })
@@ -96,7 +97,7 @@ class GameCardMonitoringTest {
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { !device.hasObject(By.text("Добавить")) })
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Следить")) })
-        compose.onNodeWithText("Следить").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.onAllNodesWithText("Следить").onFirst().performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Желаемая цена, ₽")) })
         compose.onNodeWithText("Отмена").performSemanticsAction(SemanticsActions.OnClick) { it() }
@@ -118,7 +119,7 @@ class GameCardMonitoringTest {
         compose.onNodeWithText("Закрыть").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         UiTestScroll.reveal(compose,"Следить")
-        compose.onNodeWithText("Следить").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.onAllNodesWithText("Следить").onFirst().performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Желаемая цена, ₽")) })
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.clazz("android.widget.EditText")) })
