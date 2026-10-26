@@ -31,6 +31,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -482,16 +485,33 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun steamRuEditionLabel(edition: SteamEditionReference.Edition): String = when (edition.steamRuAvailable) {
+        true -> edition.steamRuPrice?.let { "Steam RU · $it" } ?: "Steam RU · цена не указана"
+        false -> "Нет предложения в Steam RU"
+        null -> "Статус Steam RU не проверен"
+    }
+
     private fun enrichSteamGames(games: List<SteamTopSeller>): List<SteamTopSeller> {
         val pool = Executors.newFixedThreadPool(4)
         return try {
             pool.invokeAll(games.map { game -> java.util.concurrent.Callable {
-                val regional = checkTopSellerRu(game)
-                if (regional.isGame && !regional.isFree) regional.copy(reviewSummary = loadSteamReviewSummary(game.appId))
-                else regional
+                checkTopSellerRu(game)
             } })
                 .mapNotNull { runCatching { it.get() }.getOrNull() }
                 .filter { it.isGame && !it.isFree }
+        } finally { pool.shutdownNow() }
+    }
+
+    /** Reviews are fetched only for visible cards, except when review filters need complete data. */
+    private fun loadReviewSummaries(games: List<SteamTopSeller>): Map<Int, SteamReviewSummary> {
+        val missing = games.filter { it.reviewSummary == null && it.isGame && !it.isFree }.distinctBy { it.appId }
+        if (missing.isEmpty()) return emptyMap()
+        val pool = Executors.newFixedThreadPool(4)
+        return try {
+            pool.invokeAll(missing.map { game -> java.util.concurrent.Callable {
+                game.appId to loadSteamReviewSummary(game.appId)
+            } }).mapNotNull { runCatching { it.get() }.getOrNull() }
+                .mapNotNull { (appId, summary) -> summary?.let { appId to it } }.toMap()
         } finally { pool.shutdownNow() }
     }
 
@@ -831,6 +851,13 @@ class MainActivity : ComponentActivity() {
         onSearchPrice: () -> Unit, onMonitor: () -> Unit,
         cachedPrices: CachedGamePrices?
     ) {
+        var reviewSummary by remember(game.appId) { mutableStateOf(game.reviewSummary) }
+        LaunchedEffect(game.appId, game.reviewSummary) {
+            if (game.reviewSummary != null) reviewSummary = game.reviewSummary
+            else if (reviewSummary == null && game.isGame && !game.isFree) {
+                reviewSummary = withContext(Dispatchers.IO) { loadSteamReviewSummary(game.appId) }
+            }
+        }
         val platiPrice = marketplacePrices?.platiMinimum ?: cachedPrices?.plati?.price
         val ggselPrice = marketplacePrices?.ggselMinimum ?: cachedPrices?.ggsel?.price
         OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, Color(0xFFDCE2E8)),
@@ -847,7 +874,7 @@ class MainActivity : ComponentActivity() {
                     SteamArtwork("https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/library_600x900.jpg",
                         Modifier.size(76.dp, 114.dp), appId = game.appId)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                        SteamReviewBadge(game.reviewSummary)
+                        SteamReviewBadge(reviewSummary)
                         SteamGenreLine(game.genres)
                         SteamFeatureBadges(game.features)
                     }
@@ -927,16 +954,30 @@ class MainActivity : ComponentActivity() {
                             Text(pendingEdition?.name ?: "Основная игра", maxLines = 1)
                         }
                         DropdownMenu(expanded = editionMenu, onDismissRequest = { editionMenu = false }) {
-                            DropdownMenuItem(text = { Text("Основная игра") }, onClick = {
-                                pendingEdition = null; editionMenu = false
-                            })
+                            val baseEdition = pendingEditions.firstOrNull { it.isBase }
+                            if (baseEdition != null) {
+                                DropdownMenuItem(text = { Column {
+                                    Text("Основная игра")
+                                    Text(steamRuEditionLabel(baseEdition), style = MaterialTheme.typography.labelSmall)
+                                } }, onClick = {
+                                    pendingEdition = baseEdition; editionMenu = false
+                                })
+                            } else {
+                                DropdownMenuItem(text = { Text("Основная игра") }, onClick = {
+                                    pendingEdition = null; editionMenu = false
+                                })
+                            }
                             pendingEditions.filterNot { it.isBase }.forEach { edition ->
-                                DropdownMenuItem(text = { Text(edition.name) }, onClick = {
+                                DropdownMenuItem(text = { Column {
+                                    Text(edition.name)
+                                    Text(steamRuEditionLabel(edition), style = MaterialTheme.typography.labelSmall)
+                                } }, onClick = {
                                     pendingEdition = edition; editionMenu = false
                                 })
                             }
                         }
                     }
+                    pendingEdition?.let { Text(steamRuEditionLabel(it), style = MaterialTheme.typography.bodySmall) }
                     if (editionsLoading) Text("Загружаем издания Steam…", style = MaterialTheme.typography.bodySmall)
                     OutlinedTextField(pendingWatchPrice, { pendingWatchPrice = it; pendingWatchError = "" },
                         label = { Text("Желаемая цена, ₽") }, singleLine = true,
@@ -960,7 +1001,7 @@ class MainActivity : ComponentActivity() {
                     } else {
                         pendingWatchSaving = true
                         val kind = pendingWatchKind
-                        val selectedEdition = pendingEdition?.takeUnless { it.isBase }
+                        val selectedEdition = pendingEdition
                         ioExecutor.execute {
                             val result = runCatching {
                                 WatchStore.add(this@MainActivity, game.name, kind, amount, true, game.appId,
@@ -1809,13 +1850,17 @@ class MainActivity : ComponentActivity() {
                             editionMenuExpanded = false
                         })
                         steamEditions.forEach { edition ->
-                            DropdownMenuItem(text = { Text(edition.name) }, onClick = {
+                            DropdownMenuItem(text = { Column {
+                                Text(edition.name)
+                                Text(steamRuEditionLabel(edition), style = MaterialTheme.typography.labelSmall)
+                            } }, onClick = {
                                 selectedSteamEdition = edition
                                 editionMenuExpanded = false
                             })
                         }
                     }
                 }
+                selectedSteamEdition?.let { Text(steamRuEditionLabel(it), style = MaterialTheme.typography.bodySmall) }
             }
             if(suggestionBusy) Text("Подбираем названия Steam…",style=MaterialTheme.typography.bodySmall)
             if(gameSuggestions.isNotEmpty() && selectedGame==null) {
@@ -2534,6 +2579,21 @@ class MainActivity : ComponentActivity() {
                         SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> topGames + discountedExtraGames
                     }
                 }
+                val reviewFiltersActive = (leaderFilterInput.minimumReviewText.toIntOrNull() ?: 0) > 0 ||
+                    (leaderFilterInput.minimumReviewCountText.toLongOrNull() ?: 0L) > 0L
+                LaunchedEffect(sectionGames, reviewFiltersActive) {
+                    if (reviewFiltersActive) {
+                        val loaded = withContext(Dispatchers.IO) { loadReviewSummaries(sectionGames) }
+                        if (loaded.isNotEmpty()) {
+                            fun attachReviews(games: List<SteamTopSeller>) = games.map { game ->
+                                loaded[game.appId]?.let { game.copy(reviewSummary = it) } ?: game
+                            }
+                            topGames = attachReviews(topGames)
+                            newReleaseGames = attachReviews(newReleaseGames)
+                            discountedExtraGames = attachReviews(discountedExtraGames)
+                        }
+                    }
+                }
                 val countLabel = when (leaderSection) {
                     SteamLeaderSection.TOP_SELLERS -> "Загружено: ${sectionGames.size} из 100"
                     SteamLeaderSection.POPULAR_NEW_RELEASES -> "Новинок: ${sectionGames.size}"
@@ -2614,7 +2674,12 @@ class MainActivity : ComponentActivity() {
                     SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedHasMore
                     SteamLeaderSection.TOP_SELLERS -> false
                 }
-                displayedTopGames.forEachIndexed { index, game ->
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 560.dp),
+                    contentPadding = PaddingValues(vertical = 2.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    itemsIndexed(displayedTopGames, key = { _, game -> game.appId }) { index, game ->
                     val cacheKey = remember(game.appId, game.title, manualFilters, rulesRevision, ignoredIds,
                         searchTotalPages, comparisonSavedAliases[game.appId]) { comparisonKey(game.appId, game.title, true) }
                     SteamLeaderCard(index, game, leaderOfferPrices[game.appId]?.takeIf { it.scopeKey == cacheKey },
@@ -2642,6 +2707,7 @@ class MainActivity : ComponentActivity() {
                             )
                         },
                         onMonitor = { openGameMonitoring(game.appId, game.title) })
+                    }
                 }
                 if (visibleTopGames.size > leaderVisibleLimit) {
                     OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { leaderVisibleLimit += 20 }, modifier = Modifier.fillMaxWidth()) {
@@ -3155,7 +3221,12 @@ class MainActivity : ComponentActivity() {
             Text("По выбранным фильтрам игр нет.", style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        visibleGames.take(visibleLimit).forEach { game ->
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth().heightIn(max = 560.dp),
+            contentPadding = PaddingValues(vertical = 2.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+        items(visibleGames.take(visibleLimit), key = { it.appId }) { game ->
             OutlinedCard(Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, Color(0xFFDCE2E8)), colors = CardDefaults.outlinedCardColors(containerColor = Color.White)) {
                     Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -3207,6 +3278,7 @@ class MainActivity : ComponentActivity() {
                         } }
                     }
             }
+        }
         }
         if (visibleGames.size > visibleLimit) {
             OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = onShowMore, modifier = Modifier.fillMaxWidth()) {

@@ -4,6 +4,7 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
+import java.text.NumberFormat
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -11,9 +12,20 @@ import java.util.concurrent.TimeUnit
 
 /** Purchase options exposed for a Steam game, verified to include that game's app ID. */
 object SteamEditionReference {
-    data class Edition(val appId: Int, val packageId: Int, val name: String, val searchTitle: String, val isBase: Boolean)
+    data class Edition(
+        val appId: Int,
+        val packageId: Int,
+        val name: String,
+        val searchTitle: String,
+        val isBase: Boolean,
+        /** null means Steam RU could not be checked; false means this package has no RU store offer. */
+        val steamRuAvailable: Boolean? = null,
+        val steamRuPrice: String? = null
+    )
 
-    private const val MAX_PACKAGE_LOOKUPS = 24
+    // Large publishers sometimes expose many bundles for one game. Keep a finite cap while
+    // allowing considerably more than the old 24 options so Deluxe/Gold/Royal variants aren't cut off.
+    private const val MAX_PACKAGE_LOOKUPS = 48
     private const val MAX_PARALLEL_PACKAGE_LOOKUPS = 4
     private const val LOOKUP_TIMEOUT_SECONDS = 30L
     private const val CACHE_TTL_MILLIS = 30 * 60 * 1000L
@@ -43,6 +55,19 @@ object SteamEditionReference {
         val canonical = app.optString("name").trim().takeIf { it.isNotBlank() } ?: return emptyList()
         val packageIds = packageIds(app).take(MAX_PACKAGE_LOOKUPS)
         if (packageIds.isEmpty()) return emptyList()
+        // Steam's RU appdetails response contains region-specific package options. Keep it
+        // separate from the US catalogue response so US pricing can never imply RU availability.
+        val ruResponse = runCatching {
+            fetchJson("https://store.steampowered.com/api/appdetails?appids=$appId&l=russian&cc=ru")
+                .optJSONObject(appId.toString())
+        }.getOrNull()
+        // An explicit Steam success=false is a confirmed lack of a Russian store page;
+        // a request/JSON failure stays unknown so outages never look like a region lock.
+        val ruOffers = when {
+            ruResponse == null -> null
+            !ruResponse.optBoolean("success") -> emptyMap()
+            else -> ruResponse.optJSONObject("data")?.let(::ruPackageOffers)
+        }
         val requests = packageIds.map { packageId -> Callable {
             runCatching {
                 val detail = fetchJson("https://store.steampowered.com/api/packagedetails?packageids=$packageId&cc=us&l=english")
@@ -51,7 +76,10 @@ object SteamEditionReference {
                 val apps = detail.optJSONArray("apps") ?: return@runCatching null
                 if ((0 until apps.length()).none { apps.optJSONObject(it)?.optInt("id") == appId }) return@runCatching null
                 val name = detail.optString("name").trim().takeIf { it.isNotBlank() } ?: return@runCatching null
-                Edition(appId, packageId, name, name, normalize(name) == normalize(canonical))
+                val ruOffer = ruOffers?.get(packageId)
+                Edition(appId, packageId, name, name, normalize(name) == normalize(canonical),
+                    steamRuAvailable = ruOffers?.containsKey(packageId),
+                    steamRuPrice = ruOffer)
             }.getOrNull()
         } }
         val futures = try {
@@ -83,6 +111,27 @@ object SteamEditionReference {
         return (0 until groups.length()).flatMap { groups.optJSONObject(it)?.optJSONArray("subs")?.let { subs ->
             (0 until subs.length()).mapNotNull { subs.optJSONObject(it)?.optInt("packageid")?.takeIf { id -> id > 0 } }
         }.orEmpty() }.distinct()
+    }
+
+    private fun ruPackageOffers(data: JSONObject): Map<Int, String?> {
+        val offers = linkedMapOf<Int, String?>()
+        val groups = data.optJSONArray("package_groups") ?: return offers
+        for (i in 0 until groups.length()) {
+            val subs = groups.optJSONObject(i)?.optJSONArray("subs") ?: continue
+            for (j in 0 until subs.length()) {
+                val sub = subs.optJSONObject(j) ?: continue
+                val id = sub.optInt("packageid").takeIf { it > 0 } ?: continue
+                val cents = sub.optLong("price_in_cents_with_discount", -1L)
+                val price = when {
+                    cents == 0L -> "Бесплатно"
+                    cents > 0L -> "${NumberFormat.getIntegerInstance(Locale("ru")).format(cents / 100)
+                        .replace('\u00A0', ' ').replace('\u202F', ' ')} ₽"
+                    else -> null
+                }
+                offers[id] = price
+            }
+        }
+        return offers
     }
 
     private fun packageName(data: JSONObject, packageId: Int): String? {

@@ -21,9 +21,9 @@ class SteamEditionReferenceTest {
         assertFalse(options[1].isBase)
     }
 
-    @Test fun liveDiscoveryLooksUpMoreThanTwelvePackagesInParallel() {
+    @Test fun liveDiscoveryLooksUpManyPackagesInParallel() {
         val appId = 321
-        val packageIds = (1001..1016).toList()
+        val packageIds = (1001..1040).toList()
         val subs = packageIds.joinToString(",") { id ->
             "{\"packageid\":$id,\"option_text\":\"Example Game Edition $id\"}"
         }
@@ -46,6 +46,24 @@ class SteamEditionReferenceTest {
         assertEquals(packageIds.size, options.size)
         assertTrue(options.first().isBase)
         assertTrue("Expected overlapping package requests, peak was ${peak.get()}", peak.get() in 2..4)
+    }
+
+    @Test fun discoveryKeepsSteamRuPackagePriceSeparateFromUsCatalogue() {
+        val appId = 321
+        val usApp = JSONObject("""{"321":{"success":true,"data":{"type":"game","name":"Example Game","package_groups":[{"subs":[{"packageid":1001,"option_text":"Example Game - $29.99"},{"packageid":1002,"option_text":"Example Game Deluxe Edition - $39.99"}]}]}}}""")
+        val ruApp = JSONObject("""{"321":{"success":true,"data":{"type":"game","name":"Example Game","package_groups":[{"subs":[{"packageid":1001,"option_text":"Example Game - 1 499 руб.","price_in_cents_with_discount":149900}]}]}}}""")
+        val editions = SteamEditionReference.discover(appId) { url ->
+            when {
+                "cc=ru" in url -> ruApp
+                "/api/appdetails?" in url -> usApp
+                "packageids=1001" in url -> JSONObject("""{"1001":{"success":true,"data":{"name":"Example Game","apps":[{"id":321}]}}}""")
+                else -> JSONObject("""{"1002":{"success":true,"data":{"name":"Example Game Deluxe Edition","apps":[{"id":321}]}}}""")
+            }
+        }
+        assertEquals(true, editions.first { it.packageId == 1001 }.steamRuAvailable)
+        assertEquals("1 499 ₽", editions.first { it.packageId == 1001 }.steamRuPrice)
+        assertEquals(false, editions.first { it.packageId == 1002 }.steamRuAvailable)
+        assertNull(editions.first { it.packageId == 1002 }.steamRuPrice)
     }
 
     @Test fun separateEditionMatcherDoesNotMixBaseRoyalAndDlc() {
