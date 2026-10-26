@@ -22,6 +22,14 @@ object SteamArtworkPresentation {
     fun cacheKey(appId: Int, portrait: Boolean): String =
         "${if (portrait) "portrait" else "landscape"}_$appId"
 
+    /** Public Steam StoreBrowse request; it needs no account or API key and returns current hashed library assets. */
+    fun storeBrowseAssetsUrl(appId: Int): String {
+        if (appId <= 0) return ""
+        val request = """{"ids":[{"appid":$appId}],"context":{"language":"english","country_code":"US"},"data_request":{"include_assets":true}}"""
+        val encoded = java.net.URLEncoder.encode(request, Charsets.UTF_8.name())
+        return "https://api.steampowered.com/IStoreBrowseService/GetItems/v1/?input_json=$encoded"
+    }
+
     /** Alternate Steam CDN paths; the caller still keeps the requested artwork aspect ratio. */
     fun directFallbackUrls(appId: Int, portrait: Boolean): List<String> {
         if (appId <= 0) return emptyList()
