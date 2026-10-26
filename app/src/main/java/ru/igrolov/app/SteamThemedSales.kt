@@ -55,7 +55,7 @@ object SteamThemedSales {
             ?: url.substringAfter("/sale/").substringBefore("?").substringBefore("#").replace(Regex("[_/-]+"), " ").trim()
                 .takeIf { saleTerm.containsMatchIn(it) }
             ?: return null
-        val ids = sequenceOf("appid", "app_id", "id")
+        val ids = sequenceOf("appid", "app_id")
             .map { item.optInt(it, 0) }
             .firstOrNull { it > 0 }
             ?.let(::listOf)
