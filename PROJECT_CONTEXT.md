@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-26T05:23:15.270Z
+- Обновлено (UTC): 2026-10-26T05:31:55.583Z
 - Ветка: `main`.
-- HEAD: [`6f20a2601ee2`](https://github.com/Magral/Igrolov/commit/6f20a2601ee2572c27695942dc9ca91da6c0d928).
+- HEAD: [`18cbdd11b19b`](https://github.com/Magral/Igrolov/commit/18cbdd11b19bf4f555cdf19ff69a831c735d11b9).
 - Последний опубликованный стабильный GitHub Release: [v1.5.6](https://github.com/Magral/Igrolov/releases/tag/v1.5.6); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [18cbdd1](https://github.com/Magral/Igrolov/commit/18cbdd11b19bf4f555cdf19ff69a831c735d11b9) — release: Игролов 1.5.7 — очистить UI smoke script
 - [6f20a26](https://github.com/Magral/Igrolov/commit/6f20a2601ee2572c27695942dc9ca91da6c0d928) — release: Игролов 1.5.7 — поправить тест формата обложек
 - [3001625](https://github.com/Magral/Igrolov/commit/3001625803625d00ebbfe286e8c6c7c30dff95b3) — release: Игролов 1.5.7 — исправить список обложек
 - [7465660](https://github.com/Magral/Igrolov/commit/7465660259219f156933e443444b97f790bd2f54) — release: Игролов 1.5.7 — вертикальные обложки без API
-- [2a38de5](https://github.com/Magral/Igrolov/commit/2a38de5373e41f313323708079f8827c5c27da63) — release: Игролов 1.5.6 — вертикальные обложки SteamGridDB
 <!-- AUTO_CONTEXT_END -->
