@@ -95,6 +95,7 @@ class MainActivity : ComponentActivity() {
     }
     private val askNotifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
     private val prefs by lazy { getSharedPreferences("tracked_products", MODE_PRIVATE) }
+    private val steamLeaderCachePrefs by lazy { getSharedPreferences("steam_leader_cache", MODE_PRIVATE) }
     private fun loadIds(): List<String> = prefs.getString("ids", "")!!.split(",").filter { it.isNotBlank() }
     private fun saveIds(ids: List<String>) = prefs.edit().putString("ids", ids.distinct().joinToString(",")).apply()
     private fun trackedLegacyId(key:String)=key.substringAfter(':',key)
@@ -495,14 +496,33 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun enrichSteamGames(games: List<SteamTopSeller>): List<SteamTopSeller> {
-        val pool = Executors.newFixedThreadPool(4)
-        return try {
-            pool.invokeAll(games.map { game -> java.util.concurrent.Callable {
-                checkTopSellerRu(game)
-            } })
-                .mapNotNull { runCatching { it.get() }.getOrNull() }
-                .filter { it.isGame && !it.isFree }
-        } finally { pool.shutdownNow() }
+        val now = System.currentTimeMillis()
+        val cached = games.associate { game ->
+            game.appId to steamLeaderCachePrefs.getString("game:${game.appId}", null)
+                ?.let { SteamLeaderCache.decode(it, now) }
+        }
+        val fresh = games.filter { cached[it.appId] == null }
+        val refreshed = if (fresh.isEmpty()) emptyMap() else {
+            val pool = Executors.newFixedThreadPool(4)
+            try {
+                pool.invokeAll(fresh.map { game -> java.util.concurrent.Callable {
+                    checkTopSellerRu(game)
+                } }).mapNotNull { future ->
+                    runCatching { future.get() }.getOrNull()
+                }.associateBy { it.appId }
+            } finally { pool.shutdownNow() }
+        }
+        if (refreshed.isNotEmpty()) {
+            val editor = steamLeaderCachePrefs.edit()
+            refreshed.values
+                .filter { it.isGame && it.availability != SteamRuAvailability.UNKNOWN }
+                .forEach { game ->
+                    editor.putString("game:${game.appId}", SteamLeaderCache.encode(game, now))
+                }
+            editor.apply()
+        }
+        return games.mapNotNull { game -> cached[game.appId] ?: refreshed[game.appId] }
+            .filter { it.isGame && !it.isFree }
     }
 
     /** Reviews are fetched only for visible cards, except when review filters need complete data. */
