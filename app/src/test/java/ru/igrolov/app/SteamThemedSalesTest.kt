@@ -43,12 +43,7 @@ class SteamThemedSalesTest {
     }
 
     @Test fun salePageReadsEmbeddedGameCapsulesAndIgnoresDlcAndBundles() {
-        val html = """{"jsondata":"{\\"sale_sections\\":[{\\"capsules\\":[
-            {\\"id\\":219740,\\"type\\":\\"game\\"},
-            {\\"id\\":3155070,\\"type\\":\\"dlc\\"},
-            {\\"id\\":48666,\\"type\\":\\"bundle\\"},
-            {\\"id\\":322330,\\"type\\":\\"game\\"}
-        ]}]}","announcement_body":{}}"""
+        val html = """{"jsondata":"{\"sale_sections\":[{\"capsules\":[{\"id\":219740,\"type\":\"game\"},{\"id\":3155070,\"type\":\"dlc\"},{\"id\":48666,\"type\":\"bundle\"},{\"id\":322330,\"type\":\"game\"}]}]}","announcement_body":{}}"""
 
         assertEquals(listOf(219740, 322330), SteamThemedSales.salePageGameIds(html))
         assertEquals(listOf(219740, 322330), SteamThemedSales.parseSalePageGames(html, "Survival Fest").map { it.appId })
