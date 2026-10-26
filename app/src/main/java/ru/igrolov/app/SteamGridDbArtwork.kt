@@ -43,6 +43,7 @@ object SteamGridDbArtwork {
         val fromCards = cards
             .filter(dimensions::containsMatchIn)
             .flatMap { card -> links.findAll(card).map { it.groupValues[1] }.toList() }
+            .toList()
         // SteamGridDB has changed its card markup before. If its asset class changes,
         // still recover the URL from the same compact HTML region as the 600x900 label.
         val fromPage = if (fromCards.isNotEmpty()) emptyList() else {
