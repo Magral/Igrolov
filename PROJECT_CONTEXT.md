@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-26T15:36:56.825Z
+- Обновлено (UTC): 2026-10-26T15:44:53.809Z
 - Ветка: `main`.
-- HEAD: [`e09230837acb`](https://github.com/Magral/Igrolov/commit/e09230837acb2ccbf1877b29ff6c931451e19310).
+- HEAD: [`0f08a3e6a57d`](https://github.com/Magral/Igrolov/commit/0f08a3e6a57dfa08c84bb92ee9d64a65433e4393).
 - Последний опубликованный стабильный GitHub Release: [v1.5.7](https://github.com/Magral/Igrolov/releases/tag/v1.5.7); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [0f08a3e](https://github.com/Magral/Igrolov/commit/0f08a3e6a57dfa08c84bb92ee9d64a65433e4393) — fix: parse games from Steam sale pages
 - [e092308](https://github.com/Magral/Igrolov/commit/e09230837acb2ccbf1877b29ff6c931451e19310) — feat: add live Steam themed sales to Leaders
 - [c30b874](https://github.com/Magral/Igrolov/commit/c30b874dedadc362ed156491dffb0ac8885f57a6) — perf: reuse recent Steam Leaders metadata
 - [a6f4f38](https://github.com/Magral/Igrolov/commit/a6f4f3866867ac3ca50564132234bcb8c0f3754c) — perf: cache recent Steam leader metadata
-- [bbc8afd](https://github.com/Magral/Igrolov/commit/bbc8afd90ac555f47e0dc733a74887fe3f8c3b55) — fix: add alternate Steam portrait CDN
 <!-- AUTO_CONTEXT_END -->
