@@ -93,7 +93,7 @@ jobs:
 
   ggsel-live-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Verify live GGSEL category and product catalog
@@ -104,6 +104,8 @@ jobs:
         run: python3 scripts/steam_edition_smoke.py
       - name: Verify live Steam themed sale feed
         run: python3 scripts/steam_themed_sales_smoke.py
+      - name: Verify reachable vertical artwork for current Top 100
+        run: python3 scripts/steam_artwork_smoke.py
 
   device:
     needs: build

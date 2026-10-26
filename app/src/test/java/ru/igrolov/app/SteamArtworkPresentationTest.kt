@@ -37,6 +37,17 @@ class SteamArtworkPresentationTest {
         assertEquals(listOf(header), SteamArtworkPresentation.filterForAspect(listOf(portrait, header, sgdb), portrait = false))
     }
 
+    @Test fun storeBrowseAssetRequestIsPublicAndTargetsOneApp() {
+        val url = SteamArtworkPresentation.storeBrowseAssetsUrl(281990)
+        assertTrue(url.startsWith("https://api.steampowered.com/IStoreBrowseService/GetItems/v1/?input_json="))
+        assertFalse(url.contains("key="))
+        val encoded = url.substringAfter("input_json=")
+        val input = java.net.URLDecoder.decode(encoded, Charsets.UTF_8.name())
+        assertTrue(input.contains("\"appid\":281990"))
+        assertTrue(input.contains("\"include_assets\":true"))
+        assertEquals("", SteamArtworkPresentation.storeBrowseAssetsUrl(0))
+    }
+
     @Test fun resolvesModernHashBasedLibraryCoversBeforeUsingLandscapeFallbacks() {
         val filenameToken = "$" + "{FILENAME}"
         val response = """{"response":{"store_items":[{"appid":123,"success":1,"assets":{

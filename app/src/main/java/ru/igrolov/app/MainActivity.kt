@@ -683,11 +683,18 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun steamArtworkFallbackUrls(appId: Int, portrait: Boolean): List<String> {
-        val urls = SteamArtworkPresentation.directFallbackUrls(appId, portrait).toMutableList()
+        val urls = mutableListOf<String>()
         if (portrait) {
-            // Community portrait covers come from the public page; no key or SGDB API is used.
+            // Resolve Steam's current hashed 600x900 assets before trying guessed legacy paths.
+            runCatching {
+                val raw = steamArtworkJson(SteamArtworkPresentation.storeBrowseAssetsUrl(appId))
+                urls += SteamArtworkPresentation.libraryCapsuleUrls(raw, appId)
+            }
+            // Community posters are read from the public game page, without a key or SGDB API.
             urls += SteamGridDbArtwork.fetchPortraitUrls(this, appId)
+            urls += SteamArtworkPresentation.directFallbackUrls(appId, portrait = true)
         } else {
+            urls += SteamArtworkPresentation.directFallbackUrls(appId, portrait = false)
             runCatching {
                 val raw = steamArtworkJson("https://store.steampowered.com/api/appdetails?appids=$appId&cc=us&l=english")
                 SteamTopSellerParser.applyGlobalMetadata(SteamTopSeller(appId, ""), raw).headerImageUrl

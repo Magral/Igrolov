@@ -14,7 +14,7 @@ object SteamGridDbArtwork {
         if (appId <= 0) return emptyList()
         val prefs = context.getSharedPreferences("steam_artwork_urls", Context.MODE_PRIVATE)
         // Bump the key to discard empty results saved by the previous brittle parser.
-        val cacheKey = "sgdb_public_page_portrait_v2_$appId"
+        val cacheKey = "sgdb_public_page_portrait_v3_$appId"
         val cachedAtKey = "${cacheKey}_at"
         val now = System.currentTimeMillis()
         val cachedAt = prefs.getLong(cachedAtKey, 0L)
