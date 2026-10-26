@@ -4,6 +4,7 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.semantics.SemanticsActions
 import org.junit.Rule
@@ -118,8 +119,8 @@ class GameCardMonitoringTest {
         assertTrue(UiTestScroll.await(compose,10000) { device.hasObject(By.text("A strategy game.")) })
         compose.onNodeWithText("Закрыть").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
-        UiTestScroll.reveal(compose,"Следить")
-        compose.onAllNodesWithText("Следить").onFirst().performSemanticsAction(SemanticsActions.OnClick) { it() }
+        UiTestScroll.reveal(compose, "Dead by Daylight")
+        compose.onAllNodesWithText("Следить").onLast().performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Желаемая цена, ₽")) })
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.clazz("android.widget.EditText")) })
