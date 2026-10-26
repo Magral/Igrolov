@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-26T16:17:10.594Z
+- Обновлено (UTC): 2026-10-26T16:35:06.169Z
 - Ветка: `main`.
-- HEAD: [`d7c74fc2c231`](https://github.com/Magral/Igrolov/commit/d7c74fc2c231ba697381a7bc0099b74e92a8ca80).
+- HEAD: [`3d18e3ecea05`](https://github.com/Magral/Igrolov/commit/3d18e3ecea054a6f38bdd70c3a1a3eac87166f86).
 - Последний опубликованный стабильный GitHub Release: [v1.6.0](https://github.com/Magral/Igrolov/releases/tag/v1.6.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [3d18e3e](https://github.com/Magral/Igrolov/commit/3d18e3ecea054a6f38bdd70c3a1a3eac87166f86) — release: Игролов 1.6.1 — миниатюры во всех разделах
 - [d7c74fc](https://github.com/Magral/Igrolov/commit/d7c74fc2c231ba697381a7bc0099b74e92a8ca80) — fix: restore vertical covers across Steam bestsellers
 - [493a40e](https://github.com/Magral/Igrolov/commit/493a40e1be8df1404453664d3b66b0f602f338f9) — docs: close release 1.6.0 checklist
 - [3de5ecd](https://github.com/Magral/Igrolov/commit/3de5ecd3001d6ff473009943ee043ad52ace9134) — release: Игролов 1.6.0 — исправить upgrade smoke
-- [5d7a7c1](https://github.com/Magral/Igrolov/commit/5d7a7c1d204befc632d81374d8a494ceec69fee6) — release: Игролов 1.6.0 — тематические распродажи
 <!-- AUTO_CONTEXT_END -->
