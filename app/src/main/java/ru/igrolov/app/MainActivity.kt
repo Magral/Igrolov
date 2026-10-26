@@ -679,6 +679,9 @@ class MainActivity : ComponentActivity() {
         try {
             if (connection.responseCode !in 200..299) throw java.io.IOException("Steam HTTP ${connection.responseCode}")
             return connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+        } catch (error: Exception) {
+            SteamArtworkDiagnostics.record(null, url, error)
+            throw error
         } finally { connection.disconnect() }
     }
 
