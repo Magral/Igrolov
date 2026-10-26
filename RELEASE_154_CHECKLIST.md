@@ -6,9 +6,9 @@
 - [x] Показывать региональные цену/доступность Steam RU для каждого пакета.
 - [x] Сохранять точно выбранный пакет при добавлении в мониторинг.
 - [x] Добавить unit-тесты для региональной цены и расширенного каталога вариантов.
-- [ ] `:app:testDebugUnitTest`
-- [ ] `:app:assembleDebug`
-- [ ] `:app:assembleDebugAndroidTest`
-- [ ] UI-сценарии API 26 и 29.
-- [ ] GitHub Actions завершился успешно.
+- [x] `:app:testDebugUnitTest`
+- [x] `:app:assembleDebug`
+- [x] `:app:assembleDebugAndroidTest`
+- [x] UI-сценарии API 26 и 29.
+- [x] GitHub Actions завершился успешно.
 - [ ] GitHub Release v1.5.4 опубликован с APK.
