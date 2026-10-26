@@ -11,7 +11,9 @@ class SteamArtworkPresentationTest {
         assertTrue(SteamArtworkPresentation.isPortrait(cover))
         assertEquals("portrait_123", SteamArtworkPresentation.cacheKey(123, true))
         assertFalse(SteamArtworkPresentation.isPortrait("https://cdn.akamai.steamstatic.com/steam/apps/123/header.jpg"))
+        assertTrue(SteamArtworkPresentation.isPortrait("https://cdn2.steamgriddb.com/grid/poster.png"))
         assertEquals("landscape_123", SteamArtworkPresentation.cacheKey(123, false))
+        assertFalse(SteamArtworkPresentation.matchesAspect("https://cdn.akamai.steamstatic.com/steam/apps/123/header.jpg", true))
     }
 
     @Test fun directFallbacksKeepPortraitAndLandscapeArtworkSeparate() {
@@ -23,6 +25,15 @@ class SteamArtworkPresentationTest {
         assertTrue(landscape.isNotEmpty())
         assertTrue(landscape.none(SteamArtworkPresentation::isPortrait))
         assertTrue(SteamArtworkPresentation.directFallbackUrls(0, portrait = true).isEmpty())
+    }
+
+    @Test fun portraitCardsNeverReceiveLandscapeSteamHeaders() {
+        val portrait = "https://cdn.akamai.steamstatic.com/steam/apps/7940/library_600x900.jpg"
+        val header = "https://cdn.akamai.steamstatic.com/steam/apps/7940/header.jpg"
+        val sgdb = "https://cdn2.steamgriddb.com/grid/call-of-duty-poster.png"
+
+        assertEquals(listOf(portrait, sgdb), SteamArtworkPresentation.filterForAspect(listOf(header, portrait, sgdb), portrait = true))
+        assertEquals(listOf(header), SteamArtworkPresentation.filterForAspect(listOf(portrait, header, sgdb), portrait = false))
     }
 
     @Test fun resolvesModernHashBasedLibraryCoversBeforeUsingLandscapeFallbacks() {

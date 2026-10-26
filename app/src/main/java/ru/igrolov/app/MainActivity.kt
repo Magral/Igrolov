@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import org.json.JSONObject
 import org.json.JSONArray
 import java.net.HttpURLConnection
@@ -611,12 +612,19 @@ class MainActivity : ComponentActivity() {
             )
             urls += SteamArtworkPresentation.libraryCapsuleUrls(response, appId)
         }
-        runCatching {
-            val raw = steamArtworkJson("https://store.steampowered.com/api/appdetails?appids=$appId&cc=us&l=english")
-            SteamTopSellerParser.applyGlobalMetadata(SteamTopSeller(appId, ""), raw).headerImageUrl
-                .takeIf { it.isNotBlank() }?.let(urls::add)
+        if (portrait) {
+            val apiKey = SteamGridDbArtwork.readApiKey(this)
+            if (apiKey.isNotBlank()) {
+                urls += SteamGridDbArtwork.fetchPortraitUrls(this, appId, apiKey)
+            }
+        } else {
+            runCatching {
+                val raw = steamArtworkJson("https://store.steampowered.com/api/appdetails?appids=$appId&cc=us&l=english")
+                SteamTopSellerParser.applyGlobalMetadata(SteamTopSeller(appId, ""), raw).headerImageUrl
+                    .takeIf { it.isNotBlank() }?.let(urls::add)
+            }
         }
-        return urls.distinct()
+        return SteamArtworkPresentation.filterForAspect(urls, portrait)
     }
 
     @Composable
@@ -629,13 +637,18 @@ class MainActivity : ComponentActivity() {
         val artworkCacheKey = remember(appId, requestedPortrait) {
             appId?.let { SteamArtworkPresentation.cacheKey(it, requestedPortrait) }
         }
+        LaunchedEffect(artworkCacheKey, requestedPortrait) {
+            artworkCacheKey?.let { key ->
+                val cached = artworkPrefs.getString(key, null)
+                if (!cached.isNullOrBlank() && !SteamArtworkPresentation.matchesAspect(cached, requestedPortrait)) {
+                    artworkPrefs.edit().remove(key).apply()
+                }
+            }
+        }
         val initialCandidates = remember(url, appId, artworkCacheKey) {
             val cachedRequested = artworkCacheKey?.let { artworkPrefs.getString(it, null) }
-                ?.takeIf { it.isNotBlank() }
-            val cachedOtherAspect = appId?.let {
-                artworkPrefs.getString(SteamArtworkPresentation.cacheKey(it, !requestedPortrait), null)
-            }?.takeIf { it.isNotBlank() }
-            listOfNotNull(cachedRequested, url, cachedOtherAspect).distinct()
+                ?.takeIf { it.isNotBlank() && SteamArtworkPresentation.matchesAspect(it, requestedPortrait) }
+            listOfNotNull(cachedRequested, url.takeIf { SteamArtworkPresentation.matchesAspect(it, requestedPortrait) }).distinct()
         }
         var candidates by remember(url, appId) { mutableStateOf(initialCandidates) }
         var candidateIndex by remember(url, appId) { mutableIntStateOf(0) }
@@ -1155,6 +1168,10 @@ class MainActivity : ComponentActivity() {
         var visibleOfferLimit by remember { mutableIntStateOf(30) }
         var searchPage by remember { mutableIntStateOf(0) }
         var catalogLimit by remember { mutableIntStateOf(CatalogPageSettings.get(this@MainActivity)) }
+        var steamGridDbApiKey by remember { mutableStateOf(SteamGridDbArtwork.readApiKey(this@MainActivity)) }
+        var artworkKeyStatus by remember { mutableStateOf("") }
+        var artworkKeyChecking by remember { mutableStateOf(false) }
+        val artworkSettingsScope = rememberCoroutineScope()
         val searchTotalPages = catalogLimit / 100
         var showDirectory by remember { mutableStateOf(false) }
         var searchFound by remember { mutableIntStateOf(0) }
@@ -2771,6 +2788,71 @@ class MainActivity : ComponentActivity() {
                         })
                         Text("$count товаров", modifier = Modifier.padding(start = 8.dp))
                     }
+                }
+                HorizontalDivider()
+                Text("Вертикальные обложки игр", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Если у игры нет вертикального постера Steam, Игролов возьмёт его из SteamGridDB. " +
+                        "Для этого нужен личный API-ключ; он хранится зашифрованно на устройстве.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                OutlinedButton(
+                    onClick = {
+                        runCatching {
+                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.steamgriddb.com/profile/preferences")))
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                ) { Text("Получить ключ SteamGridDB") }
+                OutlinedTextField(
+                    value = steamGridDbApiKey,
+                    onValueChange = { steamGridDbApiKey = it; artworkKeyStatus = "" },
+                    label = { Text("SteamGridDB API-ключ") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+                )
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = {
+                            artworkKeyChecking = true
+                            artworkKeyStatus = "Проверяем ключ…"
+                            artworkSettingsScope.launch {
+                                val valid = withContext(Dispatchers.IO) {
+                                    SteamGridDbArtwork.validateApiKey(steamGridDbApiKey)
+                                }
+                                if (valid) {
+                                    runCatching { SteamGridDbArtwork.saveApiKey(this@MainActivity, steamGridDbApiKey) }
+                                        .onSuccess { artworkKeyStatus = "Ключ проверен и сохранён. Вертикальные обложки будут загружаться из SteamGridDB." }
+                                        .onFailure { artworkKeyStatus = "Не удалось сохранить ключ на устройстве." }
+                                } else {
+                                    artworkKeyStatus = "Ключ не прошёл проверку. Проверьте его и повторите попытку."
+                                }
+                                artworkKeyChecking = false
+                            }
+                        },
+                        enabled = !artworkKeyChecking && steamGridDbApiKey.isNotBlank(),
+                        modifier = Modifier.weight(1f)
+                    ) { Text(if (artworkKeyChecking) "Проверяем…" else "Проверить и сохранить") }
+                    OutlinedButton(
+                        onClick = {
+                            SteamGridDbArtwork.saveApiKey(this@MainActivity, "")
+                            steamGridDbApiKey = ""
+                            artworkKeyStatus = "Ключ удалён."
+                        },
+                        enabled = !artworkKeyChecking && steamGridDbApiKey.isNotBlank(),
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Удалить ключ") }
+                }
+                if (artworkKeyStatus.isNotBlank()) {
+                    Text(
+                        artworkKeyStatus,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (artworkKeyStatus.startsWith("Ключ проверен") || artworkKeyStatus == "Ключ удалён.")
+                            Color(0xFF287647) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 HorizontalDivider()
                 Spacer(Modifier.height(12.dp))

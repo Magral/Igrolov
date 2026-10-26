@@ -10,7 +10,14 @@ object SteamArtworkPresentation {
         "https://shared.fastly.steamstatic.com/store_item_assets/"
     )
 
-    fun isPortrait(url: String): Boolean = url.contains("/library_600x900", ignoreCase = true)
+    fun isPortrait(url: String): Boolean =
+        url.contains("/library_600x900", ignoreCase = true) ||
+            (url.contains("cdn2.steamgriddb.com", ignoreCase = true) && url.contains("/grid/", ignoreCase = true))
+
+    fun matchesAspect(url: String, portrait: Boolean): Boolean = isPortrait(url) == portrait
+
+    fun filterForAspect(urls: List<String>, portrait: Boolean): List<String> =
+        urls.filter { matchesAspect(it, portrait) }.distinct()
 
     fun cacheKey(appId: Int, portrait: Boolean): String =
         "${if (portrait) "portrait" else "landscape"}_$appId"
