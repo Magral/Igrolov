@@ -35,7 +35,7 @@ object SteamGridDbArtwork {
 
     /** Only take image links from page cards explicitly labelled with Steam's vertical 600x900 dimensions. */
     internal fun parsePortraitUrls(html: String): List<String> {
-        val cards = Regex("(?is)<div\\b(?=[^>]*\\bclass\\s*=\\s*[\"'][^\"']*\\basset\\b)[^>]*>.*?(?=<div\\b(?=[^>]*\\bclass\\s*=\\s*[\"'][^\"']*\\basset\\b)|$)")
+        val cards = Regex("(?is)<(?:div|section|article|li)\\b(?=[^>]*\\bclass\\s*=\\s*[\"'][^\"']*\\b(?:asset|grid-card|grid-item)\\b)[^>]*>.*?(?=<(?:div|section|article|li)\\b(?=[^>]*\\bclass\\s*=\\s*[\"'][^\"']*\\b(?:asset|grid-card|grid-item)\\b)|$)")
             .findAll(html)
             .map { it.value }
         val links = Regex("(?i)(?:href|src|data-src|data-original)\\s*=\\s*[\"'](https://cdn2\\.steamgriddb\\.com/grid/[a-f0-9]+\\.(?:png|jpe?g|webp))[\"']")
@@ -49,8 +49,8 @@ object SteamGridDbArtwork {
         val fromPage = if (fromCards.isNotEmpty()) emptyList() else {
             val urls = links.findAll(html).toList()
             urls.filter { candidate ->
-                val start = (candidate.range.first - 900).coerceAtLeast(0)
-                val end = (candidate.range.last + 901).coerceAtMost(html.length)
+                val start = (candidate.range.first - 300).coerceAtLeast(0)
+                val end = (candidate.range.last + 301).coerceAtMost(html.length)
                 dimensions.containsMatchIn(html.substring(start, end))
             }.map { it.groupValues[1] }
         }
