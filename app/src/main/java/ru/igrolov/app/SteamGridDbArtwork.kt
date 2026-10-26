@@ -41,6 +41,7 @@ object SteamGridDbArtwork {
             .map { it.trim() }
             .filter(::isSafeGridUrl)
             .distinct()
+            .toList()
     }
 
     private fun isSafeGridUrl(value: String): Boolean = runCatching {
