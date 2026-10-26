@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-26T16:37:35.371Z
+- Обновлено (UTC): 2026-10-26T16:38:27.733Z
 - Ветка: `main`.
-- HEAD: [`a2bda93cb7b2`](https://github.com/Magral/Igrolov/commit/a2bda93cb7b2010f4b27cf30a0e0d87688f0666b).
+- HEAD: [`a1a58aa09111`](https://github.com/Magral/Igrolov/commit/a1a58aa09111628ed9388f6cfb662c073dd6ba7d).
 - Последний опубликованный стабильный GitHub Release: [v1.6.0](https://github.com/Magral/Igrolov/releases/tag/v1.6.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [a1a58aa](https://github.com/Magral/Igrolov/commit/a1a58aa09111628ed9388f6cfb662c073dd6ba7d) — release: Игролов 1.6.1 — проверять DLC без пакетного запроса
 - [a2bda93](https://github.com/Magral/Igrolov/commit/a2bda93cb7b2010f4b27cf30a0e0d87688f0666b) — release: Игролов 1.6.1 — учитывать только игры при проверке обложек
 - [3d18e3e](https://github.com/Magral/Igrolov/commit/3d18e3ecea054a6f38bdd70c3a1a3eac87166f86) — release: Игролов 1.6.1 — миниатюры во всех разделах
 - [d7c74fc](https://github.com/Magral/Igrolov/commit/d7c74fc2c231ba697381a7bc0099b74e92a8ca80) — fix: restore vertical covers across Steam bestsellers
-- [493a40e](https://github.com/Magral/Igrolov/commit/493a40e1be8df1404453664d3b66b0f602f338f9) — docs: close release 1.6.0 checklist
 <!-- AUTO_CONTEXT_END -->
