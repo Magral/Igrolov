@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-26T03:21:50.070Z
+- Обновлено (UTC): 2026-10-26T03:27:56.070Z
 - Ветка: `main`.
-- HEAD: [`ba336bf17257`](https://github.com/Magral/Igrolov/commit/ba336bf17257d2efcdf63ce6a2a7a7e4187b6dcd).
+- HEAD: [`e3a1983d00ad`](https://github.com/Magral/Igrolov/commit/e3a1983d00adeeb46a2dd9495f91ab7765837f87).
 - Последний опубликованный стабильный GitHub Release: [v1.5.3](https://github.com/Magral/Igrolov/releases/tag/v1.5.3); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [e3a1983](https://github.com/Magral/Igrolov/commit/e3a1983d00adeeb46a2dd9495f91ab7765837f87) — test: scroll nested wishlist actions into view
 - [ba336bf](https://github.com/Magral/Igrolov/commit/ba336bf17257d2efcdf63ce6a2a7a7e4187b6dcd) — test: scroll wish list card into view
 - [22723e2](https://github.com/Magral/Igrolov/commit/22723e238df26d7e0e560ea2ceee10d9903f9b0f) — fix: scroll virtualized wishlist cards in UI test
 - [6938ab2](https://github.com/Magral/Igrolov/commit/6938ab20908f0b4b09cca803bfd7b98fc3eddd0f) — feat: optimize Steam lists and editions
-- [a6dcbc3](https://github.com/Magral/Igrolov/commit/a6dcbc398062eb7b236f851b399162b3254791b6) — release: Игролов 1.5.3 — проверить подпись добавления издания
 <!-- AUTO_CONTEXT_END -->
