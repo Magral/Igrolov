@@ -69,14 +69,15 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-26T17:58:11.725Z
+- Обновлено (UTC): 2026-10-26T17:58:36.531Z
 - Ветка: `main`.
-- HEAD: [`7785d0fccfc4`](https://github.com/Magral/Igrolov/commit/7785d0fccfc48589e16c9e64290c30a43a78e103).
+- HEAD: [`5f3a44e91925`](https://github.com/Magral/Igrolov/commit/5f3a44e9192594a984e3aaac6a8a0db69f6c86df).
 - Последний опубликованный стабильный GitHub Release: [v1.6.1](https://github.com/Magral/Igrolov/releases/tag/v1.6.1); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [5f3a44e](https://github.com/Magral/Igrolov/commit/5f3a44e9192594a984e3aaac6a8a0db69f6c86df) — release: Игролов 1.6.2 — исправление загрузки обложек в Android
+- [9631544](https://github.com/Magral/Igrolov/commit/963154426ea9a28468683964bddfc95bedd0d3d1) — docs: describe artwork loading fixes in 1.6.2
+- [09845ee](https://github.com/Magral/Igrolov/commit/09845ee1c950168700be467ddb5b6a405492fb78) — chore: prepare version 1.6.2
+- [d9123a6](https://github.com/Magral/Igrolov/commit/d9123a62464dca8ec8cf4e60f7d30b3793b75b43) — test: require decoded Android artwork after broken cache URL
 - [7785d0f](https://github.com/Magral/Igrolov/commit/7785d0fccfc48589e16c9e64290c30a43a78e103) — fix: load composed artwork immediately and separate Steam from community fallback
-- [93bf533](https://github.com/Magral/Igrolov/commit/93bf5333d30f31afb49d95a2c83b2f9640305bf1) — docs: close Igrolov 1.6.1 release checklist
-- [a1a58aa](https://github.com/Magral/Igrolov/commit/a1a58aa09111628ed9388f6cfb662c073dd6ba7d) — release: Игролов 1.6.1 — проверять DLC без пакетного запроса
-- [a2bda93](https://github.com/Magral/Igrolov/commit/a2bda93cb7b2010f4b27cf30a0e0d87688f0666b) — release: Игролов 1.6.1 — учитывать только игры при проверке обложек
 <!-- AUTO_CONTEXT_END -->
