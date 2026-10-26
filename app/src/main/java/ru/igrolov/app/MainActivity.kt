@@ -691,7 +691,6 @@ class MainActivity : ComponentActivity() {
                 urls += SteamArtworkPresentation.libraryCapsuleUrls(raw, appId)
             }
             // Community posters are read from the public game page, without a key or SGDB API.
-            urls += SteamGridDbArtwork.fetchPortraitUrls(this, appId)
             urls += SteamArtworkPresentation.directFallbackUrls(appId, portrait = true)
         } else {
             urls += SteamArtworkPresentation.directFallbackUrls(appId, portrait = false)
@@ -729,7 +728,10 @@ class MainActivity : ComponentActivity() {
         }
         var candidates by remember(url, appId) { mutableStateOf(initialCandidates) }
         var candidateIndex by remember(url, appId) { mutableIntStateOf(0) }
-        var shouldLoad by remember(url, appId) { mutableStateOf(false) }
+        var shouldLoad by remember(url, appId) { mutableStateOf(true) }
+        var imageLoaded by remember(url, appId) { mutableStateOf(false) }
+        var communityLoaded by remember(url, appId) { mutableStateOf(false) }
+        var retryCount by remember(url, appId) { mutableIntStateOf(0) }
         var imageUrl by remember(url, appId) { mutableStateOf(initialCandidates.firstOrNull().orEmpty()) }
         var fallbackCandidatesLoaded by remember(url, appId) { mutableStateOf(false) }
         val displayedPortrait = remember(imageUrl) { SteamArtworkPresentation.isPortrait(imageUrl) }
@@ -739,22 +741,6 @@ class MainActivity : ComponentActivity() {
 
         Box(
             modifier
-                .onGloballyPositioned { coordinates ->
-                    if (!shouldLoad && coordinates.isAttached) {
-                        val root = view.rootView
-                        if (root.width > 0 && root.height > 0) {
-                            val position = coordinates.positionInWindow()
-                            val size = coordinates.size
-                            val prefetch = 220f * context.resources.displayMetrics.density
-                            if (ArtworkViewport.isNearViewport(
-                                    left = position.x, top = position.y,
-                                    width = size.width.toFloat(), height = size.height.toFloat(),
-                                    viewportWidth = root.width.toFloat(), viewportHeight = root.height.toFloat(),
-                                    margin = prefetch
-                                )) shouldLoad = true
-                        }
-                    }
-                }
                 .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
@@ -775,14 +761,16 @@ class MainActivity : ComponentActivity() {
                             .build())
                         .crossfade(true)
                         .build(),
-                    contentDescription = null,
+                    contentDescription = if (imageLoaded) "Обложка Steam $appId загружена" else "Обложка Steam $appId загружается",
                     contentScale = if (displayedPortrait) androidx.compose.ui.layout.ContentScale.Crop
                         else androidx.compose.ui.layout.ContentScale.Fit,
                     modifier = modifier,
                     onSuccess = {
+                        imageLoaded = true
                         displayedCacheKey?.let { artworkPrefs.edit().putString(it, imageUrl).apply() }
                     },
                     onError = {
+                        imageLoaded = false
                         displayedCacheKey?.let { artworkPrefs.edit().remove(it).apply() }
                         val nextIndex = candidateIndex + 1
                         if (nextIndex < candidates.size) {
@@ -801,6 +789,36 @@ class MainActivity : ComponentActivity() {
                                     candidateIndex = merged.indexOf(nextUrl)
                                     imageUrl = nextUrl
                                 }
+                            }
+                        } else if (!communityLoaded && requestedPortrait && appId != null && appId > 0) {
+                            communityLoaded = true
+                            scope.launch {
+                                val additional = withContext(Dispatchers.IO) {
+                                    SteamGridDbArtwork.fetchPortraitUrls(this@MainActivity, appId)
+                                }
+                                val merged = (candidates + additional).distinct()
+                                val nextUrl = merged.drop(candidateIndex + 1).firstOrNull()
+                                candidates = merged
+                                if (nextUrl != null) {
+                                    candidateIndex = merged.indexOf(nextUrl)
+                                    imageUrl = nextUrl
+                                } else if (retryCount < 2) {
+                                    retryCount++
+                                    kotlinx.coroutines.delay(2000L * retryCount)
+                                    fallbackCandidatesLoaded = false
+                                    communityLoaded = false
+                                    candidateIndex = 0
+                                    imageUrl = candidates.first()
+                                }
+                            }
+                        } else if (retryCount < 2) {
+                            retryCount++
+                            scope.launch {
+                                kotlinx.coroutines.delay(2000L * retryCount)
+                                fallbackCandidatesLoaded = false
+                                communityLoaded = false
+                                candidateIndex = 0
+                                imageUrl = candidates.first()
                             }
                         }
                     }
