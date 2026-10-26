@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-26T18:13:16.304Z
+- Обновлено (UTC): 2026-10-26T18:13:51.793Z
 - Ветка: `main`.
-- HEAD: [`2d1c257d19ff`](https://github.com/Magral/Igrolov/commit/2d1c257d19ff36e3e5c7bdfe382b9947eab4196a).
+- HEAD: [`6ae70f7cecc0`](https://github.com/Magral/Igrolov/commit/6ae70f7cecc09ed9a8449ef177b2c2fa088f0766).
 - Последний опубликованный стабильный GitHub Release: [v1.6.1](https://github.com/Magral/Igrolov/releases/tag/v1.6.1); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [6ae70f7](https://github.com/Magral/Igrolov/commit/6ae70f7cecc09ed9a8449ef177b2c2fa088f0766) — release: Игролов 1.6.2 — проверять результат декодирования независимо от обрезки accessibility
 - [2d1c257](https://github.com/Magral/Igrolov/commit/2d1c257d19ff36e3e5c7bdfe382b9947eab4196a) — release: Игролов 1.6.2 — диагностировать ошибки декодирования обложек
 - [1710739](https://github.com/Magral/Igrolov/commit/171073957c4308d81e29a406e8e78d7c59b9d926) — release: Игролов 1.6.2 — проверять декодирование четырёх реальных обложек Android
 - [d86110a](https://github.com/Magral/Igrolov/commit/d86110aa88d086961c4e1110f72ff92ad2e7ebc3) — release: Игролов 1.6.2 — проверенная загрузка миниатюр на Android
-- [5f3a44e](https://github.com/Magral/Igrolov/commit/5f3a44e9192594a984e3aaac6a8a0db69f6c86df) — release: Игролов 1.6.2 — исправление загрузки обложек в Android
 <!-- AUTO_CONTEXT_END -->
