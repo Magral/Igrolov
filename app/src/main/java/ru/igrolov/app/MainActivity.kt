@@ -730,6 +730,7 @@ class MainActivity : ComponentActivity() {
         var candidateIndex by remember(url, appId) { mutableIntStateOf(0) }
         var shouldLoad by remember(url, appId) { mutableStateOf(true) }
         var imageLoaded by remember(url, appId) { mutableStateOf(false) }
+        var imageFailed by remember(url, appId) { mutableStateOf(false) }
         var communityLoaded by remember(url, appId) { mutableStateOf(false) }
         var retryCount by remember(url, appId) { mutableIntStateOf(0) }
         var imageUrl by remember(url, appId) { mutableStateOf(initialCandidates.firstOrNull().orEmpty()) }
@@ -745,6 +746,15 @@ class MainActivity : ComponentActivity() {
             contentAlignment = Alignment.Center
         ) {
             Text("🎮", style = MaterialTheme.typography.bodySmall)
+            if (imageFailed && !imageLoaded) {
+                TextButton(onClick = {
+                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Igrolov artwork", SteamArtworkDiagnostics.report()))
+                    android.widget.Toast.makeText(context, "Отчёт об обложках скопирован. Пришлите его в чат.", android.widget.Toast.LENGTH_LONG).show()
+                }, modifier = Modifier.align(Alignment.BottomCenter)) {
+                    Text("Отчёт", style = MaterialTheme.typography.labelSmall)
+                }
+            }
             if (shouldLoad && imageUrl.isNotBlank()) {
                 val imageReferer = if (imageUrl.contains("steamgriddb.com", ignoreCase = true)) {
                     "https://www.steamgriddb.com/"
@@ -767,11 +777,15 @@ class MainActivity : ComponentActivity() {
                     modifier = modifier,
                     onSuccess = {
                         android.util.Log.i("SteamArtwork", "decoded app=$appId url=$imageUrl")
+                        SteamArtworkDiagnostics.record(appId, imageUrl)
+                        imageFailed = false
                         imageLoaded = true
                         displayedCacheKey?.let { artworkPrefs.edit().putString(it, imageUrl).apply() }
                     },
                     onError = {
                         android.util.Log.w("SteamArtwork", "failed app=$appId url=$imageUrl", it.result.throwable)
+                        SteamArtworkDiagnostics.record(appId, imageUrl, it.result.throwable)
+                        imageFailed = true
                         imageLoaded = false
                         displayedCacheKey?.let { artworkPrefs.edit().remove(it).apply() }
                         val nextIndex = candidateIndex + 1
@@ -1002,7 +1016,7 @@ class MainActivity : ComponentActivity() {
                         color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SteamArtwork("https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/library_600x900.jpg",
+                    SteamArtwork("https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${game.appId}/library_600x900.jpg",
                         Modifier.size(76.dp, 114.dp), appId = game.appId)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         SteamReviewBadge(reviewSummary)
@@ -2153,7 +2167,7 @@ class MainActivity : ComponentActivity() {
                         Row(Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically) {
                             if (item.steamAppId > 0) SteamArtwork(
-                                "https://cdn.akamai.steamstatic.com/steam/apps/${item.steamAppId}/library_600x900.jpg",
+                                "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${item.steamAppId}/library_600x900.jpg",
                                 Modifier.size(48.dp, 72.dp), appId = item.steamAppId
                             )
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -2281,7 +2295,7 @@ class MainActivity : ComponentActivity() {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically) {
                             if (watchAppId > 0) SteamArtwork(
-                                "https://cdn.akamai.steamstatic.com/steam/apps/${watchAppId}/library_600x900.jpg",
+                                "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${watchAppId}/library_600x900.jpg",
                                 Modifier.size(48.dp, 72.dp), appId = watchAppId
                             )
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -2544,7 +2558,7 @@ class MainActivity : ComponentActivity() {
                             Row(Modifier.fillMaxWidth().padding(6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 verticalAlignment = Alignment.CenterVertically) {
                                 if (offerAppId > 0) SteamArtwork(
-                                    "https://cdn.akamai.steamstatic.com/steam/apps/${offerAppId}/library_600x900.jpg",
+                                    "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${offerAppId}/library_600x900.jpg",
                                     Modifier.size(48.dp, 72.dp), appId = offerAppId
                                 )
                                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -2686,7 +2700,7 @@ class MainActivity : ComponentActivity() {
                         val initial = SteamTopSeller(
                             appId = game.appId,
                             title = game.title,
-                            headerImageUrl = "https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/header.jpg"
+                            headerImageUrl = "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${game.appId}/header.jpg"
                         )
                         leaderDetailsGame = initial
                         leaderDetailsLoading = true
@@ -3393,7 +3407,7 @@ class MainActivity : ComponentActivity() {
                         }
                         val prices = cachedPrices(game)
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            SteamArtwork("https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/library_600x900.jpg",
+                            SteamArtwork("https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${game.appId}/library_600x900.jpg",
                                 Modifier.size(76.dp, 114.dp), appId = game.appId)
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                 SteamGenreLine(game.genres)
