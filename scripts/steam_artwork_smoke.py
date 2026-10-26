@@ -165,21 +165,18 @@ def current_themed_sale_games(limit: int = 100) -> list[tuple[int, str]]:
 
 def actual_game_ids(app_ids: list[int]) -> set[int]:
     """Match the app's Steam enrichment filter: display games, never DLC or free apps."""
-    result: set[int] = set()
-    for offset in range(0, len(app_ids), 50):
-        ids = app_ids[offset:offset + 50]
-        joined_ids = ",".join(str(app_id) for app_id in ids)
-        payload = json.loads(get(f"{BASE}/api/appdetails?appids={joined_ids}&cc=us&l=english").decode("utf-8", "replace"))
-        for app_id in ids:
-            entry = payload.get(str(app_id), {})
-            data = entry.get("data") if entry.get("success") else None
-            # Keep unknown apps conservatively: the Android app can display them with unknown RU status.
-            if not isinstance(data, dict):
-                result.add(app_id)
-                continue
-            if data.get("type") == "game" and not data.get("is_free", False):
-                result.add(app_id)
-    return result
+    def inspect(app_id: int) -> tuple[int, bool]:
+        url = f"{BASE}/api/appdetails?appids={app_id}&cc=us&l=english"
+        payload = json.loads(get(url).decode("utf-8", "replace"))
+        entry = payload.get(str(app_id), {})
+        data = entry.get("data") if entry.get("success") else None
+        # Keep unknown apps conservatively: the Android app can display them with unknown RU status.
+        if not isinstance(data, dict):
+            return app_id, True
+        return app_id, data.get("type") == "game" and not data.get("is_free", False)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+        return {app_id for app_id, is_game in pool.map(inspect, app_ids) if is_game}
 
 
 def store_browse_covers(app_ids: list[int]) -> dict[int, list[str]]:
