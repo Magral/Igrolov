@@ -62,6 +62,9 @@ class SteamArtworkPresentationTest {
             urls.first()
         )
         assertTrue(urls.all { it.contains("library_600x900") })
+        // Every resolved Steam capsule URL must pass the same portrait filter the cards use.
+        assertTrue(urls.all(SteamArtworkPresentation::isPortrait))
+        assertEquals(urls, SteamArtworkPresentation.filterForAspect(urls, portrait = true))
     }
 
     @Test fun ignoresAssetsForOtherAppsOrWithoutPortraitCovers() {
