@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-26T05:31:55.583Z
+- Обновлено (UTC): 2026-10-26T10:38:25.015Z
 - Ветка: `main`.
-- HEAD: [`18cbdd11b19b`](https://github.com/Magral/Igrolov/commit/18cbdd11b19bf4f555cdf19ff69a831c735d11b9).
-- Последний опубликованный стабильный GitHub Release: [v1.5.6](https://github.com/Magral/Igrolov/releases/tag/v1.5.6); APK-файлы: есть вложение APK.
+- HEAD: [`72e57f431a92`](https://github.com/Magral/Igrolov/commit/72e57f431a9233f48942c46287d56138316e8652).
+- Последний опубликованный стабильный GitHub Release: [v1.5.7](https://github.com/Magral/Igrolov/releases/tag/v1.5.7); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [72e57f4](https://github.com/Magral/Igrolov/commit/72e57f431a9233f48942c46287d56138316e8652) — fix: clarify Steam RU availability and filter reset
 - [18cbdd1](https://github.com/Magral/Igrolov/commit/18cbdd11b19bf4f555cdf19ff69a831c735d11b9) — release: Игролов 1.5.7 — очистить UI smoke script
 - [6f20a26](https://github.com/Magral/Igrolov/commit/6f20a2601ee2572c27695942dc9ca91da6c0d928) — release: Игролов 1.5.7 — поправить тест формата обложек
 - [3001625](https://github.com/Magral/Igrolov/commit/3001625803625d00ebbfe286e8c6c7c30dff95b3) — release: Игролов 1.5.7 — исправить список обложек
-- [7465660](https://github.com/Magral/Igrolov/commit/7465660259219f156933e443444b97f790bd2f54) — release: Игролов 1.5.7 — вертикальные обложки без API
 <!-- AUTO_CONTEXT_END -->
