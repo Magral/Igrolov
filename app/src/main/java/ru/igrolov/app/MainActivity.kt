@@ -521,8 +521,9 @@ class MainActivity : ComponentActivity() {
                 }
             editor.apply()
         }
-        return games.mapNotNull { game -> cached[game.appId] ?: refreshed[game.appId] }
-            .filter { it.isGame && !it.isFree }
+        return games.mapNotNull { game ->
+            (cached[game.appId] ?: refreshed[game.appId])?.copy(saleEventName = game.saleEventName)
+        }.filter { it.isGame && !it.isFree }
     }
 
     /** Reviews are fetched only for visible cards, except when review filters need complete data. */
@@ -579,6 +580,61 @@ class MainActivity : ComponentActivity() {
         callback: (SteamRankingPage, String, Boolean) -> Unit
     ) {
         loadSteamRankingPage(start, 50, "TopSellers", "", "us", "english", callback)
+    }
+
+    private fun steamSalePageGet(url: String): String {
+        val connection = URL(url).openConnection() as HttpURLConnection
+        connection.connectTimeout = 12000
+        connection.readTimeout = 20000
+        connection.setRequestProperty("Accept", "text/html,application/xhtml+xml")
+        connection.setRequestProperty("User-Agent", "Igrolov Android")
+        connection.setRequestProperty("Referer", "https://store.steampowered.com/")
+        try {
+            if (connection.responseCode !in 200..299) throw java.io.IOException("Steam sale HTTP ${connection.responseCode}")
+            return connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+        } finally { connection.disconnect() }
+    }
+
+    /** Steam's current spotlight feed supplies active themed sale pages; game prices are rechecked for RU. */
+    private fun loadThemedSaleGames(callback: (List<SteamTopSeller>, String, Boolean) -> Unit) {
+        Thread {
+            val loaded = linkedMapOf<Int, SteamTopSeller>()
+            var error = ""
+            try {
+                val featured = steamGet("https://store.steampowered.com/api/featuredcategories/?cc=ru&l=russian")
+                var events = SteamThemedSales.parseFeaturedCategories(featured)
+                if (events.isEmpty()) {
+                    val fallback = steamGet("https://store.steampowered.com/api/discounts_and_events_data/?cc=ru&l=russian")
+                    events = SteamThemedSales.parseDiscountsAndEvents(fallback)
+                }
+                if (events.isEmpty()) {
+                    error = "Steam сейчас не показывает активные тематические распродажи."
+                } else {
+                    val eventGames = events.take(5).flatMap { event ->
+                        runCatching {
+                            val separator = if (event.url.contains("?")) "&" else "?"
+                            val localizedUrl = "${event.url}${separator}cc=ru&l=russian"
+                            SteamThemedSales.parseSalePageGames(steamSalePageGet(localizedUrl), event.name)
+                        }.getOrDefault(emptyList())
+                    }.distinctBy { it.appId }.take(100)
+                    eventGames.chunked(10).forEach { batch ->
+                        val enriched = enrichSteamGames(batch)
+                        enriched.filter { !it.isFree && it.discountPercent > 0 && it.saleEventName.isNotBlank() }
+                            .forEach { loaded.putIfAbsent(it.appId, it) }
+                        val snapshot = loaded.values.toList()
+                        runOnUiThread { callback(snapshot, "", false) }
+                    }
+                    if (eventGames.isEmpty()) {
+                        error = "Steam нашёл тематическую распродажу, но не вернул список игр."
+                    } else if (loaded.isEmpty()) {
+                        error = "В найденных распродажах нет игр со скидкой Steam RU."
+                    }
+                }
+            } catch (e: Exception) {
+                error = e.message ?: "Не удалось загрузить тематические распродажи Steam."
+            }
+            runOnUiThread { callback(loaded.values.toList(), error, true) }
+        }.start()
     }
 
     private fun loadSteamRankingPage(
@@ -908,6 +964,10 @@ class MainActivity : ComponentActivity() {
                     colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF111820))) {
                     Text(game.title, Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                         maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+                if (game.saleEventName.isNotBlank()) {
+                    Text("Фест Steam · ${game.saleEventName}", style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     SteamArtwork("https://cdn.akamai.steamstatic.com/steam/apps/${game.appId}/library_600x900.jpg",
@@ -1377,6 +1437,8 @@ class MainActivity : ComponentActivity() {
         var topGames by remember { mutableStateOf<List<SteamTopSeller>>(emptyList()) }
         var newReleaseGames by remember { mutableStateOf<List<SteamTopSeller>>(emptyList()) }
         var discountedExtraGames by remember { mutableStateOf<List<SteamTopSeller>>(emptyList()) }
+        var themedSaleGames by remember { mutableStateOf<List<SteamTopSeller>>(emptyList()) }
+        var themedSalesInitialLoaded by remember { mutableStateOf(false) }
         var newReleaseNextStart by remember { mutableStateOf(0) }
         var newReleaseHasMore by remember { mutableStateOf(true) }
         var newReleaseInitialLoaded by remember { mutableStateOf(false) }
@@ -1431,6 +1493,16 @@ class MainActivity : ComponentActivity() {
                         if (isFinal) newReleaseInitialLoaded = true
                     }
                 }
+                SteamLeaderSection.THEMED_SALES -> {
+                    themedSaleGames = emptyList()
+                    themedSalesInitialLoaded = false
+                    loadThemedSaleGames { games, error, isFinal ->
+                        themedSaleGames = games
+                        topError = error
+                        topBusy = !isFinal
+                        if (isFinal) themedSalesInitialLoaded = true
+                    }
+                }
                 SteamLeaderSection.TOP_SELLERS, SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> {
                     discountedExtraGames = emptyList()
                     discountedNextStart = 100
@@ -1473,13 +1545,14 @@ class MainActivity : ComponentActivity() {
                         loadMoreBusy = !isFinal
                     }
                 }
-                SteamLeaderSection.TOP_SELLERS -> loadMoreBusy = false
+                SteamLeaderSection.TOP_SELLERS, SteamLeaderSection.THEMED_SALES -> loadMoreBusy = false
             }
         }
         LaunchedEffect(activeTab, settingsOpen, leaderSection, topBusy) {
             if (activeTab == 4 && !settingsOpen && !topBusy) {
                 val needsLoad = when (leaderSection) {
                     SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseGames.isEmpty()
+                    SteamLeaderSection.THEMED_SALES -> themedSaleGames.isEmpty()
                     SteamLeaderSection.TOP_SELLERS, SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> topGames.isEmpty()
                 }
                 if (needsLoad) refreshTop()
@@ -2610,11 +2683,12 @@ class MainActivity : ComponentActivity() {
                             label = { Text(section.label, maxLines = 1, style = MaterialTheme.typography.labelSmall) })
                     }
                 }
-                val sectionGames = remember(leaderSection, newReleaseGames, topGames, discountedExtraGames) {
+                val sectionGames = remember(leaderSection, newReleaseGames, topGames, discountedExtraGames, themedSaleGames) {
                     when (leaderSection) {
                         SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseGames
                         SteamLeaderSection.TOP_SELLERS -> topGames
                         SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> topGames + discountedExtraGames
+                        SteamLeaderSection.THEMED_SALES -> themedSaleGames
                     }
                 }
                 val reviewFiltersActive = (leaderFilterInput.minimumReviewText.toIntOrNull() ?: 0) > 0 ||
@@ -2636,6 +2710,7 @@ class MainActivity : ComponentActivity() {
                     SteamLeaderSection.TOP_SELLERS -> "Загружено: ${sectionGames.size} из 100"
                     SteamLeaderSection.POPULAR_NEW_RELEASES -> "Новинок: ${sectionGames.size}"
                     SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> "Со скидкой: ${SteamLeaderSection.DISCOUNTED_TOP_SELLERS.filter(sectionGames).size}"
+                    SteamLeaderSection.THEMED_SALES -> "Игры в текущих фестах: ${sectionGames.size}"
                 }
                 val availableLeaderGenres = remember(sectionGames) {
                     sectionGames.asSequence().flatMap { it.genres.asSequence() }.distinct().sorted().toList()
@@ -2672,11 +2747,12 @@ class MainActivity : ComponentActivity() {
                 val leaderHasMore = when (leaderSection) {
                     SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseHasMore
                     SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedHasMore
-                    SteamLeaderSection.TOP_SELLERS -> false
+                    SteamLeaderSection.THEMED_SALES, SteamLeaderSection.TOP_SELLERS -> false
                 }
                 val leaderInitialLoaded = when (leaderSection) {
                     SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseInitialLoaded
                     SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedInitialLoaded
+                    SteamLeaderSection.THEMED_SALES -> themedSalesInitialLoaded
                     SteamLeaderSection.TOP_SELLERS -> false
                 }
                 LaunchedEffect(activeTab, settingsOpen, leaderSection, leaderFilterInput, topAvailabilityFilter,
@@ -2701,9 +2777,13 @@ class MainActivity : ComponentActivity() {
                 }
                 if (!topBusy && topError.isBlank() && visibleTopGames.isEmpty()) {
                     Text(
-                        if (leaderSection == SteamLeaderSection.DISCOUNTED_TOP_SELLERS)
-                            "В загруженном топе нет игр с подтверждённой скидкой Steam RU."
-                        else "Подходящих игр пока нет.",
+                        when (leaderSection) {
+                            SteamLeaderSection.DISCOUNTED_TOP_SELLERS ->
+                                "В загруженном топе нет игр с подтверждённой скидкой Steam RU."
+                            SteamLeaderSection.THEMED_SALES ->
+                                "В текущих тематических распродажах нет подходящих игр со скидкой в Steam RU."
+                            else -> "Подходящих игр пока нет."
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -2711,7 +2791,7 @@ class MainActivity : ComponentActivity() {
                 val sectionHasMore = when (leaderSection) {
                     SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseHasMore
                     SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedHasMore
-                    SteamLeaderSection.TOP_SELLERS -> false
+                    SteamLeaderSection.THEMED_SALES, SteamLeaderSection.TOP_SELLERS -> false
                 }
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth().heightIn(max = 560.dp),
