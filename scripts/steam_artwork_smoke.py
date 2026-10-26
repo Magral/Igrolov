@@ -163,6 +163,25 @@ def current_themed_sale_games(limit: int = 100) -> list[tuple[int, str]]:
     return list(games.items())
 
 
+def actual_game_ids(app_ids: list[int]) -> set[int]:
+    """Match the app's Steam enrichment filter: display games, never DLC or free apps."""
+    result: set[int] = set()
+    for offset in range(0, len(app_ids), 50):
+        ids = app_ids[offset:offset + 50]
+        joined_ids = ",".join(str(app_id) for app_id in ids)
+        payload = json.loads(get(f"{BASE}/api/appdetails?appids={joined_ids}&cc=us&l=english").decode("utf-8", "replace"))
+        for app_id in ids:
+            entry = payload.get(str(app_id), {})
+            data = entry.get("data") if entry.get("success") else None
+            # Keep unknown apps conservatively: the Android app can display them with unknown RU status.
+            if not isinstance(data, dict):
+                result.add(app_id)
+                continue
+            if data.get("type") == "game" and not data.get("is_free", False):
+                result.add(app_id)
+    return result
+
+
 def store_browse_covers(app_ids: list[int]) -> dict[int, list[str]]:
     result: dict[int, list[str]] = {}
     for offset in range(0, len(app_ids), 50):
@@ -236,11 +255,15 @@ def main() -> int:
     }
     if len(sections["bestsellers"]) < 50:
         raise RuntimeError(f"Steam returned only {len(sections['bestsellers'])} top sellers; refusing an incomplete artwork check")
-    names: dict[int, str] = {}
-    for section, games in sections.items():
+    candidate_names: dict[int, str] = {}
+    for games in sections.values():
         for app_id, name in games:
-            names.setdefault(app_id, name)
-        print(f"Artwork coverage source '{section}': {len(games)} games")
+            candidate_names.setdefault(app_id, name)
+    eligible = actual_game_ids(list(candidate_names))
+    names = {app_id: name for app_id, name in candidate_names.items() if app_id in eligible}
+    for section, games in sections.items():
+        visible_ids = [app_id for app_id, _ in games if app_id in eligible]
+        print(f"Artwork coverage source '{section}': {len(visible_ids)} eligible game cards (DLC/free excluded)")
     top = list(names.items())
     app_ids = list(names)
     covers = store_browse_covers(app_ids)
