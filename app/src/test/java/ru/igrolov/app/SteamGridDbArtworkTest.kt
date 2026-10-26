@@ -29,4 +29,18 @@ class SteamGridDbArtworkTest {
             SteamGridDbArtwork.parsePortraitUrls(html)
         )
     }
+
+    @Test fun stillFindsVerticalCoversWhenPublicPageChangesCardClassAndUsesLazyImageSource() {
+        val html = """
+            <section class="grid-card"><span>600 × 900</span>
+              <img data-src="https://cdn2.steamgriddb.com/grid/abcdef0123456789abcdef0123456789.webp"></section>
+            <section class="grid-card"><span>920 × 430</span>
+              <img src="https://cdn2.steamgriddb.com/grid/0123456789abcdef0123456789abcdef.jpg"></section>
+        """.trimIndent()
+
+        assertEquals(
+            listOf("https://cdn2.steamgriddb.com/grid/abcdef0123456789abcdef0123456789.webp"),
+            SteamGridDbArtwork.parsePortraitUrls(html)
+        )
+    }
 }

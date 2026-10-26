@@ -61,6 +61,8 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalFocusManager
 import coil3.compose.AsyncImage
+import coil3.network.NetworkHeaders
+import coil3.network.httpHeaders
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 
@@ -601,18 +603,8 @@ class MainActivity : ComponentActivity() {
 
     private fun steamArtworkFallbackUrls(appId: Int, portrait: Boolean): List<String> {
         val urls = SteamArtworkPresentation.directFallbackUrls(appId, portrait).toMutableList()
-        if (portrait) runCatching {
-            val request = JSONObject()
-                .put("ids", JSONArray().put(JSONObject().put("appid", appId)))
-                .put("context", JSONObject().put("language", "english").put("country_code", "US"))
-                .put("data_request", JSONObject().put("include_assets", true))
-            val encoded = URLEncoder.encode(request.toString(), "UTF-8")
-            val response = steamArtworkJson(
-                "https://api.steampowered.com/IStoreBrowseService/GetItems/v1/?input_json=$encoded"
-            )
-            urls += SteamArtworkPresentation.libraryCapsuleUrls(response, appId)
-        }
         if (portrait) {
+            // Community portrait covers come from the public page; no key or SGDB API is used.
             urls += SteamGridDbArtwork.fetchPortraitUrls(this, appId)
         } else {
             runCatching {
@@ -680,9 +672,19 @@ class MainActivity : ComponentActivity() {
         ) {
             Text("🎮", style = MaterialTheme.typography.bodySmall)
             if (shouldLoad && imageUrl.isNotBlank()) {
+                val imageReferer = if (imageUrl.contains("steamgriddb.com", ignoreCase = true)) {
+                    "https://www.steamgriddb.com/"
+                } else {
+                    "https://store.steampowered.com/"
+                }
                 AsyncImage(
                     model = ImageRequest.Builder(context)
                         .data(imageUrl)
+                        .httpHeaders(NetworkHeaders.Builder()
+                            .set("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124.0 Mobile Safari/537.36 Igrolov/1.5.7")
+                            .set("Referer", imageReferer)
+                            .set("Accept", "image/avif,image/webp,image/*,*/*;q=0.8")
+                            .build())
                         .crossfade(true)
                         .build(),
                     contentDescription = null,
