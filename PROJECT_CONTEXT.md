@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-26T04:24:15.873Z
+- Обновлено (UTC): 2026-10-26T04:52:29.992Z
 - Ветка: `main`.
-- HEAD: [`bad6c20747df`](https://github.com/Magral/Igrolov/commit/bad6c20747dfebd674626d106e469721592be474).
-- Последний опубликованный стабильный GitHub Release: [v1.5.4](https://github.com/Magral/Igrolov/releases/tag/v1.5.4); APK-файлы: есть вложение APK.
+- HEAD: [`2a38de5373e4`](https://github.com/Magral/Igrolov/commit/2a38de5373e41f313323708079f8827c5c27da63).
+- Последний опубликованный стабильный GitHub Release: [v1.5.5](https://github.com/Magral/Igrolov/releases/tag/v1.5.5); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [2a38de5](https://github.com/Magral/Igrolov/commit/2a38de5373e41f313323708079f8827c5c27da63) — release: Игролов 1.5.6 — вертикальные обложки SteamGridDB
 - [bad6c20](https://github.com/Magral/Igrolov/commit/bad6c20747dfebd674626d106e469721592be474) — release: Игролов 1.5.5 — привязать UI тест к игре
 - [5e1215d](https://github.com/Magral/Igrolov/commit/5e1215daa5d5669ed399748756dc86376498a5bf) — release: Игролов 1.5.5 — повтор UI-проверок
 - [1bae92b](https://github.com/Magral/Igrolov/commit/1bae92ba48ec170f7ae63e8a5cf41f53ed34ada1) — release: Игролов 1.5.5 — обложки и мониторинг
-- [b0a9c59](https://github.com/Magral/Igrolov/commit/b0a9c597f1e0084abf268fca6b15853907b5beb0) — release: Игролов 1.5.4 — оптимизация списков и издания Steam
 <!-- AUTO_CONTEXT_END -->
