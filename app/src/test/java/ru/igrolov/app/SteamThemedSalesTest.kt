@@ -31,6 +31,17 @@ class SteamThemedSalesTest {
         assertEquals(listOf("Publisher Sale"), events.map { it.name })
     }
 
+    @Test fun themedSalesKeepOnlyDiscountedPaidGamesFromAnEvent() {
+        val games = listOf(
+            SteamTopSeller(1, "Sale game", discountPercent = 25, saleEventName = "Racing Fest"),
+            SteamTopSeller(2, "Full price", saleEventName = "Racing Fest"),
+            SteamTopSeller(3, "Free deal", isFree = true, discountPercent = 100, saleEventName = "Racing Fest"),
+            SteamTopSeller(4, "Unrelated deal", discountPercent = 30)
+        )
+
+        assertEquals(listOf(1), SteamLeaderSection.THEMED_SALES.filter(games).map { it.appId })
+    }
+
     @Test fun salePageGamesSupportRankingAndGenericSteamCards() {
         val html = """
             <a class="search_result_row" data-ds-appid="281990">
@@ -45,6 +56,7 @@ class SteamThemedSalesTest {
         val games = SteamThemedSales.parseSalePageGames(html, "Strategy Fest")
 
         assertEquals(listOf(281990, 440, 730), games.map { it.appId })
+        assertEquals(listOf("Stellaris", "Team Fortress 2", "Counter-Strike 2"), games.map { it.title })
         assertTrue(games.all { it.saleEventName == "Strategy Fest" })
     }
 }
