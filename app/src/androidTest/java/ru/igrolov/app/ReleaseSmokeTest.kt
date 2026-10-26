@@ -151,7 +151,8 @@ class ReleaseSmokeTest {
         compose.waitUntil(5000) {
             compose.onAllNodesWithText("Ищем минимальную цену", substring = true).fetchSemanticsNodes().isNotEmpty()
         }
-        assertTrue(device.hasObject(By.text("900 ₽")))
+        UiTestScroll.reveal(compose, "900 ₽")
+        compose.onNodeWithText("900 ₽").assertIsDisplayed()
         compose.onNodeWithText("Stellaris").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Поиск игры")) })
