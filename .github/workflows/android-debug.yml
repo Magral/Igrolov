@@ -102,6 +102,8 @@ jobs:
         run: python3 scripts/steam_reviews_smoke.py
       - name: Verify live Steam purchase editions
         run: python3 scripts/steam_edition_smoke.py
+      - name: Verify live Steam themed sale feed
+        run: python3 scripts/steam_themed_sales_smoke.py
 
   device:
     needs: build
