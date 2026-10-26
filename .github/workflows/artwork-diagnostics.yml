@@ -1,0 +1,38 @@
+name: Publish artwork diagnostic APK
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/artwork-diagnostics.yml']
+permissions:
+  actions: read
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download compiled diagnostic APK
+        uses: actions/download-artifact@v4
+        with:
+          name: Igrolov-v1.6.2-debug-372e724cd07ad87566d34314256b7e0fc7613cc5
+          run-id: 40380450006
+          github-token: ${{ github.token }}
+          path: downloaded
+      - name: Prepare APK
+        run: |
+          mkdir -p diagnostic
+          apk=$(find downloaded -type f -name '*.apk' -print -quit)
+          test -n "$apk"
+          cp "$apk" diagnostic/Igrolov-1.6.2-diagnostics.apk
+      - name: Publish diagnostic prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.6.2-diagnostics
+          target_commitish: 372e724cd07ad87566d34314256b7e0fc7613cc5
+          name: Игролов — диагностика обложек
+          prerelease: true
+          body: |
+            Диагностическая сборка для выяснения массовых ошибок загрузки обложек на устройстве пользователя.
+            Можно установить поверх 1.6.2. Откройте проблемный раздел, нажмите «Отчёт» на пустой миниатюре и пришлите скопированный текст в чат.
+            Сборка и unit-тесты прошли. Полный Android UI-прогон этой сборки не прошёл; это диагностический предварительный выпуск, исправление массовой проблемы ещё не подтверждено.
+          files: diagnostic/Igrolov-1.6.2-diagnostics.apk
+          fail_on_unmatched_files: true
