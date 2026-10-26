@@ -69,15 +69,15 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-26T17:58:45.728Z
+- Обновлено (UTC): 2026-10-26T17:59:41.927Z
 - Ветка: `main`.
-- HEAD: [`c876c9ed8502`](https://github.com/Magral/Igrolov/commit/c876c9ed8502b8b1f48857cd285ad19368558e79).
+- HEAD: [`d86110aa88d0`](https://github.com/Magral/Igrolov/commit/d86110aa88d086961c4e1110f72ff92ad2e7ebc3).
 - Последний опубликованный стабильный GitHub Release: [v1.6.1](https://github.com/Magral/Igrolov/releases/tag/v1.6.1); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [d86110a](https://github.com/Magral/Igrolov/commit/d86110aa88d086961c4e1110f72ff92ad2e7ebc3) — release: Игролов 1.6.2 — проверенная загрузка миниатюр на Android
 - [5f3a44e](https://github.com/Magral/Igrolov/commit/5f3a44e9192594a984e3aaac6a8a0db69f6c86df) — release: Игролов 1.6.2 — исправление загрузки обложек в Android
 - [9631544](https://github.com/Magral/Igrolov/commit/963154426ea9a28468683964bddfc95bedd0d3d1) — docs: describe artwork loading fixes in 1.6.2
 - [09845ee](https://github.com/Magral/Igrolov/commit/09845ee1c950168700be467ddb5b6a405492fb78) — chore: prepare version 1.6.2
 - [d9123a6](https://github.com/Magral/Igrolov/commit/d9123a62464dca8ec8cf4e60f7d30b3793b75b43) — test: require decoded Android artwork after broken cache URL
-- [7785d0f](https://github.com/Magral/Igrolov/commit/7785d0fccfc48589e16c9e64290c30a43a78e103) — fix: load composed artwork immediately and separate Steam from community fallback
 <!-- AUTO_CONTEXT_END -->
