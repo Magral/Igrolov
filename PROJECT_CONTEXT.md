@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-26T16:47:42.263Z
+- Обновлено (UTC): 2026-10-26T17:58:11.725Z
 - Ветка: `main`.
-- HEAD: [`93bf5333d30f`](https://github.com/Magral/Igrolov/commit/93bf5333d30f31afb49d95a2c83b2f9640305bf1).
+- HEAD: [`7785d0fccfc4`](https://github.com/Magral/Igrolov/commit/7785d0fccfc48589e16c9e64290c30a43a78e103).
 - Последний опубликованный стабильный GitHub Release: [v1.6.1](https://github.com/Magral/Igrolov/releases/tag/v1.6.1); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [7785d0f](https://github.com/Magral/Igrolov/commit/7785d0fccfc48589e16c9e64290c30a43a78e103) — fix: load composed artwork immediately and separate Steam from community fallback
 - [93bf533](https://github.com/Magral/Igrolov/commit/93bf5333d30f31afb49d95a2c83b2f9640305bf1) — docs: close Igrolov 1.6.1 release checklist
 - [a1a58aa](https://github.com/Magral/Igrolov/commit/a1a58aa09111628ed9388f6cfb662c073dd6ba7d) — release: Игролов 1.6.1 — проверять DLC без пакетного запроса
 - [a2bda93](https://github.com/Magral/Igrolov/commit/a2bda93cb7b2010f4b27cf30a0e0d87688f0666b) — release: Игролов 1.6.1 — учитывать только игры при проверке обложек
-- [3d18e3e](https://github.com/Magral/Igrolov/commit/3d18e3ecea054a6f38bdd70c3a1a3eac87166f86) — release: Игролов 1.6.1 — миниатюры во всех разделах
 <!-- AUTO_CONTEXT_END -->
