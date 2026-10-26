@@ -68,9 +68,7 @@ class ReleaseSmokeTest {
         compose.onNodeWithText("Ещё").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         compose.onNodeWithText("Сбросить").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        compose.waitForIdle()
-        assertTrue(device.hasObject(By.text("Steam RU · Все")))
-        compose.waitForIdle()
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Steam RU · Все")) })
         compose.onNodeWithText("Поиск").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         compose.onNodeWithText("Gift").performSemanticsAction(SemanticsActions.OnClick) { it() }
