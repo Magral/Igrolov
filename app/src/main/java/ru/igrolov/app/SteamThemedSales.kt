@@ -80,9 +80,8 @@ object SteamThemedSales {
         appIdAttribute.findAll(html).forEach { match ->
             val id = match.groupValues[1].toIntOrNull()?.takeIf { it > 0 } ?: return@forEach
             if (found.containsKey(id)) return@forEach
-            val start = (match.range.first - 500).coerceAtLeast(0)
-            val end = (match.range.last + 1800).coerceAtMost(html.length)
-            val snippet = html.substring(start, end)
+            val end = (match.range.last + 1200).coerceAtMost(html.length)
+            val snippet = html.substring(match.range.first, end)
             val nameHtml = htmlTitle.find(snippet)?.groupValues?.get(1)
                 ?: Regex("(?is)<img[^>]+alt=[\"']([^\"']+)[\"']").find(snippet)?.groupValues?.get(1)
                 ?: return@forEach
