@@ -284,7 +284,7 @@ object SteamTopSellerParser {
         )
     }
 
-    /** Store search visibility does not prove RU purchase availability; only positive regional price/free evidence does. */
+    /** Store search visibility does not prove RU purchase availability; a game without a regional price is unavailable. */
     fun applyRuDetails(game: SteamTopSeller, json: String, ruSearchContainsApp: Boolean?): SteamTopSeller {
         val root = runCatching { JSONObject(json) }.getOrNull() ?: return game
         val entry = root.optJSONObject(game.appId.toString()) ?: return game
@@ -308,7 +308,7 @@ object SteamTopSellerParser {
             steamPrice = if (isFree) "Бесплатно" else if (available) finalFormatted else "",
             steamInitialPrice = if (available) price?.optString("initial_formatted", "").orEmpty() else "",
             discountPercent = if (available && !isFree) price?.optInt("discount_percent", 0)?.coerceIn(0, 100) ?: 0 else 0,
-            availability = if (available) SteamRuAvailability.AVAILABLE else SteamRuAvailability.UNKNOWN,
+            availability = if (available) SteamRuAvailability.AVAILABLE else SteamRuAvailability.UNAVAILABLE,
             isFree = isFree,
             headerImageUrl = data.optString("header_image").trim(),
             description = data.optString("short_description").ifBlank { data.optString("about_the_game") }.trim(),

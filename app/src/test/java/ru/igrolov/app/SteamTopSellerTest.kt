@@ -29,6 +29,21 @@ class SteamTopSellerTest {
         assertTrue(SteamLeaderSection.DISCOUNTED_TOP_SELLERS.filter(listOf(free)).isEmpty())
     }
 
+    @Test fun successfulRuDetailsWithoutRegionalPriceMarkGameUnavailable() {
+        val game = SteamTopSellerParser.applyRuDetails(SteamTopSeller(123, "Region locked"),
+            """{"123":{"success":true,"data":{"type":"game","name":"Region locked","is_free":false}}}""", true)
+
+        assertEquals(SteamRuAvailability.UNAVAILABLE, game.availability)
+        assertEquals("", game.steamPrice)
+    }
+
+    @Test fun failedRuDetailsDoNotConfuseApiFailureWithRegionalPriceEvidence() {
+        val game = SteamTopSellerParser.applyRuDetails(SteamTopSeller(123, "Unknown"),
+            """{"123":{"success":false}}""", true)
+
+        assertEquals(SteamRuAvailability.UNKNOWN, game.availability)
+    }
+
     @Test fun featuredNewReleasesKeepExactAppIdsAndIgnoreDuplicates() {
         val games = SteamTopSellerParser.parseFeaturedCategory("""{
             "new_releases":{"items":[
@@ -120,6 +135,16 @@ class SteamTopSellerTest {
             controllerSupport = SteamControllerSupport.FULL, selectedGenres = setOf("RPG")
         ))
         assertEquals(listOf(1), filtered.map { it.appId })
+    }
+
+    @Test fun advancedFilterButtonCountIncludesLanguageControllerAndGenres() {
+        val input = SteamLeaderFilterInput(
+            russianLocalization = SteamRussianLocalization.SUPPORTED,
+            controllerSupport = SteamControllerSupport.FULL,
+            selectedGenres = setOf("RPG", "Стратегии")
+        )
+
+        assertEquals(4, input.activeFilterCount)
     }
 
     @Test fun wishlistGenreFilterUsesSteamDetailsAndCanBePersisted() {

@@ -2626,7 +2626,8 @@ class MainActivity : ComponentActivity() {
                     availabilityFilter = topAvailabilityFilter,
                     onAvailabilitySelected = { filter ->
                         topAvailabilityFilter = filter
-                    }
+                    },
+                    onReset = { topAvailabilityFilter = "Все игры" }
                 )
                 val availabilityFilteredGames = remember(sectionGames, leaderSection, topAvailabilityFilter) {
                     leaderSection.filter(sectionGames).filter { game ->
@@ -2984,7 +2985,8 @@ class MainActivity : ComponentActivity() {
         includeReviewFilters: Boolean = true,
         availableGenres: List<String> = emptyList(),
         availabilityFilter: String? = null,
-        onAvailabilitySelected: ((String) -> Unit)? = null
+        onAvailabilitySelected: ((String) -> Unit)? = null,
+        onReset: (() -> Unit)? = null
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(
@@ -3004,13 +3006,7 @@ class MainActivity : ComponentActivity() {
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
                     border = BorderStroke(1.dp, Color(0xFFD2D9E1))
                 ) {
-                    val activeCount = listOf(
-                        input.titleQuery.isNotBlank(),
-                        input.maxPriceText.isNotBlank(),
-                        input.minimumDiscountText.isNotBlank(),
-                        input.minimumReviewText.isNotBlank(),
-                        input.minimumReviewCountText.isNotBlank()
-                    ).count { it }
+                    val activeCount = input.activeFilterCount
                     Text(if (input.expanded) "Скрыть" else if (activeCount > 0) "Ещё · $activeCount" else "Ещё",
                         maxLines = 1, style = MaterialTheme.typography.labelSmall)
                 }
@@ -3065,7 +3061,10 @@ class MainActivity : ComponentActivity() {
                             "Цена и число отзывов должны быть больше 0, проценты — от 0 до 100.",
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                            TextButton(onClick = { onInput(SteamLeaderFilterInput(expanded = true)) },
+                            TextButton(onClick = {
+                                onInput(SteamLeaderFilterInput(expanded = true))
+                                onReset?.invoke()
+                            },
                                 contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)) { Text("Сбросить") }
                         }
                     }
