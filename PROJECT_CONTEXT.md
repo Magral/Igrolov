@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-26T11:39:18.672Z
+- Обновлено (UTC): 2026-10-26T12:15:43.347Z
 - Ветка: `main`.
-- HEAD: [`2bc9b71b4584`](https://github.com/Magral/Igrolov/commit/2bc9b71b4584c0c56d8fe07bdfcb23cf675e9f39).
+- HEAD: [`bbc8afd90ac5`](https://github.com/Magral/Igrolov/commit/bbc8afd90ac555f47e0dc733a74887fe3f8c3b55).
 - Последний опубликованный стабильный GitHub Release: [v1.5.7](https://github.com/Magral/Igrolov/releases/tag/v1.5.7); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [bbc8afd](https://github.com/Magral/Igrolov/commit/bbc8afd90ac555f47e0dc733a74887fe3f8c3b55) — fix: add alternate Steam portrait CDN
 - [2bc9b71](https://github.com/Magral/Igrolov/commit/2bc9b71b4584c0c56d8fe07bdfcb23cf675e9f39) — fix: scope portrait extraction to artwork cards
 - [78c33bf](https://github.com/Magral/Igrolov/commit/78c33bf77cdd62863c5c98bda4fab5a28a1b38a6) — fix: materialize portrait cover candidates
 - [83121bb](https://github.com/Magral/Igrolov/commit/83121bba6bd8ab5249f3f98c6656e6079305495b) — fix: restore missing portrait covers
-- [5d63191](https://github.com/Magral/Igrolov/commit/5d63191142b6e9d3c331ce40f8bb7928dc27d4dd) — test: verify reset filter through Compose semantics
 <!-- AUTO_CONTEXT_END -->
