@@ -613,10 +613,7 @@ class MainActivity : ComponentActivity() {
             urls += SteamArtworkPresentation.libraryCapsuleUrls(response, appId)
         }
         if (portrait) {
-            val apiKey = SteamGridDbArtwork.readApiKey(this)
-            if (apiKey.isNotBlank()) {
-                urls += SteamGridDbArtwork.fetchPortraitUrls(this, appId, apiKey)
-            }
+            urls += SteamGridDbArtwork.fetchPortraitUrls(this, appId)
         } else {
             runCatching {
                 val raw = steamArtworkJson("https://store.steampowered.com/api/appdetails?appids=$appId&cc=us&l=english")
@@ -1168,10 +1165,6 @@ class MainActivity : ComponentActivity() {
         var visibleOfferLimit by remember { mutableIntStateOf(30) }
         var searchPage by remember { mutableIntStateOf(0) }
         var catalogLimit by remember { mutableIntStateOf(CatalogPageSettings.get(this@MainActivity)) }
-        var steamGridDbApiKey by remember { mutableStateOf(SteamGridDbArtwork.readApiKey(this@MainActivity)) }
-        var artworkKeyStatus by remember { mutableStateOf("") }
-        var artworkKeyChecking by remember { mutableStateOf(false) }
-        val artworkSettingsScope = rememberCoroutineScope()
         val searchTotalPages = catalogLimit / 100
         var showDirectory by remember { mutableStateOf(false) }
         var searchFound by remember { mutableIntStateOf(0) }
@@ -2792,68 +2785,9 @@ class MainActivity : ComponentActivity() {
                 HorizontalDivider()
                 Text("Вертикальные обложки игр", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "Если у игры нет вертикального постера Steam, Игролов возьмёт его из SteamGridDB. " +
-                        "Для этого нужен личный API-ключ; он хранится зашифрованно на устройстве.",
+                    "Если вертикальной обложки Steam нет, Игролов проверяет публичную страницу SteamGridDB и берёт оттуда только постеры 600×900. API-ключ и вход в аккаунт не нужны.",
                     style = MaterialTheme.typography.bodySmall
                 )
-                OutlinedButton(
-                    onClick = {
-                        runCatching {
-                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.steamgriddb.com/profile/preferences")))
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
-                ) { Text("Получить ключ SteamGridDB") }
-                OutlinedTextField(
-                    value = steamGridDbApiKey,
-                    onValueChange = { steamGridDbApiKey = it; artworkKeyStatus = "" },
-                    label = { Text("SteamGridDB API-ключ") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
-                )
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = {
-                            artworkKeyChecking = true
-                            artworkKeyStatus = "Проверяем ключ…"
-                            artworkSettingsScope.launch {
-                                val valid = withContext(Dispatchers.IO) {
-                                    SteamGridDbArtwork.validateApiKey(steamGridDbApiKey)
-                                }
-                                if (valid) {
-                                    runCatching { SteamGridDbArtwork.saveApiKey(this@MainActivity, steamGridDbApiKey) }
-                                        .onSuccess { artworkKeyStatus = "Ключ проверен и сохранён. Вертикальные обложки будут загружаться из SteamGridDB." }
-                                        .onFailure { artworkKeyStatus = "Не удалось сохранить ключ на устройстве." }
-                                } else {
-                                    artworkKeyStatus = "Ключ не прошёл проверку. Проверьте его и повторите попытку."
-                                }
-                                artworkKeyChecking = false
-                            }
-                        },
-                        enabled = !artworkKeyChecking && steamGridDbApiKey.isNotBlank(),
-                        modifier = Modifier.weight(1f)
-                    ) { Text(if (artworkKeyChecking) "Проверяем…" else "Проверить и сохранить") }
-                    OutlinedButton(
-                        onClick = {
-                            SteamGridDbArtwork.saveApiKey(this@MainActivity, "")
-                            steamGridDbApiKey = ""
-                            artworkKeyStatus = "Ключ удалён."
-                        },
-                        enabled = !artworkKeyChecking && steamGridDbApiKey.isNotBlank(),
-                        modifier = Modifier.weight(1f)
-                    ) { Text("Удалить ключ") }
-                }
-                if (artworkKeyStatus.isNotBlank()) {
-                    Text(
-                        artworkKeyStatus,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (artworkKeyStatus.startsWith("Ключ проверен") || artworkKeyStatus == "Ключ удалён.")
-                            Color(0xFF287647) else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
                 HorizontalDivider()
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { showDirectory = true }, modifier = Modifier.fillMaxWidth()) {
