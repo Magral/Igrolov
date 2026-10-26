@@ -766,10 +766,12 @@ class MainActivity : ComponentActivity() {
                         else androidx.compose.ui.layout.ContentScale.Fit,
                     modifier = modifier,
                     onSuccess = {
+                        android.util.Log.i("SteamArtwork", "decoded app=$appId url=$imageUrl")
                         imageLoaded = true
                         displayedCacheKey?.let { artworkPrefs.edit().putString(it, imageUrl).apply() }
                     },
                     onError = {
+                        android.util.Log.w("SteamArtwork", "failed app=$appId url=$imageUrl", it.result.throwable)
                         imageLoaded = false
                         displayedCacheKey?.let { artworkPrefs.edit().remove(it).apply() }
                         val nextIndex = candidateIndex + 1
