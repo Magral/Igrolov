@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-26T03:45:50.496Z
+- Обновлено (UTC): 2026-10-26T03:54:41.327Z
 - Ветка: `main`.
-- HEAD: [`5010c9411408`](https://github.com/Magral/Igrolov/commit/5010c941140809ff786fe91e81a12331b75d7192).
+- HEAD: [`b0a9c597f1e0`](https://github.com/Magral/Igrolov/commit/b0a9c597f1e0084abf268fca6b15853907b5beb0).
 - Последний опубликованный стабильный GitHub Release: [v1.5.3](https://github.com/Magral/Igrolov/releases/tag/v1.5.3); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [b0a9c59](https://github.com/Magral/Igrolov/commit/b0a9c597f1e0084abf268fca6b15853907b5beb0) — release: Игролов 1.5.4 — оптимизация списков и издания Steam
 - [5010c94](https://github.com/Magral/Igrolov/commit/5010c941140809ff786fe91e81a12331b75d7192) — test: scroll Wishlist prices during offer search
 - [6bba7b0](https://github.com/Magral/Igrolov/commit/6bba7b031c27929733b1f9873c292debacef1e37) — test: assert wishlist Steam price via Compose
 - [bde9610](https://github.com/Magral/Igrolov/commit/bde9610a3016b78fc6f2ade10f51ef88471d0bf5) — test: scroll wishlist prices into view
-- [e3a1983](https://github.com/Magral/Igrolov/commit/e3a1983d00adeeb46a2dd9495f91ab7765837f87) — test: scroll nested wishlist actions into view
 <!-- AUTO_CONTEXT_END -->
