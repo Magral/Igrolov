@@ -52,7 +52,7 @@ object SteamThemedSales {
             .map { item.optString(it).trim() }
             .firstOrNull { it.isNotBlank() && saleTerm.containsMatchIn(it) }
             ?: fallbackName.takeIf { saleTerm.containsMatchIn(it) }
-            ?: url.substringAfter("/sale/").substringBefore(/[?#]).replace(Regex("[_/-]+"), " ").trim()
+            ?: url.substringAfter("/sale/").substringBefore("?").substringBefore("#").replace(Regex("[_/-]+"), " ").trim()
                 .takeIf { saleTerm.containsMatchIn(it) }
             ?: return null
         val ids = sequenceOf("appid", "app_id", "id")
