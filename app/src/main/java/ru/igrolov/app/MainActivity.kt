@@ -807,6 +807,28 @@ class MainActivity : ComponentActivity() {
                                 if (nextUrl != null) {
                                     candidateIndex = merged.indexOf(nextUrl)
                                     imageUrl = nextUrl
+                                } else if (!communityLoaded && requestedPortrait) {
+                                    // Steam may return only missing/obsolete URLs (or none).
+                                    // Continue to the community portrait source instead of
+                                    // leaving the card stuck after its first 404.
+                                    communityLoaded = true
+                                    val community = withContext(Dispatchers.IO) {
+                                        SteamGridDbArtwork.fetchPortraitUrls(this@MainActivity, appId)
+                                    }
+                                    val withCommunity = (merged + community).distinct()
+                                    val communityUrl = withCommunity.drop(candidateIndex + 1).firstOrNull()
+                                    candidates = withCommunity
+                                    if (communityUrl != null) {
+                                        candidateIndex = withCommunity.indexOf(communityUrl)
+                                        imageUrl = communityUrl
+                                    } else if (retryCount < 2 && withCommunity.isNotEmpty()) {
+                                        retryCount++
+                                        kotlinx.coroutines.delay(2000L * retryCount)
+                                        fallbackCandidatesLoaded = false
+                                        communityLoaded = false
+                                        candidateIndex = 0
+                                        imageUrl = withCommunity.first()
+                                    }
                                 }
                             }
                         } else if (!communityLoaded && requestedPortrait && appId != null && appId > 0) {
