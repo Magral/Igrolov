@@ -7,11 +7,13 @@ enum class SteamRuAvailability { AVAILABLE, UNAVAILABLE, UNKNOWN }
 enum class SteamLeaderSection(val label: String) {
     TOP_SELLERS("Бестселлеры"),
     POPULAR_NEW_RELEASES("Новинки"),
-    DISCOUNTED_TOP_SELLERS("Скидки");
+    DISCOUNTED_TOP_SELLERS("Скидки"),
+    THEMED_SALES("Фесты");
 
     fun filter(games: List<SteamTopSeller>): List<SteamTopSeller> =
         when (this) {
             DISCOUNTED_TOP_SELLERS -> games.filter { !it.isFree && it.discountPercent > 0 }
+            THEMED_SALES -> games.filter { !it.isFree && it.discountPercent > 0 && it.saleEventName.isNotBlank() }
             else -> games.filter { !it.isFree }
         }
 }
@@ -29,7 +31,8 @@ data class SteamTopSeller(
     val description: String = "",
     val reviewSummary: SteamReviewSummary? = null,
     val features: SteamGameFeatures = SteamGameFeatures(),
-    val genres: List<String> = emptyList()
+    val genres: List<String> = emptyList(),
+    val saleEventName: String = ""
 )
 
 data class SteamRankingPage(
