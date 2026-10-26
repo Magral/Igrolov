@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-26T15:44:53.809Z
+- Обновлено (UTC): 2026-10-26T15:48:33.972Z
 - Ветка: `main`.
-- HEAD: [`0f08a3e6a57d`](https://github.com/Magral/Igrolov/commit/0f08a3e6a57dfa08c84bb92ee9d64a65433e4393).
+- HEAD: [`92d0956676f9`](https://github.com/Magral/Igrolov/commit/92d0956676f9edca502200df9170210d908a8254).
 - Последний опубликованный стабильный GitHub Release: [v1.5.7](https://github.com/Magral/Igrolov/releases/tag/v1.5.7); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [92d0956](https://github.com/Magral/Igrolov/commit/92d0956676f9edca502200df9170210d908a8254) — test: fix Steam sale page JSON fixture escaping
 - [0f08a3e](https://github.com/Magral/Igrolov/commit/0f08a3e6a57dfa08c84bb92ee9d64a65433e4393) — fix: parse games from Steam sale pages
 - [e092308](https://github.com/Magral/Igrolov/commit/e09230837acb2ccbf1877b29ff6c931451e19310) — feat: add live Steam themed sales to Leaders
 - [c30b874](https://github.com/Magral/Igrolov/commit/c30b874dedadc362ed156491dffb0ac8885f57a6) — perf: reuse recent Steam Leaders metadata
-- [a6f4f38](https://github.com/Magral/Igrolov/commit/a6f4f3866867ac3ca50564132234bcb8c0f3754c) — perf: cache recent Steam leader metadata
 <!-- AUTO_CONTEXT_END -->
