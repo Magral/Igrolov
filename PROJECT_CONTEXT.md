@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-25T16:51:00.458Z
+- Обновлено (UTC): 2026-10-26T03:07:22.489Z
 - Ветка: `main`.
-- HEAD: [`a6dcbc398062`](https://github.com/Magral/Igrolov/commit/a6dcbc398062eb7b236f851b399162b3254791b6).
-- Последний опубликованный стабильный GitHub Release: [v1.5.2](https://github.com/Magral/Igrolov/releases/tag/v1.5.2); APK-файлы: есть вложение APK.
+- HEAD: [`6938ab20908f`](https://github.com/Magral/Igrolov/commit/6938ab20908f0b4b09cca803bfd7b98fc3eddd0f).
+- Последний опубликованный стабильный GitHub Release: [v1.5.3](https://github.com/Magral/Igrolov/releases/tag/v1.5.3); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [6938ab2](https://github.com/Magral/Igrolov/commit/6938ab20908f0b4b09cca803bfd7b98fc3eddd0f) — feat: optimize Steam lists and editions
 - [a6dcbc3](https://github.com/Magral/Igrolov/commit/a6dcbc398062eb7b236f851b399162b3254791b6) — release: Игролов 1.5.3 — проверить подпись добавления издания
 - [962493c](https://github.com/Magral/Igrolov/commit/962493cb18b2ab6421be11a7d20bec2b946fae8e) — release: Игролов 1.5.3 — обновить проверку кнопки издания
 - [471e565](https://github.com/Magral/Igrolov/commit/471e5655e2f62118880a46f36eda13fac019fc39) — release: Игролов 1.5.3 — восстановить тест обложек
-- [9d50b44](https://github.com/Magral/Igrolov/commit/9d50b44211959f2ab542311c13ef938d93a50a16) — release: Игролов 1.5.3 — исправить тестовые данные
 <!-- AUTO_CONTEXT_END -->
