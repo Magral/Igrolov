@@ -22,6 +22,7 @@ object SteamLeaderCache {
         .put("russianLocalization", game.features.russianLocalization.name)
         .put("controllerSupport", game.features.controllerSupport.name)
         .put("genres", JSONArray(game.genres))
+        .put("saleEventName", game.saleEventName)
         .toString()
 
     fun decode(raw: String, now: Long, ttlMillis: Long = TTL_MILLIS): SteamTopSeller? {
@@ -55,7 +56,8 @@ object SteamLeaderCache {
             headerImageUrl = json.optString("headerImageUrl"),
             description = json.optString("description"),
             features = SteamGameFeatures(localization, controller),
-            genres = genres
+            genres = genres,
+            saleEventName = json.optString("saleEventName")
         )
     }
 }
