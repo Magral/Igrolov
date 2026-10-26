@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-26T10:44:32.973Z
+- Обновлено (UTC): 2026-10-26T10:52:22.822Z
 - Ветка: `main`.
-- HEAD: [`d2632482bd5b`](https://github.com/Magral/Igrolov/commit/d2632482bd5b8385faa57ca414076082fa0431ba).
+- HEAD: [`a62d905effa1`](https://github.com/Magral/Igrolov/commit/a62d905effa1a3fefc7f156186464abab419d51f).
 - Последний опубликованный стабильный GitHub Release: [v1.5.7](https://github.com/Magral/Igrolov/releases/tag/v1.5.7); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [a62d905](https://github.com/Magral/Igrolov/commit/a62d905effa1a3fefc7f156186464abab419d51f) — test: wait for filter reset on older devices
 - [d263248](https://github.com/Magral/Igrolov/commit/d2632482bd5b8385faa57ca414076082fa0431ba) — test: verify leaders filter reset in UI
 - [f8f6781](https://github.com/Magral/Igrolov/commit/f8f6781f8bfd128314b3632889c98c83abb144ee) — test: align Steam RU availability expectations
 - [72e57f4](https://github.com/Magral/Igrolov/commit/72e57f431a9233f48942c46287d56138316e8652) — fix: clarify Steam RU availability and filter reset
-- [18cbdd1](https://github.com/Magral/Igrolov/commit/18cbdd11b19bf4f555cdf19ff69a831c735d11b9) — release: Игролов 1.5.7 — очистить UI smoke script
 <!-- AUTO_CONTEXT_END -->
