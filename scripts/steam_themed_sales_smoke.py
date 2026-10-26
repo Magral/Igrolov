@@ -30,6 +30,8 @@ def get(url: str) -> str:
 def themed_sale_links(payload: dict) -> list[tuple[str, str]]:
     candidates = []
     groups = [payload.get(str(index), {}) for index in range(8)]
+    if isinstance(payload.get("items"), list):
+        groups.append({"name": "", "items": payload["items"]})
     groups.extend([payload.get("spotlights", {}), payload.get("events", {})])
     for group in groups:
         items = group.get("items", []) if isinstance(group, dict) else group
