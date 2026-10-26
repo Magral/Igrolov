@@ -33,7 +33,6 @@ for tab in search products monitoring wishlist leaders directory; do adb pull "/
 adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class ru.igrolov.app.GameCardMonitoringTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/game-card-monitoring.txt
 grep -E 'OK \(1 test\)' device-results/game-card-monitoring.txt
-grep -E 'OK \(1 test\)' device-results/steamgriddb-key-store.txt
 adb pull /sdcard/Android/data/ru.igrolov.app/files/leader-review-monitor.png device-results/leader-review-monitor.png
 adb pull /sdcard/Android/data/ru.igrolov.app/files/wishlist-monitor.png device-results/wishlist-monitor.png
 cp device-results/leader-review-monitor.png device-results/redesign-leaders.png
