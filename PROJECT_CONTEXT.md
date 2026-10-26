@@ -69,14 +69,15 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-26T18:13:51.793Z
+- Обновлено (UTC): 2026-10-26T18:44:16.272Z
 - Ветка: `main`.
-- HEAD: [`6ae70f7cecc0`](https://github.com/Magral/Igrolov/commit/6ae70f7cecc09ed9a8449ef177b2c2fa088f0766).
-- Последний опубликованный стабильный GitHub Release: [v1.6.1](https://github.com/Magral/Igrolov/releases/tag/v1.6.1); APK-файлы: есть вложение APK.
+- HEAD: [`9ea1b8ebf0e8`](https://github.com/Magral/Igrolov/commit/9ea1b8ebf0e80175c0b745222cc2b17c4c3fb8f8).
+- Последний опубликованный стабильный GitHub Release: [v1.6.2](https://github.com/Magral/Igrolov/releases/tag/v1.6.2); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [9ea1b8e](https://github.com/Magral/Igrolov/commit/9ea1b8ebf0e80175c0b745222cc2b17c4c3fb8f8) — fix: include modern Steam asset hosts in thumbnail fallback
+- [294d05c](https://github.com/Magral/Igrolov/commit/294d05c12feb603f86422b91fe19d21caa24a6bf) — fix: start artwork on current Steam CDN and copy device failures from cards
+- [6fe9a6a](https://github.com/Magral/Igrolov/commit/6fe9a6aede1038603e796700a1dcce00887b64b7) — feat: expose bounded artwork diagnostics without private profile data
 - [6ae70f7](https://github.com/Magral/Igrolov/commit/6ae70f7cecc09ed9a8449ef177b2c2fa088f0766) — release: Игролов 1.6.2 — проверять результат декодирования независимо от обрезки accessibility
 - [2d1c257](https://github.com/Magral/Igrolov/commit/2d1c257d19ff36e3e5c7bdfe382b9947eab4196a) — release: Игролов 1.6.2 — диагностировать ошибки декодирования обложек
-- [1710739](https://github.com/Magral/Igrolov/commit/171073957c4308d81e29a406e8e78d7c59b9d926) — release: Игролов 1.6.2 — проверять декодирование четырёх реальных обложек Android
-- [d86110a](https://github.com/Magral/Igrolov/commit/d86110aa88d086961c4e1110f72ff92ad2e7ebc3) — release: Игролов 1.6.2 — проверенная загрузка миниатюр на Android
 <!-- AUTO_CONTEXT_END -->
