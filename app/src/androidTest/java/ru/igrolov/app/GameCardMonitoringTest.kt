@@ -3,10 +3,7 @@ package ru.igrolov.app
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performSemanticsAction
-import androidx.compose.ui.test.performScrollToIndex
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.semantics.SemanticsActions
 import org.junit.Rule
 import android.content.Context
@@ -131,15 +128,7 @@ class GameCardMonitoringTest {
         compose.onNodeWithText("Добавить").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { !device.hasObject(By.text("Добавить")) })
-        compose.onNodeWithTag("wishlist-card-list").performScrollToIndex(1)
-        compose.onNodeWithTag("wishlist-card-list").performScrollTo()
-        compose.waitForIdle()
-        repeat(4) {
-            if (!device.hasObject(By.text("Добавить издание"))) {
-                device.swipe(540, 1550, 540, 760, 8)
-                compose.waitForIdle()
-            }
-        }
+        UiTestScroll.reveal(compose, "Добавить издание")
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Добавить издание")) })
         WorkManager.getInstance(context).cancelAllWork().result.get()
         saved = WatchStore.read(context)
