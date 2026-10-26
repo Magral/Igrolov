@@ -84,11 +84,41 @@ object SteamThemedSales {
             val snippet = html.substring(match.range.first, end)
             val nameHtml = htmlTitle.find(snippet)?.groupValues?.get(1)
                 ?: Regex("(?is)<img[^>]+alt=[\"']([^\"']+)[\"']").find(snippet)?.groupValues?.get(1)
-                ?: return@forEach
-            val name = decodeText(nameHtml)
-            if (name.isNotBlank()) found[id] = SteamTopSeller(id, name, saleEventName = eventName)
+            val name = nameHtml?.let(::decodeText).orEmpty()
+            found[id] = SteamTopSeller(id, name, saleEventName = eventName)
+        }
+        salePageGameIds(html).forEach { id ->
+            found.putIfAbsent(id, SteamTopSeller(id, "", saleEventName = eventName))
         }
         return found.values.toList()
+    }
+
+    /** Sale pages keep their curated game IDs in the event's embedded jsondata, not in initial card HTML. */
+    fun salePageGameIds(html: String): List<Int> {
+        val decoded = html.replace("&quot;", "\"").replace("&amp;", "&")
+        val marker = "\"jsondata\":\""
+        val start = decoded.indexOf(marker).takeIf { it >= 0 }?.plus(marker.length) ?: return emptyList()
+        val end = decoded.indexOf("\",\"announcement_body\"", start).takeIf { it >= 0 } ?: return emptyList()
+        val encoded = decoded.substring(start, end)
+        val eventJson = runCatching {
+            val jsonText = org.json.JSONArray("[\"$encoded\"]").optString(0)
+            JSONObject(jsonText)
+        }.getOrNull() ?: return emptyList()
+        val result = linkedSetOf<Int>()
+        fun collect(value: Any?) {
+            when (value) {
+                is JSONObject -> {
+                    if (value.optString("type") == "game") {
+                        value.optInt("id", 0).takeIf { it > 0 }?.let(result::add)
+                    }
+                    val keys = value.keys()
+                    while (keys.hasNext()) collect(value.opt(keys.next()))
+                }
+                is org.json.JSONArray -> for (index in 0 until value.length()) collect(value.opt(index))
+            }
+        }
+        collect(eventJson.opt("sale_sections"))
+        return result.toList()
     }
 
     private fun decodeText(value: String): String = value
