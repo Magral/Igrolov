@@ -44,7 +44,7 @@ class ReleaseSmokeTest {
         assertEquals("2500",ManualSearchSettings.read(context).maxPrice)
         WatchStore.write(context,org.json.JSONArray())
         ManualSearchSettings.save(context,ManualSearchFilters())
-        assertEquals(161,PackageInfoCompat.getLongVersionCode(context.packageManager.getPackageInfo(context.packageName,0)))
+        assertEquals(162,PackageInfoCompat.getLongVersionCode(context.packageManager.getPackageInfo(context.packageName,0)))
     }
     @Test fun launchAndNavigateFiltersSettingsAndMonitoring() {
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
@@ -118,6 +118,9 @@ class ReleaseSmokeTest {
     }
 
     @Test fun savedWishlistProfilesShowSteamPricesAndKeepSearchSeparate() {
+        context.getSharedPreferences("steam_artwork_urls",0).edit()
+            .putString("portrait_281990","https://shared.steamstatic.com/store_item_assets/steam/apps/281990/igrolov-missing/library_600x900.jpg").commit()
+
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         val prefs=context.getSharedPreferences("tracked_products",0)
         val steamId="76561198000000000"
@@ -140,6 +143,10 @@ class ReleaseSmokeTest {
         assertFalse(device.hasObject(By.text("AppID 281990")))
         UiTestScroll.reveal(compose,"Подробнее")
         compose.onNodeWithText("Подробнее").assertIsDisplayed()
+        assertTrue("Android must decode and display artwork after a broken cached URL",
+            UiTestScroll.await(compose, 60000) {
+                device.hasObject(By.desc("Обложка Steam 281990 загружена"))
+            })
         if (!device.hasObject(By.text("750 ₽"))) {
             UiTestScroll.reveal(compose,"750 ₽")
         }
