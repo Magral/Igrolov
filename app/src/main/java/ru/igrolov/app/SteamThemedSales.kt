@@ -12,7 +12,7 @@ data class SteamThemedSaleEvent(
 
 /** Reads current sale spotlights from Steam's public regional storefront responses. */
 object SteamThemedSales {
-    private val appUrl = Regex("(?i)/app/([0-9]{1,10})(?:/|$|[?#])")
+    private val appUrl = Regex("(?i)/app/([0-9]{1,10})(?:/|[?#])")
     private val appIdAttribute = Regex("(?i)(?:data-ds-appid|data-appid)=[\"']([0-9]{1,10})[\"']")
     private val htmlTitle = Regex(
         "(?is)<(?:div|span|a)[^>]*class=[\"'][^\"']*(?:salepreview_item_name|search_result_row|title|game_name)[^\"']*[\"'][^>]*>(.*?)</(?:div|span|a)>"
