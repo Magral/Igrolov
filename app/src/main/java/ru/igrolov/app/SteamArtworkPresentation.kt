@@ -33,7 +33,8 @@ object SteamArtworkPresentation {
         return filenames.flatMap { filename ->
             listOf(
                 "https://cdn.cloudflare.steamstatic.com/steam/apps/$appId/$filename",
-                "https://cdn.akamai.steamstatic.com/steam/apps/$appId/$filename"
+                "https://cdn.akamai.steamstatic.com/steam/apps/$appId/$filename",
+                "https://steamcdn-a.akamaihd.net/steam/apps/$appId/$filename"
             )
         }.distinct()
     }

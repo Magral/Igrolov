@@ -22,6 +22,7 @@ class SteamArtworkPresentationTest {
 
         assertTrue(portrait.isNotEmpty())
         assertTrue(portrait.all(SteamArtworkPresentation::isPortrait))
+        assertTrue(portrait.any { it.startsWith("https://steamcdn-a.akamaihd.net/steam/apps/123/library_600x900") })
         assertTrue(landscape.isNotEmpty())
         assertTrue(landscape.none(SteamArtworkPresentation::isPortrait))
         assertTrue(SteamArtworkPresentation.directFallbackUrls(0, portrait = true).isEmpty())
