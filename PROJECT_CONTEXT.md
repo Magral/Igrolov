@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-26T12:15:43.347Z
+- Обновлено (UTC): 2026-10-26T14:47:03.819Z
 - Ветка: `main`.
-- HEAD: [`bbc8afd90ac5`](https://github.com/Magral/Igrolov/commit/bbc8afd90ac555f47e0dc733a74887fe3f8c3b55).
+- HEAD: [`a6f4f3866867`](https://github.com/Magral/Igrolov/commit/a6f4f3866867ac3ca50564132234bcb8c0f3754c).
 - Последний опубликованный стабильный GitHub Release: [v1.5.7](https://github.com/Magral/Igrolov/releases/tag/v1.5.7); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [a6f4f38](https://github.com/Magral/Igrolov/commit/a6f4f3866867ac3ca50564132234bcb8c0f3754c) — perf: cache recent Steam leader metadata
 - [bbc8afd](https://github.com/Magral/Igrolov/commit/bbc8afd90ac555f47e0dc733a74887fe3f8c3b55) — fix: add alternate Steam portrait CDN
 - [2bc9b71](https://github.com/Magral/Igrolov/commit/2bc9b71b4584c0c56d8fe07bdfcb23cf675e9f39) — fix: scope portrait extraction to artwork cards
 - [78c33bf](https://github.com/Magral/Igrolov/commit/78c33bf77cdd62863c5c98bda4fab5a28a1b38a6) — fix: materialize portrait cover candidates
-- [83121bb](https://github.com/Magral/Igrolov/commit/83121bba6bd8ab5249f3f98c6656e6079305495b) — fix: restore missing portrait covers
 <!-- AUTO_CONTEXT_END -->
