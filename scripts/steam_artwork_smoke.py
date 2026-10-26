@@ -111,7 +111,8 @@ def store_browse_covers(app_ids: list[int]) -> dict[int, list[str]]:
 
 
 def is_image(url: str) -> bool:
-    request = urllib.request.Request(url, headers={**HEADERS, "Range": "bytes=0-31"})
+    referer = "https://www.steamgriddb.com/" if "steamgriddb.com" in url else "https://store.steampowered.com/"
+    request = urllib.request.Request(url, headers={**HEADERS, "Range": "bytes=0-31", "Referer": referer})
     try:
         with urllib.request.urlopen(request, timeout=15) as response:
             data = response.read(32)
