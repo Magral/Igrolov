@@ -40,6 +40,9 @@ object SteamArtworkPresentation {
         }
         return filenames.flatMap { filename ->
             listOf(
+                "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/$appId/$filename",
+                "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/$appId/$filename",
+                "https://shared.steamstatic.com/store_item_assets/steam/apps/$appId/$filename",
                 "https://cdn.cloudflare.steamstatic.com/steam/apps/$appId/$filename",
                 "https://cdn.akamai.steamstatic.com/steam/apps/$appId/$filename",
                 "https://steamcdn-a.akamaihd.net/steam/apps/$appId/$filename"
