@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-26T16:03:32.251Z
+- Обновлено (UTC): 2026-10-26T16:17:10.594Z
 - Ветка: `main`.
-- HEAD: [`493a40e1be8d`](https://github.com/Magral/Igrolov/commit/493a40e1be8df1404453664d3b66b0f602f338f9).
+- HEAD: [`d7c74fc2c231`](https://github.com/Magral/Igrolov/commit/d7c74fc2c231ba697381a7bc0099b74e92a8ca80).
 - Последний опубликованный стабильный GitHub Release: [v1.6.0](https://github.com/Magral/Igrolov/releases/tag/v1.6.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [d7c74fc](https://github.com/Magral/Igrolov/commit/d7c74fc2c231ba697381a7bc0099b74e92a8ca80) — fix: restore vertical covers across Steam bestsellers
 - [493a40e](https://github.com/Magral/Igrolov/commit/493a40e1be8df1404453664d3b66b0f602f338f9) — docs: close release 1.6.0 checklist
 - [3de5ecd](https://github.com/Magral/Igrolov/commit/3de5ecd3001d6ff473009943ee043ad52ace9134) — release: Игролов 1.6.0 — исправить upgrade smoke
 - [5d7a7c1](https://github.com/Magral/Igrolov/commit/5d7a7c1d204befc632d81374d8a494ceec69fee6) — release: Игролов 1.6.0 — тематические распродажи
-- [92d0956](https://github.com/Magral/Igrolov/commit/92d0956676f9edca502200df9170210d908a8254) — test: fix Steam sale page JSON fixture escaping
 <!-- AUTO_CONTEXT_END -->
