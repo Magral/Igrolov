@@ -77,6 +77,92 @@ def current_top_sellers(limit: int = 100) -> list[tuple[int, str]]:
     return list(items.items())[:limit]
 
 
+
+def current_popular_new_releases(limit: int = 100) -> list[tuple[int, str]]:
+    """Mirror the app's pageable Steam Popular New Releases source."""
+    items: dict[int, str] = {}
+    start = 0
+    total = 0
+    while len(items) < limit and (start == 0 or start < total):
+        params = urllib.parse.urlencode({
+            "query": "", "start": start, "count": 50, "dynamic_data": "",
+            "sort_by": "Released_DESC", "category1": "998", "category2": "popularnew",
+            "infinite": "1", "json": "1", "cc": "ru", "l": "russian",
+        })
+        page_rows, total = parse_ranking_page(get(f"{BASE}/search/results/?{params}").decode("utf-8", "replace"))
+        if not page_rows:
+            break
+        for app_id, name in page_rows:
+            items.setdefault(app_id, name)
+        start += len(page_rows)
+    return list(items.items())[:limit]
+
+
+def sale_page_game_ids(page: str) -> set[int]:
+    """Read game IDs embedded in a public Steam themed-sale page."""
+    decoded = html.unescape(page)
+    match = re.search(r'"jsondata":"(.*?)","announcement_body"', decoded, re.DOTALL)
+    if not match:
+        return set()
+    try:
+        event_data = json.loads(json.loads('"' + match.group(1) + '"'))
+    except (json.JSONDecodeError, TypeError):
+        return set()
+    ids: set[int] = set()
+
+    def collect(value: object) -> None:
+        if isinstance(value, dict):
+            if value.get("type") == "game":
+                try:
+                    app_id = int(value.get("id", 0))
+                    if app_id > 0:
+                        ids.add(app_id)
+                except (TypeError, ValueError):
+                    pass
+            for child in value.values():
+                collect(child)
+        elif isinstance(value, list):
+            for child in value:
+                collect(child)
+
+    collect(event_data.get("sale_sections", []))
+    return ids
+
+
+def current_themed_sale_games(limit: int = 100) -> list[tuple[int, str]]:
+    """Mirror the app's current Steam sale-page feed; empty is valid between events."""
+    featured = json.loads(get(f"{BASE}/api/featuredcategories/?cc=ru&l=russian").decode("utf-8", "replace"))
+    sale_urls: list[str] = []
+
+    def collect_urls(value: object) -> None:
+        if isinstance(value, dict):
+            for child in value.values():
+                if isinstance(child, str):
+                    candidate = html.unescape(child).replace("\\\\/", "/")
+                    if "store.steampowered.com" in candidate and "/sale/" in candidate.lower():
+                        sale_urls.append(candidate)
+                else:
+                    collect_urls(child)
+        elif isinstance(value, list):
+            for child in value:
+                collect_urls(child)
+
+    collect_urls(featured)
+    unique_urls = list(dict.fromkeys(sale_urls))[:5]
+    games: dict[int, str] = {}
+    for url in unique_urls:
+        localized = url + ("&" if "?" in url else "?") + "cc=ru&l=russian"
+        page = get(localized).decode("utf-8", "replace")
+        ids = set(re.findall(r"""(?:data-ds-appid|data-appid)=["']([0-9]{1,10})["']""", page, re.IGNORECASE))
+        ids.update(sale_page_game_ids(page))
+        for app_id in ids:
+            numeric_id = int(app_id)
+            games.setdefault(numeric_id, str(numeric_id))
+            if len(games) >= limit:
+                return list(games.items())
+    return list(games.items())
+
+
 def store_browse_covers(app_ids: list[int]) -> dict[int, list[str]]:
     result: dict[int, list[str]] = {}
     for offset in range(0, len(app_ids), 50):
@@ -143,11 +229,20 @@ def steamgriddb_portraits(app_id: int) -> list[str]:
 
 
 def main() -> int:
-    top = current_top_sellers()
-    if len(top) < 50:
-        raise RuntimeError(f"Steam returned only {len(top)} top sellers; refusing an incomplete artwork check")
-    app_ids = [app_id for app_id, _ in top]
-    names = dict(top)
+    sections = {
+        "bestsellers": current_top_sellers(),
+        "popular new releases": current_popular_new_releases(),
+        "themed sales": current_themed_sale_games(),
+    }
+    if len(sections["bestsellers"]) < 50:
+        raise RuntimeError(f"Steam returned only {len(sections['bestsellers'])} top sellers; refusing an incomplete artwork check")
+    names: dict[int, str] = {}
+    for section, games in sections.items():
+        for app_id, name in games:
+            names.setdefault(app_id, name)
+        print(f"Artwork coverage source '{section}': {len(games)} games")
+    top = list(names.items())
+    app_ids = list(names)
     covers = store_browse_covers(app_ids)
     checks = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=12) as pool:
@@ -177,14 +272,14 @@ def main() -> int:
     covered = [app_id for app_id in app_ids if checks[app_id][1] is not None]
     steam_count = sum(checks[app_id][0] == "Steam Store" for app_id in covered)
     sgdb_count = sum(checks[app_id][0] == "SteamGridDB" for app_id in covered)
-    print(f"Portrait artwork smoke: {len(covered)}/{len(top)} current Steam bestsellers have reachable vertical covers.")
+    print(f"Portrait artwork smoke: {len(covered)}/{len(top)} games across all dynamic Leaders feeds have reachable vertical covers.")
     print(f"Verified sources: Steam Store {steam_count}, SteamGridDB public pages {sgdb_count}.")
     for app_id in app_ids:
         source, url = checks[app_id]
         if url is None:
             print(f"MISSING  {app_id}  {names[app_id]}")
     if len(covered) != len(top):
-        raise RuntimeError(f"{len(top) - len(covered)} current bestsellers have no reachable portrait cover")
+        raise RuntimeError(f"{len(top) - len(covered)} games across dynamic Leaders feeds have no reachable portrait cover")
     return 0
 
 
