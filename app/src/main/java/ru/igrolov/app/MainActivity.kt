@@ -413,17 +413,22 @@ class MainActivity : ComponentActivity() {
             if (entry?.optBoolean("success") == true) {
                 SteamTopSellerParser.applyRuDetails(game, details, null)
             } else {
-                // A failed RU appdetails response describes the region, so corroborate it only with the RU search.
-                val term = URLEncoder.encode(game.title, "UTF-8")
-                val searchContainsApp = runCatching {
-                    val search = JSONObject(steamGet("https://store.steampowered.com/api/storesearch/?term=$term&l=russian&cc=ru"))
+                // Sale-page event data contains app IDs but may not include names. Resolve one globally
+                // before using the RU store search as regional evidence.
+                val searchable = if (game.title.isBlank()) runCatching {
+                    val global = steamGet("https://store.steampowered.com/api/appdetails?appids=${game.appId}&cc=us&l=english")
+                    SteamTopSellerParser.applyGlobalMetadata(game, global)
+                }.getOrDefault(game) else game
+                val term = searchable.title.takeIf { it.isNotBlank() }?.let { URLEncoder.encode(it, "UTF-8") }
+                val searchContainsApp = term?.let { encodedTitle -> runCatching {
+                    val search = JSONObject(steamGet("https://store.steampowered.com/api/storesearch/?term=$encodedTitle&l=russian&cc=ru"))
                     val items = search.optJSONArray("items") ?: return@runCatching null
                     (0 until items.length()).any { index ->
                         val item = items.optJSONObject(index) ?: return@any false
                         item.optInt("id", item.optInt("appid", 0)) == game.appId
                     }
-                }.getOrNull()
-                SteamTopSellerParser.applyRuDetails(game, details, searchContainsApp)
+                }.getOrNull() }
+                SteamTopSellerParser.applyRuDetails(searchable, details, searchContainsApp)
             }
         } catch (_: Exception) { game }
 
