@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Smoke check Steam's public feed for currently featured themed sale pages."""
+import html
 import json
 import re
 import time
@@ -25,6 +26,36 @@ def get(url: str) -> str:
             if attempt < 2:
                 time.sleep(attempt + 1)
     raise RuntimeError(f"Steam endpoint unavailable: {last_error}")
+
+
+def sale_page_game_ids(page: str) -> set[int]:
+    decoded = html.unescape(page)
+    match = re.search(r'"jsondata":"(.*?)","announcement_body"', decoded, re.DOTALL)
+    if not match:
+        return set()
+    try:
+        event_data = json.loads(json.loads('"' + match.group(1) + '"'))
+    except (json.JSONDecodeError, TypeError):
+        return set()
+    ids: set[int] = set()
+
+    def collect(value: object) -> None:
+        if isinstance(value, dict):
+            if value.get("type") == "game":
+                try:
+                    app_id = int(value.get("id", 0))
+                    if app_id > 0:
+                        ids.add(app_id)
+                except (TypeError, ValueError):
+                    pass
+            for child in value.values():
+                collect(child)
+        elif isinstance(value, list):
+            for child in value:
+                collect(child)
+
+    collect(event_data.get("sale_sections", []))
+    return ids
 
 
 def themed_sale_links(payload: dict) -> list[tuple[str, str]]:
@@ -75,4 +106,5 @@ for name, url in events[:5]:
     localized = url + ("&" if "?" in url else "?") + "cc=ru&l=russian"
     page = get(localized)
     app_ids = set(re.findall(r"""(?:data-ds-appid|data-appid)=["']([0-9]{1,10})["']""", page, re.IGNORECASE))
-    print(f"- {name}: Steam page reachable; game ids in initial HTML: {len(app_ids)}")
+    app_ids.update(sale_page_game_ids(page))
+    print(f"- {name}: Steam page reachable; curated game IDs: {len(app_ids)}")
