@@ -137,7 +137,7 @@ class ReleaseSmokeTest {
             UiTestScroll.reveal(compose,"750 ₽")
         }
         UiTestScroll.reveal(compose, "900 ₽")
-        assertTrue(device.hasObject(By.text("900 ₽")))
+        compose.onNodeWithText("900 ₽").assertIsDisplayed()
         // Compose's text matcher confirms the discount note is rendered; UIAutomator
         // does not expose this nested Text as an exact standalone accessibility node.
         UiTestScroll.reveal(compose,"−50%")
