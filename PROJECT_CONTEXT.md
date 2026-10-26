@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-26T10:58:48.922Z
+- Обновлено (UTC): 2026-10-26T11:35:30.456Z
 - Ветка: `main`.
-- HEAD: [`5d63191142b6`](https://github.com/Magral/Igrolov/commit/5d63191142b6e9d3c331ce40f8bb7928dc27d4dd).
+- HEAD: [`83121bba6bd8`](https://github.com/Magral/Igrolov/commit/83121bba6bd8ab5249f3f98c6656e6079305495b).
 - Последний опубликованный стабильный GitHub Release: [v1.5.7](https://github.com/Magral/Igrolov/releases/tag/v1.5.7); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [83121bb](https://github.com/Magral/Igrolov/commit/83121bba6bd8ab5249f3f98c6656e6079305495b) — fix: restore missing portrait covers
 - [5d63191](https://github.com/Magral/Igrolov/commit/5d63191142b6e9d3c331ce40f8bb7928dc27d4dd) — test: verify reset filter through Compose semantics
 - [a62d905](https://github.com/Magral/Igrolov/commit/a62d905effa1a3fefc7f156186464abab419d51f) — test: wait for filter reset on older devices
 - [d263248](https://github.com/Magral/Igrolov/commit/d2632482bd5b8385faa57ca414076082fa0431ba) — test: verify leaders filter reset in UI
-- [f8f6781](https://github.com/Magral/Igrolov/commit/f8f6781f8bfd128314b3632889c98c83abb144ee) — test: align Steam RU availability expectations
 <!-- AUTO_CONTEXT_END -->
