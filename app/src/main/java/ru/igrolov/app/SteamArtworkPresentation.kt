@@ -15,6 +15,22 @@ object SteamArtworkPresentation {
     fun cacheKey(appId: Int, portrait: Boolean): String =
         "${if (portrait) "portrait" else "landscape"}_$appId"
 
+    /** Alternate Steam CDN paths; the caller still keeps the requested artwork aspect ratio. */
+    fun directFallbackUrls(appId: Int, portrait: Boolean): List<String> {
+        if (appId <= 0) return emptyList()
+        val filenames = if (portrait) {
+            listOf("library_600x900.jpg", "library_600x900_2x.jpg")
+        } else {
+            listOf("header.jpg", "capsule_616x353.jpg", "capsule_467x181.jpg")
+        }
+        return filenames.flatMap { filename ->
+            listOf(
+                "https://cdn.cloudflare.steamstatic.com/steam/apps/$appId/$filename",
+                "https://cdn.akamai.steamstatic.com/steam/apps/$appId/$filename"
+            )
+        }.distinct()
+    }
+
     fun libraryCapsuleUrls(responseJson: String, appId: Int): List<String> = runCatching {
         val items = JSONObject(responseJson).optJSONObject("response")?.optJSONArray("store_items")
             ?: return emptyList()

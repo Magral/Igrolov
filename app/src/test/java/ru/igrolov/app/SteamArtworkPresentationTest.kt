@@ -14,6 +14,17 @@ class SteamArtworkPresentationTest {
         assertEquals("landscape_123", SteamArtworkPresentation.cacheKey(123, false))
     }
 
+    @Test fun directFallbacksKeepPortraitAndLandscapeArtworkSeparate() {
+        val portrait = SteamArtworkPresentation.directFallbackUrls(123, portrait = true)
+        val landscape = SteamArtworkPresentation.directFallbackUrls(123, portrait = false)
+
+        assertTrue(portrait.isNotEmpty())
+        assertTrue(portrait.all(SteamArtworkPresentation::isPortrait))
+        assertTrue(landscape.isNotEmpty())
+        assertTrue(landscape.none(SteamArtworkPresentation::isPortrait))
+        assertTrue(SteamArtworkPresentation.directFallbackUrls(0, portrait = true).isEmpty())
+    }
+
     @Test fun resolvesModernHashBasedLibraryCoversBeforeUsingLandscapeFallbacks() {
         val filenameToken = "$" + "{FILENAME}"
         val response = """{"response":{"store_items":[{"appid":123,"success":1,"assets":{

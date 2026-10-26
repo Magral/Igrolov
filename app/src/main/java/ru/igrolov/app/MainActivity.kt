@@ -599,7 +599,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun steamArtworkFallbackUrls(appId: Int, portrait: Boolean): List<String> {
-        val urls = mutableListOf<String>()
+        val urls = SteamArtworkPresentation.directFallbackUrls(appId, portrait).toMutableList()
         if (portrait) runCatching {
             val request = JSONObject()
                 .put("ids", JSONArray().put(JSONObject().put("appid", appId)))
@@ -625,20 +625,27 @@ class MainActivity : ComponentActivity() {
         val view = LocalView.current
         val scope = rememberCoroutineScope()
         val artworkPrefs = remember(context) { context.getSharedPreferences("steam_artwork_urls", MODE_PRIVATE) }
-        val portraitArtwork = remember(url) { SteamArtworkPresentation.isPortrait(url) }
-        val artworkCacheKey = remember(appId, portraitArtwork) {
-            appId?.let { SteamArtworkPresentation.cacheKey(it, portraitArtwork) }
+        val requestedPortrait = remember(url) { SteamArtworkPresentation.isPortrait(url) }
+        val artworkCacheKey = remember(appId, requestedPortrait) {
+            appId?.let { SteamArtworkPresentation.cacheKey(it, requestedPortrait) }
         }
         val initialCandidates = remember(url, appId, artworkCacheKey) {
-            val cached = artworkCacheKey?.let { artworkPrefs.getString(it, null) }
+            val cachedRequested = artworkCacheKey?.let { artworkPrefs.getString(it, null) }
                 ?.takeIf { it.isNotBlank() }
-            listOfNotNull(cached, url).distinct()
+            val cachedOtherAspect = appId?.let {
+                artworkPrefs.getString(SteamArtworkPresentation.cacheKey(it, !requestedPortrait), null)
+            }?.takeIf { it.isNotBlank() }
+            listOfNotNull(cachedRequested, url, cachedOtherAspect).distinct()
         }
         var candidates by remember(url, appId) { mutableStateOf(initialCandidates) }
         var candidateIndex by remember(url, appId) { mutableIntStateOf(0) }
         var shouldLoad by remember(url, appId) { mutableStateOf(false) }
         var imageUrl by remember(url, appId) { mutableStateOf(initialCandidates.firstOrNull().orEmpty()) }
         var fallbackCandidatesLoaded by remember(url, appId) { mutableStateOf(false) }
+        val displayedPortrait = remember(imageUrl) { SteamArtworkPresentation.isPortrait(imageUrl) }
+        val displayedCacheKey = remember(appId, displayedPortrait) {
+            appId?.let { SteamArtworkPresentation.cacheKey(it, displayedPortrait) }
+        }
 
         Box(
             modifier
@@ -669,14 +676,14 @@ class MainActivity : ComponentActivity() {
                         .crossfade(true)
                         .build(),
                     contentDescription = null,
-                    contentScale = if (portraitArtwork) androidx.compose.ui.layout.ContentScale.Crop
+                    contentScale = if (displayedPortrait) androidx.compose.ui.layout.ContentScale.Crop
                         else androidx.compose.ui.layout.ContentScale.Fit,
                     modifier = modifier,
                     onSuccess = {
-                        artworkCacheKey?.let { artworkPrefs.edit().putString(it, imageUrl).apply() }
+                        displayedCacheKey?.let { artworkPrefs.edit().putString(it, imageUrl).apply() }
                     },
                     onError = {
-                        artworkCacheKey?.let { artworkPrefs.edit().remove(it).apply() }
+                        displayedCacheKey?.let { artworkPrefs.edit().remove(it).apply() }
                         val nextIndex = candidateIndex + 1
                         if (nextIndex < candidates.size) {
                             candidateIndex = nextIndex
@@ -685,7 +692,7 @@ class MainActivity : ComponentActivity() {
                             fallbackCandidatesLoaded = true
                             scope.launch {
                                 val additional = withContext(Dispatchers.IO) {
-                                    steamArtworkFallbackUrls(appId, portraitArtwork)
+                                    steamArtworkFallbackUrls(appId, requestedPortrait)
                                 }
                                 val merged = (candidates + additional).distinct()
                                 val nextUrl = merged.drop(candidateIndex + 1).firstOrNull()
@@ -846,7 +853,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun SteamLeaderCard(
         index: Int, game: SteamTopSeller, marketplacePrices: LeaderOfferPrices?,
-        monitored: Boolean, searchEnabled: Boolean,
+        searchEnabled: Boolean,
         onOpenSearch: () -> Unit, onDetails: () -> Unit,
         onSearchPrice: () -> Unit, onMonitor: () -> Unit,
         cachedPrices: CachedGamePrices?
@@ -898,7 +905,7 @@ class MainActivity : ComponentActivity() {
                     OutlinedButton(onClick = onMonitor, modifier = Modifier.weight(1f).height(36.dp),
                         contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp),
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
-                        Text(if (monitored) "Добавить издание" else "Следить",
+                        Text("Следить",
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                             color = Color(0xFF17212D), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
@@ -2536,7 +2543,6 @@ class MainActivity : ComponentActivity() {
                             hiddenWishlistSearch = true
                         )
                     },
-                    isMonitored = { game -> isGameWatched(game.appId, game.title) },
                     onMonitor = { game -> openGameMonitoring(game.appId, game.title) },
                     cachedPrices = { game -> wishlistCacheKeys[game.appId]?.let { catalogueUi.priceCache[it] } },
                     onDetails = { game ->
@@ -2683,7 +2689,7 @@ class MainActivity : ComponentActivity() {
                     val cacheKey = remember(game.appId, game.title, manualFilters, rulesRevision, ignoredIds,
                         searchTotalPages, comparisonSavedAliases[game.appId]) { comparisonKey(game.appId, game.title, true) }
                     SteamLeaderCard(index, game, leaderOfferPrices[game.appId]?.takeIf { it.scopeKey == cacheKey },
-                        monitored = isGameWatched(game.appId, game.title), searchEnabled = !searching && !catalogueUi.priceBatch.running && manualFilters.valid,
+                        searchEnabled = !searching && !catalogueUi.priceBatch.running && manualFilters.valid,
                         cachedPrices = catalogueUi.priceCache[cacheKey],
                         onOpenSearch = {
                                     if (!catalogueUi.priceBatch.running) {
@@ -3164,7 +3170,6 @@ class MainActivity : ComponentActivity() {
         onSearchPrice: (WishlistGame) -> Unit,
         onDetails: (WishlistGame) -> Unit,
         onShowMore: () -> Unit,
-        isMonitored: (WishlistGame) -> Boolean,
         onMonitor: (WishlistGame) -> Unit,
         cachedPrices: (WishlistGame) -> CachedGamePrices?
     ) {
@@ -3260,7 +3265,7 @@ class MainActivity : ComponentActivity() {
                             OutlinedButton(onClick = { onMonitor(game) }, enabled = game.appId > 0,
                                 modifier = Modifier.weight(1f).height(36.dp), contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp),
                                 shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
-                                Text(if (isMonitored(game)) "Добавить издание" else "Следить",
+                                Text("Следить",
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                                     color = Color(0xFF17212D), maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
