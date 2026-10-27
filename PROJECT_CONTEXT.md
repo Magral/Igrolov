@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-27T14:50:39.290Z
+- Обновлено (UTC): 2026-10-27T14:59:41.593Z
 - Ветка: `main`.
-- HEAD: [`b359e5bfc0cf`](https://github.com/Magral/Igrolov/commit/b359e5bfc0cf2e4abeb91f7da83c66c10b585820).
+- HEAD: [`ab7486361516`](https://github.com/Magral/Igrolov/commit/ab7486361516e6eafcb7fbc2511c8b44af3f3dc6).
 - Последний опубликованный стабильный GitHub Release: [v1.6.4](https://github.com/Magral/Igrolov/releases/tag/v1.6.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [ab74863](https://github.com/Magral/Igrolov/commit/ab7486361516e6eafcb7fbc2511c8b44af3f3dc6) — release: Игролов 1.6.5
 - [b359e5b](https://github.com/Magral/Igrolov/commit/b359e5bfc0cf2e4abeb91f7da83c66c10b585820) — test: verify plain price refresh failure message
 - [39c0a05](https://github.com/Magral/Igrolov/commit/39c0a05aa3ba60eb279a690108e3c0704c818e66) — fix: preserve last confirmed price after refresh failure
 - [d669711](https://github.com/Magral/Igrolov/commit/d669711b805d3c44fc0518248ca42b4d92593ebf) — test: expect customer friendly price refresh error
-- [16fbb8c](https://github.com/Magral/Igrolov/commit/16fbb8c16228c190b975b71bc4c210aab1337b99) — test: wait for clickable game suggestion
 <!-- AUTO_CONTEXT_END -->
