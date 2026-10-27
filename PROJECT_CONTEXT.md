@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-27T12:18:07.412Z
+- Обновлено (UTC): 2026-10-27T12:20:14.120Z
 - Ветка: `main`.
-- HEAD: [`c1c7f9496c1c`](https://github.com/Magral/Igrolov/commit/c1c7f9496c1c9337b669de46ccdcda89e6cc21ac).
+- HEAD: [`db6010050ec1`](https://github.com/Magral/Igrolov/commit/db6010050ec1c342d4a30f77c777d7499e985e60).
 - Последний опубликованный стабильный GitHub Release: [v1.6.4](https://github.com/Magral/Igrolov/releases/tag/v1.6.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [db60100](https://github.com/Magral/Igrolov/commit/db6010050ec1c342d4a30f77c777d7499e985e60) — fix: remove technical price-check errors from monitor cards
 - [c1c7f94](https://github.com/Magral/Igrolov/commit/c1c7f9496c1c9337b669de46ccdcda89e6cc21ac) — fix: keep monitoring error details compact by default
 - [fdc70a9](https://github.com/Magral/Igrolov/commit/fdc70a9c7dfa4cf1945f0b659aa119ef0228c519) — chore: remove one-time artwork test publisher
 - [5840cc1](https://github.com/Magral/Igrolov/commit/5840cc1392ce8c5dcc914332d0a00546b3e3ed67) — release: Игролов 1.6.4 — оптимизация поиска и загрузки данных
-- [351cf6c](https://github.com/Magral/Igrolov/commit/351cf6c7efcfcf4b8a70d53004df5050a1fde973) — fix: allow independent price checks from leaderboard cards
 <!-- AUTO_CONTEXT_END -->
