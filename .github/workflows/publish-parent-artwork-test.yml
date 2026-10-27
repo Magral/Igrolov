@@ -33,7 +33,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.6.2-capsule-fix-test
-          target_commitish: 6571d1fae7a141ccbea5e7ac44374f66da6cc73a
+          target_commitish: ${{ github.sha }}
           name: Игролов — исправление фильтра вертикальных обложек
           prerelease: true
           body: |
