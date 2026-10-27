@@ -144,7 +144,7 @@ class TrackedTransferUiRegressionTest {
         compose.waitUntil(10000) { compose.onAllNodesWithText("5200,00 ₽").fetchSemanticsNodes().isNotEmpty() }
         offline.set(true)
         clickText("Обновить цены")
-        compose.waitUntil(10000) { compose.onAllNodesWithText("Нет связи",substring=true).fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10000) { compose.onAllNodesWithText("Не удалось обновить цену",substring=true).fetchSemanticsNodes().isNotEmpty() }
         assertTrue(compose.onAllNodesWithText("5200,00 ₽").fetchSemanticsNodes().isNotEmpty())
         device.takeScreenshot(File(context.getExternalFilesDir(null),"tracked-transfer.png"))
         MonitorRoomStore.writeTrackedProduct(context,"123456",null)
