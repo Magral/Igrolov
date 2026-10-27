@@ -1,0 +1,47 @@
+name: Publish DLC artwork fallback test APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/publish-parent-artwork-test.yml
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish-test-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download verified APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Igrolov-v1.6.2-debug-ad320d83797004044c1287b625b38574c9d61c7c
+          run-id: 40455053268
+          github-token: ${{ github.token }}
+          path: downloaded
+
+      - name: Prepare APK
+        run: |
+          apk=$(find downloaded -type f -name '*.apk' -print -quit)
+          test -n "$apk"
+          mkdir -p release
+          cp "$apk" release/Igrolov-1.6.2-parent-artwork-test.apk
+
+      - name: Publish test prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.6.2-parent-artwork-test
+          target_commitish: ad320d83797004044c1287b625b38574c9d61c7c
+          name: Игролов — проверка обложек DLC
+          prerelease: true
+          body: |
+            Тестовая сборка для проверки резервных вертикальных обложек для DLC.
+            Если Steam и SteamGridDB не содержат отдельную страницу DLC, приложение ищет Parent App на публичной странице SteamDB и загружает обложку основной игры.
+            
+            APK собран из commit ad320d83797004044c1287b625b38574c9d61c7c.
+            Проверки GitHub Actions: unit-тесты, live smoke, Android API 26 и 29 — успешно.
+            Это тестовая prerelease-сборка, не стабильный релиз.
+          files: release/Igrolov-1.6.2-parent-artwork-test.apk
+          fail_on_unmatched_files: true
