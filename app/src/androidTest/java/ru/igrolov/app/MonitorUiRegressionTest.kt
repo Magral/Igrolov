@@ -73,20 +73,14 @@ class MonitorUiRegressionTest {
             compose.onAllNodesWithText("Динамика: минимум снизился", substring = true).fetchSemanticsNodes().isNotEmpty()
         }
         UiTestScroll.reveal(compose, "Динамика: минимум снизился", contains = true)
-        assertTrue(compose.onAllNodesWithText("Детали проверки").fetchSemanticsNodes().isNotEmpty())
+        assertFalse("Internal check details must not be shown to shoppers",
+            compose.onAllNodesWithText("Детали проверки").fetchSemanticsNodes().isNotEmpty())
         assertFalse(device.hasObject(By.text("Источники · Plati: 0 · GGSEL: 1")))
+        assertFalse(device.hasObject(By.textStartsWith("Следующая проверка")))
         device.takeScreenshot(File(context.getExternalFilesDir(null),"monitor-compact.png"))
-        compose.onNodeWithText("Детали проверки").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        compose.waitUntil(5000) {
-            compose.onAllNodesWithText("Источники · Plati: 0 · GGSEL: 1").fetchSemanticsNodes().isNotEmpty()
-        }
-        UiTestScroll.reveal(compose, "Источники · Plati: 0 · GGSEL: 1")
-        assertTrue(compose.onAllNodesWithText("Источники · Plati: 0 · GGSEL: 1").fetchSemanticsNodes().isNotEmpty())
-        UiTestScroll.reveal(compose, "3 лучшие цены (1)")
-        assertTrue(device.hasObject(By.text("3 лучшие цены (1)")))
-        assertTrue(device.hasObject(By.textStartsWith("Следующая проверка")) ||
-            device.hasObject(By.textStartsWith("Проверка будет повторена автоматически")))
-        compose.onNodeWithText("3 лучшие цены (1)").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        UiTestScroll.reveal(compose, "Цены (1)")
+        assertTrue(device.hasObject(By.text("Цены (1)")))
+        compose.onNodeWithText("Цены (1)").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitUntil(5000) {
             compose.onAllNodesWithText("Открыть на GGSEL").fetchSemanticsNodes().isNotEmpty()
         }
@@ -120,12 +114,12 @@ class MonitorUiRegressionTest {
         compose.onAllNodes(hasSetTextAction()).onFirst().performScrollTo()
         compose.onAllNodes(hasSetTextAction()).onFirst().performTextInput("Стелларис")
         compose.waitUntil(15000) {
-            compose.onAllNodesWithText("Stellaris · Steam #281990").fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodesWithText("Stellaris").fetchSemanticsNodes().isNotEmpty()
         }
-        compose.onNodeWithText("Stellaris · Steam #281990")
+        compose.onAllNodesWithText("Stellaris").onLast()
             .performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitUntil(5000) {
-            compose.onAllNodesWithText("Выбрано: Stellaris · Steam #281990").fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodesWithText("Выбрано: Stellaris").fetchSemanticsNodes().isNotEmpty()
         }
         device.takeScreenshot(File(context.getExternalFilesDir(null),"monitor-selection.png"))
         WatchStore.write(context,JSONArray())
