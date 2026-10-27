@@ -30,7 +30,7 @@ object SteamDbArtwork {
 
     internal fun parseParentAppId(html: String, childAppId: Int): Int? {
         val parentRow = Regex(
-            """(?is)<tr\\b[^>]*>\\s*<td[^>]*>\\s*Parent\\s+App\\s*</td>\\s*<td[^>]*>(.*?)</td>\\s*</tr>"""
+            """(?is)<tr\b[^>]*>\s*<td[^>]*>\s*Parent\s+App\s*</td>\s*<td[^>]*>(.*?)</td>\s*</tr>"""
         ).find(html)?.groupValues?.get(1) ?: return null
         val parent = Regex("""(?i)data-appid=["']([0-9]{1,10})["']""")
             .find(parentRow)?.groupValues?.get(1)?.toIntOrNull() ?: return null
