@@ -114,7 +114,7 @@ class MonitorUiRegressionTest {
         compose.onAllNodes(hasSetTextAction()).onFirst().performScrollTo()
         compose.onAllNodes(hasSetTextAction()).onFirst().performTextInput("Стелларис")
         compose.waitUntil(15000) {
-            compose.onAllNodesWithText("Stellaris").fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodes(hasText("Stellaris") and hasClickAction()).fetchSemanticsNodes().isNotEmpty()
         }
         compose.onAllNodes(hasText("Stellaris") and hasClickAction()).onLast()
             .performSemanticsAction(SemanticsActions.OnClick) { it() }
