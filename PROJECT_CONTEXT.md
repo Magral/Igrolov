@@ -69,9 +69,9 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-27T02:21:25.999Z
+- Обновлено (UTC): 2026-10-27T02:21:33.545Z
 - Ветка: `main`.
-- HEAD: [`59217d520dbd`](https://github.com/Magral/Igrolov/commit/59217d520dbdbf17629d688dc21beeb6427504d8).
+- HEAD: [`fd2cc635e912`](https://github.com/Magral/Igrolov/commit/fd2cc635e9120466abc65d077bb87b30a471c0cb).
 - Последний опубликованный стабильный GitHub Release: [v1.6.2](https://github.com/Magral/Igrolov/releases/tag/v1.6.2); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
@@ -79,5 +79,4 @@
 - [48ceff1](https://github.com/Magral/Igrolov/commit/48ceff1a5e11719343a5c60c90ed633823219ff2) — fix: expire empty SteamGridDB artwork cache quickly
 - [0c17a51](https://github.com/Magral/Igrolov/commit/0c17a51626c3cea287939e26d91739a862e1a707) — debug: capture SteamGridDB resolution results
 - [3f4cade](https://github.com/Magral/Igrolov/commit/3f4cade074e4cb7998f03f4fd2bf483207f289c0) — ci: publish artwork fallback test APK
-- [a069294](https://github.com/Magral/Igrolov/commit/a0692949db284244640b77e0814b605d5b462e0a) — fix: continue portrait fallback after Steam artwork 404
 <!-- AUTO_CONTEXT_END -->
