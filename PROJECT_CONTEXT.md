@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-27T02:31:19.489Z
+- Обновлено (UTC): 2026-10-27T05:23:16.204Z
 - Ветка: `main`.
-- HEAD: [`df125b89c0a6`](https://github.com/Magral/Igrolov/commit/df125b89c0a6a7ad37ff4d3388469a68fb6b3123).
+- HEAD: [`c9d91921d64d`](https://github.com/Magral/Igrolov/commit/c9d91921d64dba589e6252ff6364250b95bdb541).
 - Последний опубликованный стабильный GitHub Release: [v1.6.2](https://github.com/Magral/Igrolov/releases/tag/v1.6.2); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [c9d9192](https://github.com/Magral/Igrolov/commit/c9d91921d64dba589e6252ff6364250b95bdb541) — feat: resolve parent Steam artwork for DLC
 - [df125b8](https://github.com/Magral/Igrolov/commit/df125b89c0a6a7ad37ff4d3388469a68fb6b3123) — ci: publish artwork cache fix test APK
 - [3495308](https://github.com/Magral/Igrolov/commit/349530892f4d62901405dce0a639e9a4e821e366) — test: cover current SteamGridDB page markup
 - [99d766a](https://github.com/Magral/Igrolov/commit/99d766a5ca6d83eb43f262258397e888c9debb4c) — fix: count SteamGridDB cards in artwork report
-- [59217d5](https://github.com/Magral/Igrolov/commit/59217d520dbdbf17629d688dc21beeb6427504d8) — fix: log SteamGridDB extraction diagnostics safely
 <!-- AUTO_CONTEXT_END -->
