@@ -6,27 +6,41 @@ import java.net.URL
 
 /** Reads portrait cover links from SteamGridDB's public game page; no API or account key is used. */
 object SteamGridDbArtwork {
-    private const val EMPTY_CACHE_TTL_MS = 30 * 60 * 1000L
+    private const val EMPTY_CACHE_TTL_MS = 2 * 60 * 1000L
     private const val POSTER_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000L
 
     /** Returns community portrait cover links from the public Steam-ID page, without API routes. */
     fun fetchPortraitUrls(context: Context, appId: Int): List<String> {
         if (appId <= 0) return emptyList()
         val prefs = context.getSharedPreferences("steam_artwork_urls", Context.MODE_PRIVATE)
-        // Bump the key to discard empty results saved by the previous brittle parser.
-        val cacheKey = "sgdb_public_page_portrait_v3_$appId"
+        // v4 discards stale empty results cached before fallback diagnostics and short negative caching.
+        val cacheKey = "sgdb_public_page_portrait_v4_$appId"
         val cachedAtKey = "${cacheKey}_at"
         val now = System.currentTimeMillis()
         val cachedAt = prefs.getLong(cachedAtKey, 0L)
         val cachedUrls = prefs.getString(cacheKey, null)?.split('\n')?.filter(::isSafeGridUrl)
         if (cachedAt > 0L && cachedUrls != null) {
             val ttl = if (cachedUrls.isEmpty()) EMPTY_CACHE_TTL_MS else POSTER_CACHE_TTL_MS
-            if (now - cachedAt in 0..ttl) return cachedUrls
+            if (now - cachedAt in 0..ttl) {
+                SteamArtworkDiagnostics.note(appId, "www.steamgriddb.com", "cache hit portraitUrls=${cachedUrls.size}")
+                return cachedUrls
+            }
         }
         // A timeout, DNS error, or anti-bot response is transient. Do not cache it as
         // "this game has no artwork"; otherwise one bad request hides covers for hours.
-        val html = runCatching { request(publicGridPageUrl(appId)) }.getOrNull() ?: return emptyList()
+        val pageUrl = publicGridPageUrl(appId)
+        val html = try {
+            request(pageUrl)
+        } catch (error: Exception) {
+            SteamArtworkDiagnostics.record(appId, pageUrl, error)
+            return emptyList()
+        }
         val urls = parsePortraitUrls(html)
+        SteamArtworkDiagnostics.note(
+            appId,
+            "www.steamgriddb.com",
+            "pageChars=${html.length} portraitUrls=${urls.size} assetCards=${html.countMatches(Regex("(?i)class=[\\"'][^\\"']*\\basset\\b"))}"
+        )
         prefs.edit().putString(cacheKey, urls.joinToString("\n")).putLong(cachedAtKey, now).apply()
         return urls
     }
