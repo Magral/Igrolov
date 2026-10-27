@@ -30,6 +30,27 @@ class SteamGridDbArtworkTest {
         )
     }
 
+    @Test fun extractsCurrentSteamGridDbDownloadLinkFromNestedAssetCard() {
+        val html = """
+            <div data-type="grid" class="asset-container compact">
+              <div class="asset" aria-expanded="false">
+                <div class="preview"><div class="btn-download">
+                  <a href="https://cdn2.steamgriddb.com/grid/a592d9fe5ade10553913fb1b94f1175c.png">download</a>
+                </div></div>
+                <div class="img-container" style="padding-bottom: 150%;">
+                  <img data-src="https://cdn2.steamgriddb.com/thumb/a592d9fe5ade10553913fb1b94f1175c.jpg">
+                </div>
+                <div class="info"><div class="metadata">Alternate • <span>600×900</span></div></div>
+              </div>
+            </div>
+        """.trimIndent()
+
+        assertEquals(
+            listOf("https://cdn2.steamgriddb.com/grid/a592d9fe5ade10553913fb1b94f1175c.png"),
+            SteamGridDbArtwork.parsePortraitUrls(html)
+        )
+    }
+
     @Test fun stillFindsVerticalCoversWhenPublicPageChangesCardClassAndUsesLazyImageSource() {
         val html = """
             <section class="grid-card"><span>600 × 900</span>
