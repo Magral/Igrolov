@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-27T06:11:24.018Z
+- Обновлено (UTC): 2026-10-27T06:20:06.187Z
 - Ветка: `main`.
-- HEAD: [`b9c55a86f68e`](https://github.com/Magral/Igrolov/commit/b9c55a86f68e318b976947a22efcef5385617cde).
+- HEAD: [`e5471fc9ff85`](https://github.com/Magral/Igrolov/commit/e5471fc9ff854fda9925128487efac60e7f5af51).
 - Последний опубликованный стабильный GitHub Release: [v1.6.2](https://github.com/Magral/Igrolov/releases/tag/v1.6.2); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [e5471fc](https://github.com/Magral/Igrolov/commit/e5471fc9ff854fda9925128487efac60e7f5af51) — ci: publish verified Steam capsule portrait filter fix
 - [6571d1f](https://github.com/Magral/Igrolov/commit/6571d1fae7a141ccbea5e7ac44374f66da6cc73a) — test: use actual Steam library_capsule filenames through portrait pipeline
 - [c90174d](https://github.com/Magral/Igrolov/commit/c90174d27dc3580152426bd70f0beb17ecece327) — fix: retain Steam library_capsule portrait assets in artwork filter
 - [e4ad009](https://github.com/Magral/Igrolov/commit/e4ad009c3ac3edcd5ad04c448e0bd1476c92c502) — ci: publish DLC artwork fallback test APK
-- [ad320d8](https://github.com/Magral/Igrolov/commit/ad320d83797004044c1287b625b38574c9d61c7c) — test: parse parent app relation for DLC artwork
 <!-- AUTO_CONTEXT_END -->
