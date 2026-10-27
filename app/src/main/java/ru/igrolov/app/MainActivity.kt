@@ -1904,7 +1904,6 @@ class MainActivity : ComponentActivity() {
                         else " Подтверждённые цены не найдены."
                     } else ""
                     searchMessage = summary
-                    searchMessage = summary
                 }
                 onFinished?.invoke()
             }
@@ -2333,8 +2332,8 @@ class MainActivity : ComponentActivity() {
                                 })
                         }
                         val checkedAt = w.optLong("checked", 0L)
-                                                val monitorDate = java.text.SimpleDateFormat("dd.MM HH:mm", Locale("ru", "RU"))
-                                                var resultsExpanded by remember(w.optString("name")) { mutableStateOf(false) }
+                        val monitorDate = java.text.SimpleDateFormat("dd.MM HH:mm", Locale("ru", "RU"))
+                        var resultsExpanded by remember(w.optString("name")) { mutableStateOf(false) }
                         val bestOffers = w.optJSONArray("topOffers") ?: JSONArray()
                         if (checkedAt > 0L) Text("Проверено ${monitorDate.format(java.util.Date(checkedAt))}",
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -2342,13 +2341,13 @@ class MainActivity : ComponentActivity() {
                             Text(if (resultsExpanded) "Скрыть цены" else "Цены (${bestOffers.length()})", maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
                         }
                         if (w.has("error")) {
-                                                    Text(
-                                                        MonitorErrorPresentation.summary(w.optString("error")),
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                    )
-                                                }
-                                                if (resultsExpanded) {
+                            Text(
+                                MonitorErrorPresentation.summary(w.optString("error")),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        if (resultsExpanded) {
                             if (bestOffers.length() == 0) {
                                 Text("Пока нет результатов. Нажмите «Проверить сейчас».", style = MaterialTheme.typography.bodySmall)
                             }
