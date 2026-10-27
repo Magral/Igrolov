@@ -52,16 +52,16 @@ class SteamArtworkPresentationTest {
         val filenameToken = "$" + "{FILENAME}"
         val response = """{"response":{"store_items":[{"appid":123,"success":1,"assets":{
             "asset_url_format":"steam/apps/123/$filenameToken?t=1234",
-            "library_capsule_2x":"a1b2c3/library_600x900_2x.jpg",
-            "library_capsule":"a1b2c3/library_600x900.jpg"
+            "library_capsule_2x":"a1b2c3/library_capsule_2x.jpg",
+            "library_capsule":"a1b2c3/library_capsule.jpg"
         }}]}}"""
         val urls = SteamArtworkPresentation.libraryCapsuleUrls(response, 123)
         assertEquals(6, urls.size)
         assertEquals(
-            "https://shared.steamstatic.com/store_item_assets/steam/apps/123/a1b2c3/library_600x900_2x.jpg?t=1234",
+            "https://shared.steamstatic.com/store_item_assets/steam/apps/123/a1b2c3/library_capsule_2x.jpg?t=1234",
             urls.first()
         )
-        assertTrue(urls.all { it.contains("library_600x900") })
+        assertTrue(urls.all { it.contains("library_capsule") })
         // Every resolved Steam capsule URL must pass the same portrait filter the cards use.
         assertTrue(urls.all(SteamArtworkPresentation::isPortrait))
         assertEquals(urls, SteamArtworkPresentation.filterForAspect(urls, portrait = true))
