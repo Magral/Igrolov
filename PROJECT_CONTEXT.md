@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-27T11:11:41.063Z
+- Обновлено (UTC): 2026-10-27T11:20:46.923Z
 - Ветка: `main`.
-- HEAD: [`5840cc1392ce`](https://github.com/Magral/Igrolov/commit/5840cc1392ce8c5dcc914332d0a00546b3e3ed67).
-- Последний опубликованный стабильный GitHub Release: [v1.6.3](https://github.com/Magral/Igrolov/releases/tag/v1.6.3); APK-файлы: есть вложение APK.
+- HEAD: [`fdc70a9c7dfa`](https://github.com/Magral/Igrolov/commit/fdc70a9c7dfa4cf1945f0b659aa119ef0228c519).
+- Последний опубликованный стабильный GitHub Release: [v1.6.4](https://github.com/Magral/Igrolov/releases/tag/v1.6.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [fdc70a9](https://github.com/Magral/Igrolov/commit/fdc70a9c7dfa4cf1945f0b659aa119ef0228c519) — chore: remove one-time artwork test publisher
 - [5840cc1](https://github.com/Magral/Igrolov/commit/5840cc1392ce8c5dcc914332d0a00546b3e3ed67) — release: Игролов 1.6.4 — оптимизация поиска и загрузки данных
 - [351cf6c](https://github.com/Magral/Igrolov/commit/351cf6c7efcfcf4b8a70d53004df5050a1fde973) — fix: allow independent price checks from leaderboard cards
 - [6654b4a](https://github.com/Magral/Igrolov/commit/6654b4a63c9ce71874d024ad45ed4f4ebdb45472) — perf: display app version and shorten retry for missing SteamDB parents
-- [6397fc8](https://github.com/Magral/Igrolov/commit/6397fc8a4b64099970e24e3208eff9ea0c13e128) — release: align upgrade smoke test with Игролов 1.6.3
 <!-- AUTO_CONTEXT_END -->
