@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-27T14:22:01.411Z
+- Обновлено (UTC): 2026-10-27T14:25:09.987Z
 - Ветка: `main`.
-- HEAD: [`e94465f30f08`](https://github.com/Magral/Igrolov/commit/e94465f30f08ada19486c5b608b7b67fa0c05547).
+- HEAD: [`a137258498fb`](https://github.com/Magral/Igrolov/commit/a137258498fb494f4eb8e28754f73d5674f7b6bf).
 - Последний опубликованный стабильный GitHub Release: [v1.6.4](https://github.com/Magral/Igrolov/releases/tag/v1.6.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [a137258](https://github.com/Magral/Igrolov/commit/a137258498fb494f4eb8e28754f73d5674f7b6bf) — test: remove member matcher import
 - [e94465f](https://github.com/Magral/Igrolov/commit/e94465f30f08ada19486c5b608b7b67fa0c05547) — test: target clickable game suggestion by text
 - [b48c595](https://github.com/Magral/Igrolov/commit/b48c5954bb892a5cf5742255ea811725f0e4a6db) — test: import clickable matcher for game suggestion
 - [e51e467](https://github.com/Magral/Igrolov/commit/e51e467a83c54b7274ef2c8934e23dd8633deec4) — test: select clickable game suggestions by title
-- [42358f9](https://github.com/Magral/Igrolov/commit/42358f99e9c1af616aa3f3520325772c3e5a68bf) — test: import Compose collection last matcher
 <!-- AUTO_CONTEXT_END -->
