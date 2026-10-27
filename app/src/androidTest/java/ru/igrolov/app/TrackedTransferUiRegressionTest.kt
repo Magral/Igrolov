@@ -98,9 +98,9 @@ class TrackedTransferUiRegressionTest {
         device.takeScreenshot(File(debugOut,"tracked-search-suggestions.png"))
         device.dumpWindowHierarchy(File(debugOut,"tracked-search-suggestions.xml"))
         compose.waitUntil(15000) {
-            compose.onAllNodesWithText("Stellaris · Steam #281990").fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodesWithText("Stellaris").fetchSemanticsNodes().isNotEmpty()
         }
-        clickText("Stellaris · Steam #281990")
+        clickText("Stellaris")
         // The selected tab hides the soft keyboard without leaving the search form.
         clickText("Поиск")
         device.waitForIdle()
@@ -109,7 +109,7 @@ class TrackedTransferUiRegressionTest {
         clickText("Искать")
         val searchCompleted=runCatching {
             compose.waitUntil(15000) {
-                compose.onAllNodesWithText("Проверено:",substring=true).fetchSemanticsNodes().isNotEmpty()
+                compose.onAllNodesWithText("Найдено предложений:",substring=true).fetchSemanticsNodes().isNotEmpty()
             }
         }.isSuccess
         if(!searchCompleted) {
