@@ -71,7 +71,8 @@ class StellarisUiRegressionTest {
         compose.onAllNodes(hasSetTextAction()).onFirst().performTextReplacement("Stelaris")
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Stellaris")) })
-        compose.onAllNodesWithText("Stellaris").filter(hasClickAction()).onLast().performClick()
+        compose.onAllNodes(hasText("Stellaris") and hasClickAction()).onLast()
+            .performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         // The active tab clears focus while preserving the selected Steam game.
         device.findObject(By.text("Поиск")).click()

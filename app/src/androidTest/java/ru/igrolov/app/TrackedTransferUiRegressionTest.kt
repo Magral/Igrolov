@@ -11,6 +11,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onAllNodes
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onLast
@@ -102,7 +103,7 @@ class TrackedTransferUiRegressionTest {
         compose.waitUntil(15000) {
             compose.onAllNodesWithText("Stellaris").fetchSemanticsNodes().isNotEmpty()
         }
-        compose.onAllNodesWithText("Stellaris").filter(hasClickAction()).onLast()
+        compose.onAllNodes(hasText("Stellaris") and hasClickAction()).onLast()
             .performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         // The selected tab hides the soft keyboard without leaving the search form.
