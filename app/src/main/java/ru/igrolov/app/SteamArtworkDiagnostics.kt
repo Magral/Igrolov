@@ -12,6 +12,10 @@ object SteamArtworkDiagnostics {
         events.addLast("app=" + appId + " host=" + host + " " + detail)
         while (events.size > 120) events.removeFirst()
     }
+    @Synchronized fun note(appId: Int, host: String, detail: String) {
+        events.addLast("app=" + appId + " host=" + host + " " + detail.take(220))
+        while (events.size > 120) events.removeFirst()
+    }
     @Synchronized fun report(): String =
         "Igrolov artwork diagnostics; Android " + android.os.Build.VERSION.SDK_INT +
             "\n" + events.joinToString("\n")
