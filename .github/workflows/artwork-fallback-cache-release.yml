@@ -1,0 +1,38 @@
+name: Publish artwork cache fix test APK
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/artwork-fallback-cache-release.yml']
+permissions:
+  actions: read
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download tested APK
+        uses: actions/download-artifact@v4
+        with:
+          name: Igrolov-v1.6.2-debug-349530892f4d62901405dce0a639e9a4e821e366
+          run-id: 40437999002
+          github-token: ${{ github.token }}
+          path: downloaded
+      - name: Prepare APK
+        run: |
+          mkdir -p diagnostic
+          apk=$(find downloaded -type f -name '*.apk' -print -quit)
+          test -n "$apk"
+          cp "$apk" diagnostic/Igrolov-1.6.2-artwork-cache-test.apk
+      - name: Publish artwork cache test prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.6.2-artwork-cache-test
+          target_commitish: 349530892f4d62901405dce0a639e9a4e821e366
+          name: Игролов — проверка кэша обложек
+          prerelease: true
+          body: |
+            Тестовая сборка исправляет длительное сохранение пустого результата SteamGridDB между обновлениями приложения. Старый пустой кэш сбрасывается; пустые результаты теперь хранятся 2 минуты. Отчёт показывает количество постеров, извлечённых из публичной страницы.
+            APK собран из commit 349530892f4d62901405dce0a639e9a4e821e366. Устанавливается поверх 1.6.2.
+            GitHub Actions прошёл unit-тесты, live smoke и UI-прогоны на Android API 26 и 29. Массовая проблема на телефоне ещё не подтверждена как устранённая.
+          files: diagnostic/Igrolov-1.6.2-artwork-cache-test.apk
+          fail_on_unmatched_files: true
