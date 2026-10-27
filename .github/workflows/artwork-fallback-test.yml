@@ -1,0 +1,38 @@
+name: Publish artwork fallback test APK
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/artwork-fallback-test.yml']
+permissions:
+  actions: read
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download tested APK
+        uses: actions/download-artifact@v4
+        with:
+          name: Igrolov-v1.6.2-debug-a0692949db284244640b77e0814b605d5b462e0a
+          run-id: 40385101137
+          github-token: ${{ github.token }}
+          path: downloaded
+      - name: Prepare APK
+        run: |
+          mkdir -p diagnostic
+          apk=$(find downloaded -type f -name '*.apk' -print -quit)
+          test -n "$apk"
+          cp "$apk" diagnostic/Igrolov-1.6.2-artwork-test.apk
+      - name: Publish artwork fallback prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.6.2-artwork-fallback
+          target_commitish: a0692949db284244640b77e0814b605d5b462e0a
+          name: Игролов — проверка запасных обложек
+          prerelease: true
+          body: |
+            Тестовая сборка проверяет обработку отсутствующих Steam-обложек: если Steam возвращает 404 и не даёт рабочий URL, приложение переходит к поиску вертикальной обложки SteamGridDB.
+            APK собран из commit a0692949db284244640b77e0814b605d5b462e0a. Debug-подпись сохранена, сборка устанавливается поверх 1.6.2.
+            GitHub Actions прошёл unit-тесты, live smoke и UI-прогоны на Android API 26 и 29. Проверка на устройстве пользователя ещё нужна, массовая проблема пока не объявляется устранённой.
+          files: diagnostic/Igrolov-1.6.2-artwork-test.apk
+          fail_on_unmatched_files: true
