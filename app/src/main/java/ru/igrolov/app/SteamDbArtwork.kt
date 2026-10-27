@@ -6,7 +6,8 @@ import java.net.URL
 
 /** Reads DLC-to-parent relationships from SteamDB's public HTML page without an API key. */
 object SteamDbArtwork {
-    private const val CACHE_TTL_MS = 30L * 24 * 60 * 60 * 1000
+    private const val PARENT_CACHE_TTL_MS = 30L * 24 * 60 * 60 * 1000
+    private const val NO_PARENT_CACHE_TTL_MS = 2L * 60 * 1000
 
     fun parentAppId(context: Context, appId: Int): Int? {
         if (appId <= 0) return null
@@ -15,7 +16,7 @@ object SteamDbArtwork {
         val timeKey = "${key}_at"
         val now = System.currentTimeMillis()
         val cachedAt = prefs.getLong(timeKey, 0L)
-        if (cachedAt > 0L && now - cachedAt in 0..CACHE_TTL_MS) {
+        if (cachedAt > 0L && now - cachedAt in 0..(if (prefs.getInt(key, 0) > 0) PARENT_CACHE_TTL_MS else NO_PARENT_CACHE_TTL_MS)) {
             return prefs.getInt(key, 0).takeIf { it > 0 && it != appId }
         }
 

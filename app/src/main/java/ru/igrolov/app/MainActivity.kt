@@ -2944,6 +2944,8 @@ class MainActivity : ComponentActivity() {
             ScreenSection {
             if (settingsOpen && !showDirectory) {
                 Text("Настройки", style = MaterialTheme.typography.titleLarge)
+                val versionName = remember { packageManager.getPackageInfo(packageName, 0).versionName ?: "—" }
+                Text("Версия $versionName", style = MaterialTheme.typography.bodySmall)
                 Spacer(Modifier.height(12.dp))
                 Text("Количество обрабатываемых товаров", style = MaterialTheme.typography.titleMedium)
                 Text("Для поиска и мониторинга. Чем больше товаров, тем полнее выборка, но дольше проверка.", style = MaterialTheme.typography.bodySmall)
