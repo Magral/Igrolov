@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-27T13:45:42.665Z
+- Обновлено (UTC): 2026-10-27T13:46:03.347Z
 - Ветка: `main`.
-- HEAD: [`b0dfeb18cffd`](https://github.com/Magral/Igrolov/commit/b0dfeb18cffd2990323f97030c8d09030d984950).
+- HEAD: [`62dad4daeda2`](https://github.com/Magral/Igrolov/commit/62dad4daeda2d74d41bbfeb7f0f07904ae92f474).
 - Последний опубликованный стабильный GitHub Release: [v1.6.4](https://github.com/Magral/Igrolov/releases/tag/v1.6.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [62dad4d](https://github.com/Magral/Igrolov/commit/62dad4daeda2d74d41bbfeb7f0f07904ae92f474) — style: tidy simplified shopper status blocks
 - [b0dfeb1](https://github.com/Magral/Igrolov/commit/b0dfeb18cffd2990323f97030c8d09030d984950) — ui: remove internal diagnostics from shopper screens
 - [db60100](https://github.com/Magral/Igrolov/commit/db6010050ec1c342d4a30f77c777d7499e985e60) — fix: remove technical price-check errors from monitor cards
 - [c1c7f94](https://github.com/Magral/Igrolov/commit/c1c7f9496c1c9337b669de46ccdcda89e6cc21ac) — fix: keep monitoring error details compact by default
-- [fdc70a9](https://github.com/Magral/Igrolov/commit/fdc70a9c7dfa4cf1945f0b659aa119ef0228c519) — chore: remove one-time artwork test publisher
 <!-- AUTO_CONTEXT_END -->
