@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-27T14:39:42.927Z
+- Обновлено (UTC): 2026-10-27T14:47:18.488Z
 - Ветка: `main`.
-- HEAD: [`d669711b805d`](https://github.com/Magral/Igrolov/commit/d669711b805d3c44fc0518248ca42b4d92593ebf).
+- HEAD: [`39c0a05aa3ba`](https://github.com/Magral/Igrolov/commit/39c0a05aa3ba60eb279a690108e3c0704c818e66).
 - Последний опубликованный стабильный GitHub Release: [v1.6.4](https://github.com/Magral/Igrolov/releases/tag/v1.6.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [39c0a05](https://github.com/Magral/Igrolov/commit/39c0a05aa3ba60eb279a690108e3c0704c818e66) — fix: preserve last confirmed price after refresh failure
 - [d669711](https://github.com/Magral/Igrolov/commit/d669711b805d3c44fc0518248ca42b4d92593ebf) — test: expect customer friendly price refresh error
 - [16fbb8c](https://github.com/Magral/Igrolov/commit/16fbb8c16228c190b975b71bc4c210aab1337b99) — test: wait for clickable game suggestion
 - [a137258](https://github.com/Magral/Igrolov/commit/a137258498fb494f4eb8e28754f73d5674f7b6bf) — test: remove member matcher import
-- [e94465f](https://github.com/Magral/Igrolov/commit/e94465f30f08ada19486c5b608b7b67fa0c05547) — test: target clickable game suggestion by text
 <!-- AUTO_CONTEXT_END -->
