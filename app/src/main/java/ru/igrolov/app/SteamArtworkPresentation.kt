@@ -12,6 +12,7 @@ object SteamArtworkPresentation {
 
     fun isPortrait(url: String): Boolean =
         url.contains("/library_600x900", ignoreCase = true) ||
+            url.contains("/library_capsule", ignoreCase = true) ||
             (url.contains("cdn2.steamgriddb.com", ignoreCase = true) && url.contains("/grid/", ignoreCase = true))
 
     fun matchesAspect(url: String, portrait: Boolean): Boolean = isPortrait(url) == portrait
