@@ -1789,11 +1789,13 @@ class MainActivity : ComponentActivity() {
                 catalogueUi.wishlistSearchStatuses = catalogueUi.wishlistSearchStatuses + (wishlistKey to "Ищем минимальную цену…")
             }
 
-            searchGeneration++
-            activeCatalogGeneration.set(searchGeneration)
+            if (!backgroundSearch) {
+                searchGeneration++
+                activeCatalogGeneration.set(searchGeneration)
+            }
             val generation = searchGeneration
             visibleOfferLimit = 30
-            searching = true
+            if (!backgroundSearch) searching = true
             searchPage = 0
             searchFound = 0
             if (!backgroundSearch) {
@@ -1817,7 +1819,7 @@ class MainActivity : ComponentActivity() {
                     searchFound = count
                 }
             }) { found, failure, aliasSuggestions, failedSources ->
-                if (generation != searchGeneration) return@searchCatalog
+                if (generation != searchGeneration && !backgroundSearch) return@searchCatalog
                 if (aliasSuggestions.isNotEmpty() && identity != null) {
                     if (leaderboardAppId != null || onFinished != null) {
                         if (primaryCacheKey != null) recordComparison(primaryCacheKey, emptyMap(), setOf("Plati", "GGSEL"),
@@ -1833,11 +1835,11 @@ class MainActivity : ComponentActivity() {
                             catalogueUi.wishlistSearchingKeys = catalogueUi.wishlistSearchingKeys - wishlistKey
                             catalogueUi.wishlistSearchStatuses = catalogueUi.wishlistSearchStatuses + (wishlistKey to "Нужно уточнить название")
                         }
-                        searching = false
+                        if (!backgroundSearch) searching = false
                         onFinished?.invoke()
                         return@searchCatalog
                     }
-                    searching = false
+                    if (!backgroundSearch) searching = false
                     pendingAliasGame = identity
                     pendingAliasSuggestions = aliasSuggestions
                     pendingAliasProfileId = wishlistProfileId
@@ -1859,7 +1861,7 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 if (!backgroundSearch) offers = results
-                searching = false
+                if (!backgroundSearch) searching = false
                 val ready = results.count { ManualContentRules.visible(it, "Игра", "Все") }
                 val unavailable = results.count { it.available != true }
                 val uncertainPrice = results.count { it.available == true && !it.priceVerified }
@@ -2873,7 +2875,7 @@ class MainActivity : ComponentActivity() {
                     val cacheKey = remember(game.appId, game.title, manualFilters, rulesRevision, ignoredIds,
                         searchTotalPages, comparisonSavedAliases[game.appId]) { comparisonKey(game.appId, game.title, true) }
                     SteamLeaderCard(index, game, leaderOfferPrices[game.appId]?.takeIf { it.scopeKey == cacheKey },
-                        searchEnabled = !searching && !catalogueUi.priceBatch.running && manualFilters.valid,
+                        searchEnabled = !catalogueUi.priceBatch.running && manualFilters.valid,
                         cachedPrices = catalogueUi.priceCache[cacheKey],
                         onOpenSearch = {
                                     if (!catalogueUi.priceBatch.running) {
