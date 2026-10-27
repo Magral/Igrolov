@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-27T14:07:54.480Z
+- Обновлено (UTC): 2026-10-27T14:16:28.707Z
 - Ветка: `main`.
-- HEAD: [`42358f99e9c1`](https://github.com/Magral/Igrolov/commit/42358f99e9c1af616aa3f3520325772c3e5a68bf).
+- HEAD: [`e51e467a83c5`](https://github.com/Magral/Igrolov/commit/e51e467a83c54b7274ef2c8934e23dd8633deec4).
 - Последний опубликованный стабильный GitHub Release: [v1.6.4](https://github.com/Magral/Igrolov/releases/tag/v1.6.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [e51e467](https://github.com/Magral/Igrolov/commit/e51e467a83c54b7274ef2c8934e23dd8633deec4) — test: select clickable game suggestions by title
 - [42358f9](https://github.com/Magral/Igrolov/commit/42358f99e9c1af616aa3f3520325772c3e5a68bf) — test: import Compose collection last matcher
 - [8c69d86](https://github.com/Magral/Igrolov/commit/8c69d8671f0b89569f363f9a49ca3686e80684bf) — test: select game suggestion by title after removing IDs
 - [ba777dc](https://github.com/Magral/Igrolov/commit/ba777dc81d2b821d8ccd8c0be39ae3f1d9ccaf90) — test: use plain game and price status labels
-- [339861d](https://github.com/Magral/Igrolov/commit/339861d54bfa7e8824cec4304222cb21f76b819d) — test: expect plain Steam game and price search labels
 <!-- AUTO_CONTEXT_END -->
