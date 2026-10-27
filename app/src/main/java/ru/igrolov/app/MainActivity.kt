@@ -2401,17 +2401,11 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                         if (w.has("error")) {
-                                                    val rawError = w.optString("error")
-                                                    var showTechnicalError by remember(w.optString("id"), rawError) { mutableStateOf(false) }
-                                                    Text(MonitorErrorPresentation.summary(rawError),
-                                                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-                                                    Text("Показаны предыдущие цены.", style = MaterialTheme.typography.bodySmall)
-                                                    TextButton(onClick = { showTechnicalError = !showTechnicalError },
-                                                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
-                                                        Text(if (showTechnicalError) "Скрыть технические подробности" else "Технические подробности")
-                                                    }
-                                                    if (showTechnicalError) Text(rawError, style = MaterialTheme.typography.labelSmall,
-                                                        maxLines = 5, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                    Text(
+                                                        MonitorErrorPresentation.summary(w.optString("error")),
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
                                                 }
                         if(w.has("notificationError"))Text(w.optString("notificationError"),style=MaterialTheme.typography.bodySmall)
                         if (resultsExpanded) {
