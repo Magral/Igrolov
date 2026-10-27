@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-27T10:59:50.512Z
+- Обновлено (UTC): 2026-10-27T11:11:41.063Z
 - Ветка: `main`.
-- HEAD: [`351cf6c7efcf`](https://github.com/Magral/Igrolov/commit/351cf6c7efcfcf4b8a70d53004df5050a1fde973).
+- HEAD: [`5840cc1392ce`](https://github.com/Magral/Igrolov/commit/5840cc1392ce8c5dcc914332d0a00546b3e3ed67).
 - Последний опубликованный стабильный GitHub Release: [v1.6.3](https://github.com/Magral/Igrolov/releases/tag/v1.6.3); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [5840cc1](https://github.com/Magral/Igrolov/commit/5840cc1392ce8c5dcc914332d0a00546b3e3ed67) — release: Игролов 1.6.4 — оптимизация поиска и загрузки данных
 - [351cf6c](https://github.com/Magral/Igrolov/commit/351cf6c7efcfcf4b8a70d53004df5050a1fde973) — fix: allow independent price checks from leaderboard cards
 - [6654b4a](https://github.com/Magral/Igrolov/commit/6654b4a63c9ce71874d024ad45ed4f4ebdb45472) — perf: display app version and shorten retry for missing SteamDB parents
 - [6397fc8](https://github.com/Magral/Igrolov/commit/6397fc8a4b64099970e24e3208eff9ea0c13e128) — release: align upgrade smoke test with Игролов 1.6.3
-- [4db38f7](https://github.com/Magral/Igrolov/commit/4db38f7a974e25e9b97468096b334015827e9d05) — release: Игролов 1.6.3 — исправление вертикальных обложек Steam
 <!-- AUTO_CONTEXT_END -->
