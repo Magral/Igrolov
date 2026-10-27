@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-27T02:21:45.206Z
+- Обновлено (UTC): 2026-10-27T02:22:04.458Z
 - Ветка: `main`.
-- HEAD: [`99d766a5ca6d`](https://github.com/Magral/Igrolov/commit/99d766a5ca6d83eb43f262258397e888c9debb4c).
+- HEAD: [`349530892f4d`](https://github.com/Magral/Igrolov/commit/349530892f4d62901405dce0a639e9a4e821e366).
 - Последний опубликованный стабильный GitHub Release: [v1.6.2](https://github.com/Magral/Igrolov/releases/tag/v1.6.2); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [3495308](https://github.com/Magral/Igrolov/commit/349530892f4d62901405dce0a639e9a4e821e366) — test: cover current SteamGridDB page markup
 - [99d766a](https://github.com/Magral/Igrolov/commit/99d766a5ca6d83eb43f262258397e888c9debb4c) — fix: count SteamGridDB cards in artwork report
 - [59217d5](https://github.com/Magral/Igrolov/commit/59217d520dbdbf17629d688dc21beeb6427504d8) — fix: log SteamGridDB extraction diagnostics safely
 - [48ceff1](https://github.com/Magral/Igrolov/commit/48ceff1a5e11719343a5c60c90ed633823219ff2) — fix: expire empty SteamGridDB artwork cache quickly
-- [0c17a51](https://github.com/Magral/Igrolov/commit/0c17a51626c3cea287939e26d91739a862e1a707) — debug: capture SteamGridDB resolution results
 <!-- AUTO_CONTEXT_END -->
