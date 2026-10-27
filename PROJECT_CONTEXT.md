@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-27T06:38:47.396Z
+- Обновлено (UTC): 2026-10-27T06:44:45.965Z
 - Ветка: `main`.
-- HEAD: [`4db38f7a974e`](https://github.com/Magral/Igrolov/commit/4db38f7a974e25e9b97468096b334015827e9d05).
+- HEAD: [`6397fc8a4b64`](https://github.com/Magral/Igrolov/commit/6397fc8a4b64099970e24e3208eff9ea0c13e128).
 - Последний опубликованный стабильный GitHub Release: [v1.6.2](https://github.com/Magral/Igrolov/releases/tag/v1.6.2); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [6397fc8](https://github.com/Magral/Igrolov/commit/6397fc8a4b64099970e24e3208eff9ea0c13e128) — release: align upgrade smoke test with Игролов 1.6.3
 - [4db38f7](https://github.com/Magral/Igrolov/commit/4db38f7a974e25e9b97468096b334015827e9d05) — release: Игролов 1.6.3 — исправление вертикальных обложек Steam
 - [3e4a07f](https://github.com/Magral/Igrolov/commit/3e4a07f2eb1b68b3d82a5086a3f78e06eb52df1d) — ci: tag current workflow commit when publishing verified APK
 - [e5471fc](https://github.com/Magral/Igrolov/commit/e5471fc9ff854fda9925128487efac60e7f5af51) — ci: publish verified Steam capsule portrait filter fix
-- [6571d1f](https://github.com/Magral/Igrolov/commit/6571d1fae7a141ccbea5e7ac44374f66da6cc73a) — test: use actual Steam library_capsule filenames through portrait pipeline
 <!-- AUTO_CONTEXT_END -->
