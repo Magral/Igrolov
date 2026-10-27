@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-27T05:23:46.489Z
+- Обновлено (UTC): 2026-10-27T06:04:28.506Z
 - Ветка: `main`.
-- HEAD: [`1d3e7dd0d092`](https://github.com/Magral/Igrolov/commit/1d3e7dd0d0926cff7164101c58125d14db37b1d2).
+- HEAD: [`e4ad009c3ac3`](https://github.com/Magral/Igrolov/commit/e4ad009c3ac3edcd5ad04c448e0bd1476c92c502).
 - Последний опубликованный стабильный GitHub Release: [v1.6.2](https://github.com/Magral/Igrolov/releases/tag/v1.6.2); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [e4ad009](https://github.com/Magral/Igrolov/commit/e4ad009c3ac3edcd5ad04c448e0bd1476c92c502) — ci: publish DLC artwork fallback test APK
 - [ad320d8](https://github.com/Magral/Igrolov/commit/ad320d83797004044c1287b625b38574c9d61c7c) — test: parse parent app relation for DLC artwork
 - [f8294a4](https://github.com/Magral/Igrolov/commit/f8294a41956b3ca112a01c4b1d54625e81cc2674) — fix: parse parent app row from SteamDB markup
 - [0b81dfb](https://github.com/Magral/Igrolov/commit/0b81dfb8f4aaada5c6df7f51b982de3e46d41d6d) — fix: use parent game portrait for DLC without artwork
-- [c9d9192](https://github.com/Magral/Igrolov/commit/c9d91921d64dba589e6252ff6364250b95bdb541) — feat: resolve parent Steam artwork for DLC
 <!-- AUTO_CONTEXT_END -->
