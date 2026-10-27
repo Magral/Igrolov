@@ -210,7 +210,7 @@ class MainActivity : ComponentActivity() {
                             identity.canonical.takeIf {identity.confirmed}.orEmpty(),identity.appId,"Plati")
                     } finally { conn.disconnect() }
                 }
-            } catch (e: Exception) {previous.copy(price=null,status="Ошибка загрузки: ${e.message ?: "нет соединения"}")}
+            } catch (e: Exception) {previous.copy(price=null,status="Не удалось обновить цену")}
             runOnUiThread { callback(TrackedPriceCache.merge(previous,result)) }
         }
     }
@@ -743,15 +743,6 @@ class MainActivity : ComponentActivity() {
             contentAlignment = Alignment.Center
         ) {
             Text("🎮", style = MaterialTheme.typography.bodySmall)
-            if (imageFailed && !imageLoaded) {
-                TextButton(onClick = {
-                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Igrolov artwork", SteamArtworkDiagnostics.report()))
-                    android.widget.Toast.makeText(context, "Отчёт об обложках скопирован. Пришлите его в чат.", android.widget.Toast.LENGTH_LONG).show()
-                }, modifier = Modifier.align(Alignment.BottomCenter)) {
-                    Text("Отчёт", style = MaterialTheme.typography.labelSmall)
-                }
-            }
             if (shouldLoad && imageUrl.isNotBlank()) {
                 val imageReferer = if (imageUrl.contains("steamgriddb.com", ignoreCase = true)) {
                     "https://www.steamgriddb.com/"
@@ -876,7 +867,7 @@ class MainActivity : ComponentActivity() {
                     ?: if (source.checkedAt > 0) "$name: предложений нет" else "$name: нет подтверждённой цены"
                 val time = if (source.checkedAt > 0) "проверено " + date.format(java.util.Date(source.checkedAt))
                     else if (price != null) "сохранено ранее · время неизвестно" else "проверка не завершена"
-                Text("$value · $time" + if (source.failedAt > 0) " · ошибка обновления" else "",
+                Text("$value · $time" + if (source.failedAt > 0) " · цена не обновлена" else "",
                     style = MaterialTheme.typography.bodySmall,
                     color = if (source.failedAt > 0) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.tertiary)
             }
@@ -1075,7 +1066,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 if (marketplacePrices?.checking == true || (cachedPrices == null && !marketplacePrices?.message.isNullOrBlank())) {
-                    Text(marketplacePrices?.message.orEmpty(), style = MaterialTheme.typography.labelSmall,
+                    Text(if (marketplacePrices?.checking == true) "Ищем цены…" else "Не удалось обновить цены.", style = MaterialTheme.typography.labelSmall,
                         color = if (marketplacePrices?.checking == true) Color(0xFF416C9A) else MaterialTheme.colorScheme.error,
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
@@ -1287,7 +1278,7 @@ class MainActivity : ComponentActivity() {
         var suggestionBusy by remember {mutableStateOf(false)}
         var maxPrice by remember {mutableStateOf(savedFilters.maxPrice)}
         var confirmedRf by remember {mutableStateOf(savedFilters.confirmedRf)}
-        var showRejections by remember {mutableStateOf(false)}
+        
         var entry by remember { mutableStateOf("") }
         var query by remember { mutableStateOf("") }
         var offers by remember { mutableStateOf<List<Offer>>(emptyList()) }
@@ -1302,7 +1293,7 @@ class MainActivity : ComponentActivity() {
         var directoryMessage by remember { mutableStateOf("Выберите игру для редактирования") }
         var directorySuggestions by remember { mutableStateOf<List<SteamGameReference.Suggestion>>(emptyList()) }
         var directorySelectedAppId by remember { mutableStateOf<Int?>(null) }
-        var searchMessage by remember { mutableStateOf("Нажмите «Искать» для запроса к каталогам") }
+        var searchMessage by remember { mutableStateOf("Введите игру и нажмите «Искать», чтобы увидеть цены.") }
         var pendingAliasGame by remember { mutableStateOf<GameSearchResolver.Candidate?>(null) }
         var pendingAliasSuggestions by remember { mutableStateOf<List<String>>(emptyList()) }
         var pendingAliasProfileId by remember { mutableStateOf<String?>(null) }
@@ -1660,7 +1651,7 @@ class MainActivity : ComponentActivity() {
                 catalogueUi.wishlistProfiles.firstOrNull { it.steamId64 == catalogueUi.selectedWishlistId }?.input.orEmpty()
             }
             if (profile.isBlank()) {
-                catalogueUi.wishlistMessage = "Вставьте SteamID64 или ссылку на открытый профиль Steam."
+                catalogueUi.wishlistMessage = "Укажите ссылку на открытый профиль Steam."
                 return
             }
             catalogueUi.wishlistBusy = true
@@ -1696,7 +1687,7 @@ class MainActivity : ComponentActivity() {
                 } catch (e: Exception) {
                     runOnUiThread {
                         catalogueUi.wishlistBusy = false
-                        catalogueUi.wishlistMessage = "Не удалось обновить список: ${e.message ?: "ошибка Steam"}. Сохранённая копия оставлена."
+                        catalogueUi.wishlistMessage = "Не удалось обновить список. Сохранённая копия оставлена."
                     }
                 }
             }
@@ -1857,8 +1848,6 @@ class MainActivity : ComponentActivity() {
                 if (!backgroundSearch) offers = results
                 if (!backgroundSearch) searching = false
                 val ready = results.count { ManualContentRules.visible(it, "Игра", "Все") }
-                val unavailable = results.count { it.available != true }
-                val uncertainPrice = results.count { it.available == true && !it.priceVerified }
                 val wishlistSearch = wishlistProfileId != null && identity?.appId != null
                 val minimaByMarketplace = OfferPriceCache.minima(results, requestFilters, requestRules, requestIgnored)
                 val platiMinimum = minimaByMarketplace["Plati"]
@@ -1903,18 +1892,19 @@ class MainActivity : ComponentActivity() {
                     })
                 }
                 if (!backgroundSearch) {
-                    val summary = if (failure.isNotBlank() && found.isEmpty()) "Ошибка поиска: $failure" else
-                        (if (failure.isNotBlank()) "Часть каталогов недоступна ($failure). " else "") +
-                        "Проверено: ${results.size} · подходят $ready · скрыто без наличия $unavailable / без точной цены $uncertainPrice." +
-                            if (wishlistSearch) {
-                                if (hasWishlistMinimum) " Подтверждённые минимумы сохранены: " +
-                                    listOfNotNull(
-                                        platiMinimum?.let { "Plati ${String.format(Locale("ru", "RU"), "%.0f ₽", it)}" },
-                                        ggselMinimum?.let { "GGSEL ${String.format(Locale("ru", "RU"), "%.0f ₽", it)}" }
-                                    ).joinToString(" · ") + "."
-                                else " Подтверждённые цены не найдены; сохранённые значения не изменены."
-                            } else ""
-                    searchMessage = if (candidateOverride != null) "Автопоиск цен · $summary" else summary
+                    val summary = when {
+                        ready > 0 -> "Найдено предложений: $ready."
+                        else -> "Подходящих предложений не найдено. Попробуйте изменить название или фильтры."
+                    } + if (wishlistSearch) {
+                        if (hasWishlistMinimum) " Минимальные цены: " +
+                            listOfNotNull(
+                                platiMinimum?.let { "Plati ${String.format(Locale("ru", "RU"), "%.0f ₽", it)}" },
+                                ggselMinimum?.let { "GGSEL ${String.format(Locale("ru", "RU"), "%.0f ₽", it)}" }
+                            ).joinToString(" · ") + "."
+                        else " Подтверждённые цены не найдены."
+                    } else ""
+                    searchMessage = summary
+                    searchMessage = summary
                 }
                 onFinished?.invoke()
             }
@@ -2015,10 +2005,10 @@ class MainActivity : ComponentActivity() {
             }, label = { Text("Например, Cyberpunk 2077") },
                 modifier = Modifier.fillMaxWidth(), singleLine = true)
             if(selectedGame!=null) {
-                Text("Выбрано: ${selectedGame!!.name} · Steam #${selectedGame!!.appId}",style=MaterialTheme.typography.bodySmall)
+                Text("Выбрано: ${selectedGame!!.name}", style=MaterialTheme.typography.bodySmall)
                 Text("Издания из вариантов покупки Steam. Доступность активации в РФ проверяется отдельно.", style=MaterialTheme.typography.bodySmall)
                 if (editionLoading) Text("Загружаем издания Steam…", style = MaterialTheme.typography.bodySmall)
-                else if (steamEditions.isEmpty()) Text("Steam не вернул список изданий; доступен обычный поиск по названию игры.", style = MaterialTheme.typography.bodySmall)
+                else if (steamEditions.isEmpty()) Text("Для игры нет списка изданий. Можно искать по названию.", style = MaterialTheme.typography.bodySmall)
                 Box {
                     OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { editionMenuExpanded = true }, enabled = !editionLoading) {
                         Text("Издание: ${selectedSteamEdition?.name ?: "Все издания"}")
@@ -2043,7 +2033,7 @@ class MainActivity : ComponentActivity() {
             }
             if(suggestionBusy) Text("Подбираем названия Steam…",style=MaterialTheme.typography.bodySmall)
             if(gameSuggestions.isNotEmpty() && selectedGame==null) {
-                Text("Уточните игру · название и Steam ID",style=MaterialTheme.typography.titleSmall)
+                Text("Уточните название игры", style=MaterialTheme.typography.titleSmall)
                 gameSuggestions.forEach { candidate ->
                     TextButton(onClick={
                         selectedGame=candidate
@@ -2068,7 +2058,7 @@ class MainActivity : ComponentActivity() {
                         activeCatalogGeneration.set(searchGeneration)
                         searching=false
                         ManualSearchSettings.rememberGame(this@MainActivity,candidate)
-                    },modifier=Modifier.fillMaxWidth()) {Text("${candidate.name} · Steam #${candidate.appId}")}
+                    },modifier=Modifier.fillMaxWidth()) {Text(candidate.name)}
                 }
             }
             if (queryHistory.isNotEmpty()) {
@@ -2132,18 +2122,16 @@ class MainActivity : ComponentActivity() {
                 Text(if (searching) "Ищем..." else selectedSteamEdition?.let { "Искать ${it.name}" } ?: "Искать")
             }
             if (searching) {
-                LinearProgressIndicator(progress = { searchPage.toFloat() / searchTotalPages }, modifier = Modifier.fillMaxWidth())
-                Text("Страниц обработано: $searchPage / $searchTotalPages · найдено кандидатов: $searchFound", style = MaterialTheme.typography.bodySmall)
+                LinearProgressIndicator(Modifier.fillMaxWidth())
+                Text("Ищем предложения…", style = MaterialTheme.typography.bodySmall)
             }
             Text(searchMessage, style = MaterialTheme.typography.bodySmall)
-            Text("Plati · до $catalogLimit предложений     GGSEL · активный каталог",
-                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(4.dp))
             } // конец настроек поиска
             }
             ScreenSection {
             if (activeTab == 1 && !settingsOpen) {
-            OutlinedTextField(entry, { entry = it }, label = { Text("Ссылка Plati или ID товара") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(entry, { entry = it }, label = { Text("Ссылка на товар Plati") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = {
                     val raw = entry.trim()
@@ -2231,13 +2219,13 @@ class MainActivity : ComponentActivity() {
             OutlinedTextField(watchGame, { watchGame = it;watchSelection=null }, label = { Text("Название игры") },
                 singleLine = true, modifier = Modifier.fillMaxWidth())
             if(watchSuggesting) Text("Подбираем игру Steam…",style=MaterialTheme.typography.bodySmall)
-            if(watchSelection!=null) Text("Выбрано: ${watchSelection!!.name} · Steam #${watchSelection!!.appId}",style=MaterialTheme.typography.bodySmall)
+            if(watchSelection!=null) Text("Выбрано: ${watchSelection!!.name}", style=MaterialTheme.typography.bodySmall)
             if(watchSelection==null) watchSuggestions.forEach {candidate ->
                 TextButton(onClick={
                     watchSelection=candidate;watchGame=candidate.name.replace(Regex("[™®©]"),"")
                     watchSuggestionGeneration.incrementAndGet();watchSuggestions=emptyList();watchSuggesting=false
                     ManualSearchSettings.rememberGame(this@MainActivity,candidate)
-                }) {Text("${candidate.name} · Steam #${candidate.appId}")}
+                }) {Text(candidate.name)}
             }
             OutlinedTextField(targetPrice, { targetPrice = it }, label = { Text("Желаемая цена, ₽") },
                 singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -2287,8 +2275,8 @@ class MainActivity : ComponentActivity() {
                 }
             }
             if (checkingNow) {
-                LinearProgressIndicator(progress = { if (monitorTotal > 0) monitorDone.toFloat() / monitorTotal else 0f }, modifier = Modifier.fillMaxWidth())
-                Text("Проверено игр: $monitorDone / $monitorTotal${if (monitorCurrent.isNotBlank()) " · Сейчас: $monitorCurrent" else ""}", style = MaterialTheme.typography.bodySmall)
+                LinearProgressIndicator(Modifier.fillMaxWidth())
+                Text("Обновляем цены…", style = MaterialTheme.typography.bodySmall)
             }
             if (watchMessage != "Укажите название игры и цену в рублях") {
                 Text(watchMessage, style = MaterialTheme.typography.labelSmall,
@@ -2345,60 +2333,13 @@ class MainActivity : ComponentActivity() {
                                 })
                         }
                         val checkedAt = w.optLong("checked", 0L)
-                        val failedAt = w.optLong("failedAt", 0L)
-                        val monitorDate = java.text.SimpleDateFormat("dd.MM HH:mm", Locale("ru", "RU"))
-                        var diagnosticsExpanded by remember(w.optString("name")) { mutableStateOf(false) }
-                        var resultsExpanded by remember(w.optString("name")) { mutableStateOf(false) }
+                                                val monitorDate = java.text.SimpleDateFormat("dd.MM HH:mm", Locale("ru", "RU"))
+                                                var resultsExpanded by remember(w.optString("name")) { mutableStateOf(false) }
                         val bestOffers = w.optJSONArray("topOffers") ?: JSONArray()
                         if (checkedAt > 0L) Text("Проверено ${monitorDate.format(java.util.Date(checkedAt))}",
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { diagnosticsExpanded = !diagnosticsExpanded },
-                                modifier = Modifier.weight(1f).heightIn(min = 40.dp),
-                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
-                                Text(if (diagnosticsExpanded) "Скрыть детали проверки" else "Детали проверки",
-                                    maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, fontSize = 11.sp)
-                            }
-                            OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { resultsExpanded = !resultsExpanded },
-                                modifier = Modifier.weight(1f).heightIn(min = 40.dp),
-                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
-                                Text(if (resultsExpanded) "Скрыть цены" else "3 лучшие цены (${bestOffers.length()})",
-                                    maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, fontSize = 11.sp)
-                            }
-                        }
-                        if (diagnosticsExpanded) {
-                            val expectedCheck = MonitorSchedule.expectedNextCheck(checkedAt, failedAt)
-                            if (failedAt > checkedAt) {
-                                Text("Проверка будет повторена автоматически; точное время задаёт Android.",
-                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            } else if (expectedCheck != null) {
-                                val expectedStamp = monitorDate.format(java.util.Date(expectedCheck))
-                                val expectation = if (expectedCheck <= System.currentTimeMillis())
-                                    "Следующая проверка ожидается; расчётное время $expectedStamp уже прошло"
-                                else "Следующая проверка: $expectedStamp"
-                                Text("$expectation · ориентировочно, Android может задержать",
-                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            } else {
-                                Text("Следующая проверка — по расписанию, примерно раз в час.",
-                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            val sourceCounts=w.optJSONObject("sourceCounts")
-                            if(sourceCounts!=null) Text("Источники · Plati: ${sourceCounts.optInt("Plati")} · GGSEL: ${sourceCounts.optInt("GGSEL")}",style=MaterialTheme.typography.bodySmall)
-                            val sourceMinimums=w.optJSONObject("sourceMinimums")
-                            if(sourceMinimums!=null) {
-                                val platiMinimum=if(sourceMinimums.has("Plati")) String.format(Locale("ru", "RU"), "%.2f ₽", sourceMinimums.optDouble("Plati")) else "—"
-                                val ggselMinimum=if(sourceMinimums.has("GGSEL")) String.format(Locale("ru", "RU"), "%.2f ₽", sourceMinimums.optDouble("GGSEL")) else "—"
-                                Text("Минимумы · Plati: $platiMinimum · GGSEL: $ggselMinimum", style=MaterialTheme.typography.bodySmall)
-                            }
-                            if (w.has("checked") && w.has("eligibleCount")) {
-                                MonitorDiagnostics.noOfferReason(
-                                    totalCount = w.optInt("totalCount", 0),
-                                    eligibleCount = w.optInt("eligibleCount", 0),
-                                    rejectedCount = w.optInt("rejectedCount", 0),
-                                    hasError = w.has("error")
-                                )?.let { reason -> Text(reason, style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                            }
+                        OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { resultsExpanded = !resultsExpanded }, modifier = Modifier.fillMaxWidth().heightIn(min = 40.dp), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
+                            Text(if (resultsExpanded) "Скрыть цены" else "Цены (${bestOffers.length()})", maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
                         }
                         if (w.has("error")) {
                                                     Text(
@@ -2407,8 +2348,7 @@ class MainActivity : ComponentActivity() {
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                                     )
                                                 }
-                        if(w.has("notificationError"))Text(w.optString("notificationError"),style=MaterialTheme.typography.bodySmall)
-                        if (resultsExpanded) {
+                                                if (resultsExpanded) {
                             if (bestOffers.length() == 0) {
                                 Text("Пока нет результатов. Нажмите «Проверить сейчас».", style = MaterialTheme.typography.bodySmall)
                             }
@@ -2564,16 +2504,6 @@ class MainActivity : ComponentActivity() {
                         ManualSearchFilter.rejection(it,manualFilters,currentRules,ignoredIds)==null }
                 }
                 val visibleCount = filteredOffers.size
-                val rejectionCounts=remember(offers,manualFilters,currentRules,ignoredIds,selectedMarketplace) {
-                    offers.mapNotNull {
-                        if (selectedMarketplace != "Все" && it.marketplace != selectedMarketplace) "Другой маркетплейс"
-                        else ManualSearchFilter.rejection(it,manualFilters,currentRules,ignoredIds)
-                    }.groupingBy {it}.eachCount()
-                }
-                if(rejectionCounts.isNotEmpty()) {
-                    TextButton(onClick={showRejections=!showRejections}) {Text(if(showRejections) "Скрыть причины" else "Почему скрыты предложения (${rejectionCounts.values.sum()})")}
-                    if(showRejections) rejectionCounts.forEach {(reason,count)->Text("$reason: $count",style=MaterialTheme.typography.bodySmall)}
-                }
                 Text("Предложения по цене ↑ · $visibleCount", style = MaterialTheme.typography.titleMedium)
                 if (visibleCount == 0) Text("По выбранным фильтрам предложений нет. Уточните название или проверьте регион в заголовках.", style = MaterialTheme.typography.bodySmall)
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -2748,7 +2678,7 @@ class MainActivity : ComponentActivity() {
             ScreenSection {
             if (activeTab == 4 && !settingsOpen) {
                 if (topBusy) LinearProgressIndicator(Modifier.fillMaxWidth())
-                if (topError.isNotBlank()) Text(topError, color = MaterialTheme.colorScheme.error)
+                if (topError.isNotBlank()) Text("Не удалось загрузить игры. Попробуйте ещё раз.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     SteamLeaderSection.values().forEach { section ->
                         FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = leaderSection == section,
@@ -2887,7 +2817,7 @@ class MainActivity : ComponentActivity() {
                                     selectedGame = GameSearchResolver.Candidate(game.appId, game.title)
                                     query = game.title
                                     offers = emptyList()
-                                    searchMessage = "Игра выбрана из лидеров продаж. Найдены будут только проверенные предложения Steam Gift/Key для RU. Нажмите «Искать»."
+                                    searchMessage = "Игра выбрана. Нажмите «Искать», чтобы проверить предложения с активацией в РФ."
                                     activeTab = 0
 
                         },
@@ -2949,23 +2879,6 @@ class MainActivity : ComponentActivity() {
                 val versionName = remember { packageManager.getPackageInfo(packageName, 0).versionName ?: "—" }
                 Text("Версия $versionName", style = MaterialTheme.typography.bodySmall)
                 Spacer(Modifier.height(12.dp))
-                Text("Количество обрабатываемых товаров", style = MaterialTheme.typography.titleMedium)
-                Text("Для поиска и мониторинга. Чем больше товаров, тем полнее выборка, но дольше проверка.", style = MaterialTheme.typography.bodySmall)
-                listOf(100, 200, 300, 500).forEach { count ->
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                        RadioButton(selected = catalogLimit == count, onClick = {
-                            catalogLimit = count
-                            CatalogPageSettings.set(this@MainActivity, count)
-                        })
-                        Text("$count товаров", modifier = Modifier.padding(start = 8.dp))
-                    }
-                }
-                HorizontalDivider()
-                Text("Вертикальные обложки игр", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "Если вертикальной обложки Steam нет, Игролов проверяет публичную страницу SteamGridDB и берёт оттуда только постеры 600×900. API-ключ и вход в аккаунт не нужны.",
-                    style = MaterialTheme.typography.bodySmall
-                )
                 HorizontalDivider()
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { showDirectory = true }, modifier = Modifier.fillMaxWidth()) {
@@ -3029,7 +2942,7 @@ class MainActivity : ComponentActivity() {
                         directorySuggestions = emptyList()
                     }, modifier = Modifier.fillMaxWidth().height(34.dp),
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
-                        Text("${candidate.name} (Steam #${candidate.id})", modifier = Modifier.fillMaxWidth(),
+                        Text(candidate.name, modifier = Modifier.fillMaxWidth(),
                             maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
@@ -3058,7 +2971,7 @@ class MainActivity : ComponentActivity() {
                         runOnUiThread {
                             if (directoryGame.trim() == name && directorySelectedAppId == appId) {
                                 directoryGameInfo = game
-                                directoryMessage = "Источник: ${game.source} · DLC: ${game.dlcNames.size}"
+                                directoryMessage = "${game.canonical} · дополнений: ${game.dlcNames.size}"
                             }
                             directoryBusy = false
                         }
@@ -3371,7 +3284,7 @@ class MainActivity : ComponentActivity() {
             Text("Профили", style = MaterialTheme.typography.titleMedium)
             profiles.forEach { profile ->
                 TextButton(onClick = { onSelect(profile) }, modifier = Modifier.fillMaxWidth()) {
-                    Text((if (profile.steamId64 == selectedId) "●  " else "○  ") + profile.displayName + " · " + profile.steamId64.takeLast(4),
+                    Text((if (profile.steamId64 == selectedId) "●  " else "○  ") + profile.displayName,
                         modifier = Modifier.fillMaxWidth(), maxLines = 1)
                 }
             }
@@ -3379,7 +3292,7 @@ class MainActivity : ComponentActivity() {
         OutlinedTextField(
             input, onInput,
             label = { Text("Новый профиль Steam") },
-            placeholder = { Text("SteamID64, /profiles/… или /id/…") },
+            placeholder = { Text("Вставьте ссылку на открытый профиль") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
