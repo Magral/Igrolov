@@ -36,10 +36,11 @@ object SteamGridDbArtwork {
             return emptyList()
         }
         val urls = parsePortraitUrls(html)
+        val assetCards = Regex("""(?i)class=["'][^"']*\\basset\\b""").findAll(html).count()
         SteamArtworkDiagnostics.note(
             appId,
             "www.steamgriddb.com",
-            "pageChars=${html.length} portraitUrls=${urls.size} assetCards=${html.countMatches(Regex("(?i)class=[\\"'][^\\"']*\\basset\\b"))}"
+            "pageChars=${html.length} portraitUrls=${urls.size} assetCards=$assetCards"
         )
         prefs.edit().putString(cacheKey, urls.joinToString("\n")).putLong(cachedAtKey, now).apply()
         return urls
