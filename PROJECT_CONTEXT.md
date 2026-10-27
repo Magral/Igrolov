@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-27T13:56:32.359Z
+- Обновлено (UTC): 2026-10-27T14:01:19.085Z
 - Ветка: `main`.
-- HEAD: [`ba777dc81d2b`](https://github.com/Magral/Igrolov/commit/ba777dc81d2b821d8ccd8c0be39ae3f1d9ccaf90).
+- HEAD: [`8c69d8671f0b`](https://github.com/Magral/Igrolov/commit/8c69d8671f0b89569f363f9a49ca3686e80684bf).
 - Последний опубликованный стабильный GitHub Release: [v1.6.4](https://github.com/Magral/Igrolov/releases/tag/v1.6.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [8c69d86](https://github.com/Magral/Igrolov/commit/8c69d8671f0b89569f363f9a49ca3686e80684bf) — test: select game suggestion by title after removing IDs
 - [ba777dc](https://github.com/Magral/Igrolov/commit/ba777dc81d2b821d8ccd8c0be39ae3f1d9ccaf90) — test: use plain game and price status labels
 - [339861d](https://github.com/Magral/Igrolov/commit/339861d54bfa7e8824cec4304222cb21f76b819d) — test: expect plain Steam game and price search labels
 - [d1aff57](https://github.com/Magral/Igrolov/commit/d1aff5705d4dd082710c75d25590f00cd36257f4) — test: match plain-language profile and product labels
-- [b658d70](https://github.com/Magral/Igrolov/commit/b658d705cb91cbda84d3c65e70785aa6cd1658bb) — test: assert monitor diagnostics stay out of shopper UI
 <!-- AUTO_CONTEXT_END -->
