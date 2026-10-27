@@ -508,14 +508,11 @@ class MainActivity : ComponentActivity() {
         }
         val fresh = games.filter { cached[it.appId] == null }
         val refreshed = if (fresh.isEmpty()) emptyMap() else {
-            val pool = Executors.newFixedThreadPool(4)
-            try {
-                pool.invokeAll(fresh.map { game -> java.util.concurrent.Callable {
-                    checkTopSellerRu(game)
-                } }).mapNotNull { future ->
-                    runCatching { future.get() }.getOrNull()
-                }.associateBy { it.appId }
-            } finally { pool.shutdownNow() }
+            detailExecutor.invokeAll(fresh.map { game -> java.util.concurrent.Callable {
+                checkTopSellerRu(game)
+            } }).mapNotNull { future ->
+                runCatching { future.get() }.getOrNull()
+            }.associateBy { it.appId }
         }
         if (refreshed.isNotEmpty()) {
             val editor = steamLeaderCachePrefs.edit()
@@ -535,13 +532,10 @@ class MainActivity : ComponentActivity() {
     private fun loadReviewSummaries(games: List<SteamTopSeller>): Map<Int, SteamReviewSummary> {
         val missing = games.filter { it.reviewSummary == null && it.isGame && !it.isFree }.distinctBy { it.appId }
         if (missing.isEmpty()) return emptyMap()
-        val pool = Executors.newFixedThreadPool(4)
-        return try {
-            pool.invokeAll(missing.map { game -> java.util.concurrent.Callable {
-                game.appId to loadSteamReviewSummary(game.appId)
-            } }).mapNotNull { runCatching { it.get() }.getOrNull() }
-                .mapNotNull { (appId, summary) -> summary?.let { appId to it } }.toMap()
-        } finally { pool.shutdownNow() }
+        return detailExecutor.invokeAll(missing.map { game -> java.util.concurrent.Callable {
+            game.appId to loadSteamReviewSummary(game.appId)
+        } }).mapNotNull { runCatching { it.get() }.getOrNull() }
+            .mapNotNull { (appId, summary) -> summary?.let { appId to it } }.toMap()
     }
 
     // Publish verified games in small batches so the first results appear before the full ranking is checked.

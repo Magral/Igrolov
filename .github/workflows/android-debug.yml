@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  APP_VERSION: 1.6.3
+  APP_VERSION: 1.6.4
 
 permissions:
   contents: read
