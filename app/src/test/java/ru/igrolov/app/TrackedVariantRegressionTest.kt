@@ -45,7 +45,7 @@ class TrackedVariantRegressionTest {
         val previous=Tracked("123456",title,4914.0,"","https://plati.market/itm/123456","Stellaris",281990)
         val failed=previous.copy(price=null,status="Ошибка загрузки: HTTP 503")
         val merged=TrackedPriceCache.merge(previous,failed)
-        assertEquals(4914.0,merged.price!!,0.0);assertTrue(merged.status.startsWith("Нет связи"))
+        assertEquals(4914.0,merged.price!!,0.0);assertEquals("Не удалось обновить цену",merged.status)
         assertEquals("Stellaris",merged.canonical)
         assertNull(TrackedPriceCache.merge(previous,previous.copy(price=null,status="Нет в наличии")).price)
     }
