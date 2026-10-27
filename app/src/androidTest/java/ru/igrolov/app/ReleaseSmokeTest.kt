@@ -80,7 +80,7 @@ class ReleaseSmokeTest {
         compose.waitForIdle()
         compose.onNodeWithText("Товары").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
-        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Ссылка Plati или ID товара")) })
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Ссылка на товар Plati")) })
         compose.onNodeWithText("Мониторинг").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Мониторинг")) })
@@ -114,7 +114,7 @@ class ReleaseSmokeTest {
         assertFalse(device.hasObject(By.text("Искать")))
         compose.onNodeWithText("Загрузить и закрепить профиль").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
-        assertTrue(UiTestScroll.await(compose, 3000) { device.hasObject(By.textContains("Вставьте SteamID64")) })
+        assertTrue(UiTestScroll.await(compose, 3000) { device.hasObject(By.textContains("Укажите ссылку на открытый профиль")) })
         assertFalse(device.hasObject(By.text("Искать")))
     }
 
