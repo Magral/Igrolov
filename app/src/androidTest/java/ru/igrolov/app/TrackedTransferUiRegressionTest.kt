@@ -101,8 +101,7 @@ class TrackedTransferUiRegressionTest {
         compose.waitUntil(15000) {
             compose.onAllNodesWithText("Stellaris").fetchSemanticsNodes().isNotEmpty()
         }
-        compose.onAllNodesWithText("Stellaris").onLast()
-            .performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.onAllNodesWithText("Stellaris").filter(hasClickAction()).onLast().performClick()
         compose.waitForIdle()
         // The selected tab hides the soft keyboard without leaving the search form.
         clickText("Поиск")

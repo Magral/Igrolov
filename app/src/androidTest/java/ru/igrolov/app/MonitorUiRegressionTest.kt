@@ -116,8 +116,7 @@ class MonitorUiRegressionTest {
         compose.waitUntil(15000) {
             compose.onAllNodesWithText("Stellaris").fetchSemanticsNodes().isNotEmpty()
         }
-        compose.onAllNodesWithText("Stellaris").onLast()
-            .performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.onAllNodesWithText("Stellaris").filter(hasClickAction()).onLast().performClick()
         compose.waitUntil(5000) {
             compose.onAllNodesWithText("Выбрано: Stellaris").fetchSemanticsNodes().isNotEmpty()
         }
