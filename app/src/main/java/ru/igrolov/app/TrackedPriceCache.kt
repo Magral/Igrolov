@@ -38,9 +38,12 @@ object TrackedPriceCache {
             "Ожидает обновления",url,offer.canonical,offer.steamAppId,offer.marketplace)
     }
 
-    fun merge(previous:Tracked,fresh:Tracked):Tracked =
-        if(fresh.status.startsWith("Ошибка загрузки") && previous.price!=null)
-            previous.copy(status="Нет связи · показана последняя проверенная цена") else fresh
+    fun merge(previous:Tracked,fresh:Tracked):Tracked {
+        val refreshFailed=fresh.status.startsWith("Ошибка загрузки") ||
+            fresh.status.startsWith("Не удалось обновить цену")
+        return if(refreshFailed && previous.price!=null)
+            previous.copy(status="Не удалось обновить цену") else fresh
+    }
 
     fun encode(item:Tracked):String? {
         if(item.status.startsWith("Ошибка загрузки"))return null
