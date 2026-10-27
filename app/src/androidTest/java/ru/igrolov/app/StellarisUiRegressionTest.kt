@@ -70,8 +70,8 @@ class StellarisUiRegressionTest {
         assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Игролов")) })
         compose.onAllNodes(hasSetTextAction()).onFirst().performTextReplacement("Stelaris")
         compose.waitForIdle()
-        assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Stellaris · Steam #281990")) })
-        compose.onNodeWithText("Stellaris · Steam #281990").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Stellaris")) })
+        compose.onNodeWithText("Stellaris").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         // The active tab clears focus while preserving the selected Steam game.
         device.findObject(By.text("Поиск")).click()
@@ -80,7 +80,7 @@ class StellarisUiRegressionTest {
         compose.onNodeWithText("Искать").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         compose.waitUntil(15000) {
-            compose.onAllNodesWithText("Проверено:", substring=true).fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodesWithText("Найдено предложений: 1", substring=true).fetchSemanticsNodes().isNotEmpty()
         }
         UiTestScroll.reveal(compose,"Предложения по цене ↑ · 1")
         compose.onAllNodesWithText("Stellaris Steam Key РФ").assertCountEquals(1)
