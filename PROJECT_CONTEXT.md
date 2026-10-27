@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-27T13:47:26.777Z
+- Обновлено (UTC): 2026-10-27T13:56:10.848Z
 - Ветка: `main`.
-- HEAD: [`47a2a9015191`](https://github.com/Magral/Igrolov/commit/47a2a901519160418dda3e6d7805c28d61ffb0aa).
+- HEAD: [`339861d54bfa`](https://github.com/Magral/Igrolov/commit/339861d54bfa7e8824cec4304222cb21f76b819d).
 - Последний опубликованный стабильный GitHub Release: [v1.6.4](https://github.com/Magral/Igrolov/releases/tag/v1.6.4); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [339861d](https://github.com/Magral/Igrolov/commit/339861d54bfa7e8824cec4304222cb21f76b819d) — test: expect plain Steam game and price search labels
 - [d1aff57](https://github.com/Magral/Igrolov/commit/d1aff5705d4dd082710c75d25590f00cd36257f4) — test: match plain-language profile and product labels
 - [b658d70](https://github.com/Magral/Igrolov/commit/b658d705cb91cbda84d3c65e70785aa6cd1658bb) — test: assert monitor diagnostics stay out of shopper UI
 - [62dad4d](https://github.com/Magral/Igrolov/commit/62dad4daeda2d74d41bbfeb7f0f07904ae92f474) — style: tidy simplified shopper status blocks
-- [b0dfeb1](https://github.com/Magral/Igrolov/commit/b0dfeb18cffd2990323f97030c8d09030d984950) — ui: remove internal diagnostics from shopper screens
 <!-- AUTO_CONTEXT_END -->
