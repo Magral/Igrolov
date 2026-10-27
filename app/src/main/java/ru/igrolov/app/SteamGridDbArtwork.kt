@@ -26,26 +26,52 @@ object SteamGridDbArtwork {
                 return cachedUrls
             }
         }
-        // A timeout, DNS error, or anti-bot response is transient. Do not cache it as
-        // "this game has no artwork"; otherwise one bad request hides covers for hours.
+        val urls = loadPortraitUrls(context, appId)
+        prefs.edit().putString(cacheKey, urls.joinToString("\n")).putLong(cachedAtKey, now).apply()
+        return urls
+    }
+
+    private fun loadPortraitUrls(context: Context, appId: Int): List<String> {
         val pageUrl = publicGridPageUrl(appId)
         val html = try {
             request(pageUrl)
         } catch (error: Exception) {
             SteamArtworkDiagnostics.record(appId, pageUrl, error)
-            return emptyList()
+            null
         }
-        val urls = parsePortraitUrls(html)
-        val assetCards = Regex("""class=["\']asset["\']""").findAll(html).count()
-        SteamArtworkDiagnostics.note(
-            appId,
-            "www.steamgriddb.com",
-            "pageChars=${html.length} portraitUrls=${urls.size} assetCards=$assetCards"
-        )
-        prefs.edit().putString(cacheKey, urls.joinToString("\n")).putLong(cachedAtKey, now).apply()
-        return urls
-    }
+        if (html != null) {
+            val urls = parsePortraitUrls(html)
+            val assetCards = Regex("""class=["']asset["']""").findAll(html).count()
+            SteamArtworkDiagnostics.note(
+                appId,
+                "www.steamgriddb.com",
+                "pageChars=${html.length} portraitUrls=${urls.size} assetCards=$assetCards"
+            )
+            if (urls.isNotEmpty()) return urls
+        }
 
+        // A DLC may have no separate SteamGridDB page. Reuse its parent's portrait art.
+        val parentAppId = SteamDbArtwork.parentAppId(context, appId)
+        if (parentAppId != null) {
+            SteamArtworkDiagnostics.note(appId, "steamdb.info", "parent app=$parentAppId")
+            val parentUrl = publicGridPageUrl(parentAppId)
+            try {
+                val parentHtml = request(parentUrl)
+                val parentUrls = parsePortraitUrls(parentHtml)
+                SteamArtworkDiagnostics.note(
+                    appId,
+                    "www.steamgriddb.com",
+                    "parent=$parentAppId pageChars=${parentHtml.length} portraitUrls=${parentUrls.size}"
+                )
+                if (parentUrls.isNotEmpty()) return parentUrls
+            } catch (error: Exception) {
+                SteamArtworkDiagnostics.record(appId, parentUrl, error)
+            }
+        } else if (html != null) {
+            SteamArtworkDiagnostics.note(appId, "steamdb.info", "no parent app found; SteamGridDB portraitUrls=0")
+        }
+        return emptyList()
+    }
     internal fun publicGridPageUrl(appId: Int): String = "https://www.steamgriddb.com/steam/$appId/grids"
 
     /** Only take image links from page cards explicitly labelled with Steam's vertical 600x900 dimensions. */
