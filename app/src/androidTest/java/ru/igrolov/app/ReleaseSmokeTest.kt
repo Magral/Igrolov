@@ -48,6 +48,7 @@ class ReleaseSmokeTest {
         assertEquals(165,PackageInfoCompat.getLongVersionCode(context.packageManager.getPackageInfo(context.packageName,0)))
     }
     @Test fun launchAndNavigateFiltersSettingsAndMonitoring() {
+        assertNotEquals(0, context.applicationInfo.icon)
         val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         context.startActivity(Intent(context,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         assertTrue(UiTestScroll.await(compose, 15000) { device.hasObject(By.text("Игролов")) })
