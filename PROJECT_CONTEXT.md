@@ -71,16 +71,16 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-29T16:31:47.792Z
+- Обновлено (UTC): 2026-10-29T16:38:07.994Z
 - Ветка: `main`.
-- HEAD: [`1bee444d6ef8`](https://github.com/Magral/Igrolov/commit/1bee444d6ef8bd2267d77650c02977cc954adbd4).
+- HEAD: [`aa46a209a64b`](https://github.com/Magral/Igrolov/commit/aa46a209a64b6a99bd3e5fcbc592cc7e9c78be09).
 - Последний опубликованный стабильный GitHub Release: [v1.8.0](https://github.com/Magral/Igrolov/releases/tag/v1.8.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [aa46a20](https://github.com/Magral/Igrolov/commit/aa46a209a64b6a99bd3e5fcbc592cc7e9c78be09) — test: expect precise marketplace prices in wishlist cards
 - [1bee444](https://github.com/Magral/Igrolov/commit/1bee444d6ef8bd2267d77650c02977cc954adbd4) — feat: open exact minimum-price product from game cards
 - [ec8ca92](https://github.com/Magral/Igrolov/commit/ec8ca9235246410181c05d4002b495de01d706b9) — test: compare persisted watch history across target edits
 - [89d66a2](https://github.com/Magral/Igrolov/commit/89d66a2e26ceb00224b33970525e7480f5467c20) — feat: edit monitored target price without losing history
-- [c8ea3db](https://github.com/Magral/Igrolov/commit/c8ea3db9d49a5bd14c19a9f8786b74b155d9513b) — release: Игролов 1.8.0 — мониторинг, карточки и сохранение фильтров
 <!-- AUTO_CONTEXT_END -->
 
 
