@@ -15,6 +15,16 @@ class OfferPriceCacheTest {
         assertEquals(210L,result.ggsel.failedAt)
         assertEquals("offline",result.ggsel.error)
     }
+    @Test fun partialCompletionDoesNotTouchPendingMarketplacePriceOrTimestamp() {
+        val partial = OfferPriceCache.merge(old, mapOf("GGSEL" to 650.0), emptySet(), 200, 210, "", setOf("GGSEL"))
+        assertEquals(old.plati, partial.plati)
+        assertEquals(650.0, partial.ggsel.price!!, 0.0)
+        assertEquals(210L, partial.ggsel.checkedAt)
+        val terminal = OfferPriceCache.merge(partial, mapOf("GGSEL" to 650.0), setOf("Plati"), 200, 250, "offline")
+        assertEquals(500.0, terminal.plati.price!!, 0.0)
+        assertEquals(100L, terminal.plati.checkedAt)
+        assertEquals(650.0, terminal.ggsel.price!!, 0.0)
+    }
     @Test fun successfulEmptyResultClearsOldPriceAndPreviousFailure() {
         val failed=OfferPriceCache.merge(old,emptyMap(),setOf("Plati","GGSEL"),200,210,"offline")
         val empty=OfferPriceCache.merge(failed,emptyMap(),emptySet(),300,310,"")
@@ -49,3 +59,4 @@ class OfferPriceCacheTest {
             key(rules=JSONObject("""{"b":2,"a":1}"""),ignored=linkedSetOf("1","2")))
     }
 }
+

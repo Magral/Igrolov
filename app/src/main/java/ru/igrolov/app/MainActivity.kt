@@ -32,10 +32,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.draw.rotate
@@ -56,6 +60,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -75,7 +80,12 @@ class MainActivity : ComponentActivity() {
     private val detailExecutor = Executors.newFixedThreadPool(4)
     private val ioExecutor = Executors.newSingleThreadExecutor()
     private val wishlistExecutor = Executors.newSingleThreadExecutor()
-    private val catalogExecutor = Executors.newSingleThreadExecutor()
+    private val priceSearches = PriceSearchCoordinator<CatalogSourceResult>()
+    private val priceRequestSequence = java.util.concurrent.atomic.AtomicLong()
+    private val priceRequestVersions = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    private val recentSearchOffers = object : LinkedHashMap<String, Pair<Long, List<Offer>>>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Pair<Long, List<Offer>>>?): Boolean = size > 20
+    }
     private val suggestionExecutor = Executors.newSingleThreadExecutor()
     private val editionExecutor = Executors.newSingleThreadExecutor()
     private val watchSuggestionGeneration=java.util.concurrent.atomic.AtomicInteger(0)
@@ -83,7 +93,7 @@ class MainActivity : ComponentActivity() {
     private val activeCatalogGeneration = java.util.concurrent.atomic.AtomicInteger(0)
     override fun onDestroy() {
         activeCatalogGeneration.incrementAndGet()
-        catalogExecutor.shutdownNow()
+        priceSearches.close()
         suggestionGeneration.incrementAndGet()
         watchSuggestionGeneration.incrementAndGet()
         suggestionExecutor.shutdownNow()
@@ -216,9 +226,10 @@ class MainActivity : ComponentActivity() {
     }
     // Network requests are performed only on background threads.
     // Retry transient DNS/timeout/server failures without duplicating search results.
-    private fun getCatalogJson(url: String): JSONObject {
+    private fun getCatalogJson(url: String, active: () -> Boolean = { true }): JSONObject {
         var last: Exception? = null
         repeat(3) { attempt ->
+            check(active())
             var statusCode = 0
             var retryAfter: String? = null
             try {
@@ -240,7 +251,7 @@ class MainActivity : ComponentActivity() {
                     e is java.net.SocketTimeoutException ||
                     e is java.net.ConnectException ||
                     (e is java.io.IOException && (e.message?.startsWith("HTTP 5") == true || e.message == "HTTP 429"))
-                if (!retryable || attempt == 2) throw e
+                if (!active() || !retryable || attempt == 2) throw e
                 last = e
                 Thread.sleep(CatalogRetryPolicy.delayMillis(statusCode, retryAfter, attempt))
             }
@@ -248,31 +259,46 @@ class MainActivity : ComponentActivity() {
         throw last ?: java.io.IOException("Нет соединения")
     }
 
-    private fun searchCatalog(query: String, pageCount: Int, generation: Int, selectedAppId: Int?, additionalAliases: List<String>, selectedEdition: SteamEditionReference.Edition? = null, availableEditions: List<SteamEditionReference.Edition> = emptyList(), progress: (Int, Int, Int) -> Unit, callback: (List<Offer>, String, List<String>, Set<String>) -> Unit) {
-        catalogExecutor.execute {
-            val found = mutableListOf<Offer>()
-            val seenIds = mutableSetOf<String>()
-            val sellerIds = mutableMapOf<String, String>()
-            var failure = ""
-            val failedSources = mutableSetOf<String>()
-            val editionAliases = selectedEdition?.let { listOf(it.searchTitle) + additionalAliases } ?: additionalAliases
-            val reference = ManualGameReference.lookup(query,selectedAppId,editionAliases.distinct())
-            if (generation != activeCatalogGeneration.get()) return@execute
-            if(selectedAppId != null && reference.appId != selectedAppId) {
-                runOnUiThread { if(generation == activeCatalogGeneration.get()) callback(emptyList(),"Steam не подтвердил выбранную основную игру. Повторите запрос или выберите другую игру.",emptyList(),setOf("Plati","GGSEL")) }
-                return@execute
+    private data class CatalogSourceResult(val offers: List<Offer>, val aliases: List<String> = emptyList(), val failed: Boolean = false)
+
+    private fun searchCatalog(query: String, pageCount: Int, generation: Int, selectedAppId: Int?,
+        additionalAliases: List<String>, selectedEdition: SteamEditionReference.Edition? = null,
+        availableEditions: List<SteamEditionReference.Edition> = emptyList(), requestKey: String,
+        background: Boolean, externalActive: () -> Boolean,
+        progress: (Int, Int, Int) -> Unit,
+        callback: (List<Offer>, String, List<String>, Set<String>, Set<String>, Boolean, Boolean) -> Unit) {
+        val editionAliases = selectedEdition?.let { listOf(it.searchTitle) + additionalAliases } ?: additionalAliases
+        val reference by lazy {
+            ManualGameReference.lookup(query, selectedAppId, editionAliases.distinct()).also {
+                check(selectedAppId == null || it.appId == selectedAppId)
             }
-            val marketQuery=selectedEdition?.searchTitle ?: ManualGameReference.catalogQuery(query,reference.aliases)
-            val marketQueries = selectedEdition?.let {
-                ManualContentRules.marketplaceEditionSearchQueries(reference.canonical, it.searchTitle)
-            } ?: listOf(marketQuery)
-            val progressPages = pageCount * marketQueries.size
+        }
+        val marketQueries by lazy {
+            selectedEdition?.let { ManualContentRules.marketplaceEditionSearchQueries(reference.canonical, it.searchTitle) }
+                ?: listOf(ManualGameReference.catalogQuery(query, reference.aliases))
+        }
+        fun selected(offers: List<Offer>) = offers.filter {
+            selectedEdition == null || ManualContentRules.matchesSelectedSteamEdition(it.name,
+                reference.canonical, selectedEdition.name, availableEditions.map { edition -> edition.name })
+        }
+        val requestVersion = priceRequestSequence.incrementAndGet()
+        priceRequestVersions[requestKey] = requestVersion
+        priceSearches.start(requestKey, background, linkedMapOf(
+            "Plati" to { running: () -> Boolean ->
+                val active = { running() && externalActive() }
+                check(active())
+                val found = mutableListOf<Offer>()
+                val seenIds = mutableSetOf<String>()
+                val sellerIds = mutableMapOf<String, String>()
+                var failure = ""
+                var sourceFailed = false
+                val progressPages = pageCount * marketQueries.size
             for ((queryIndex, marketQuery) in marketQueries.withIndex()) {
             try {
                 // Marketplace-wide search endpoint used by the Plati site ecosystem.
                 // It is not the seller-specific shop_search.asp interface.
                 for (page in 1..pageCount) {
-                if (generation != activeCatalogGeneration.get() || Thread.currentThread().isInterrupted) return@execute
+                check(active())
                 val params = linkedMapOf(
                     "query" to marketQuery,
                     "searchmode" to "10",
@@ -286,7 +312,7 @@ class MainActivity : ComponentActivity() {
                 ).entries.joinToString("&") { (k, v) ->
                     "${URLEncoder.encode(k, "UTF-8") }=${URLEncoder.encode(v, "UTF-8") }"
                 }
-                val root = getCatalogJson("https://api.digiseller.com/api/products/search2?$params")
+                val root = getCatalogJson("https://api.digiseller.com/api/products/search2?$params", active)
                 run {
                     val result = root.optJSONObject("result")
                     val retval = root.optInt("retval", 0)
@@ -316,14 +342,14 @@ class MainActivity : ComponentActivity() {
 
                     }
                 }
-                if (generation == activeCatalogGeneration.get()) runOnUiThread {
-                    if (generation == activeCatalogGeneration.get()) progress(queryIndex * pageCount + page, progressPages, found.size)
+                if (active()) runOnUiThread {
+                    if (active()) progress(queryIndex * pageCount + page, progressPages, found.size)
                 }
                 val totalPages = root.optJSONObject("result")?.optInt("total_pages", pageCount) ?: pageCount
                 if (page >= totalPages) break
                 }
             } catch (e: Exception) {
-                failedSources.add("Plati")
+                sourceFailed = true
                 failure = listOf(failure, "Plati: ${e.message ?: "не удалось подключиться к каталогу"}")
                     .filter { it.isNotBlank() }.joinToString(" · ")
             }
@@ -338,47 +364,28 @@ class MainActivity : ComponentActivity() {
                     null
                 }
             }.enrich(sorted, sellerIds, reference = reference,
-                active = { generation == activeCatalogGeneration.get() && !Thread.currentThread().isInterrupted },
+                active = { active() },
                 progress = { checked, total ->
-                    if (generation == activeCatalogGeneration.get()) runOnUiThread {
-                        if (generation == activeCatalogGeneration.get()) progress(progressPages, progressPages, checked)
+                    if (active()) runOnUiThread {
+                        if (active()) progress(progressPages, progressPages, checked)
                     }
                 }) }.getOrElse {
                     detailFailures.incrementAndGet()
                     emptyList()
                 }
             if (detailFailures.get() > 0) {
-                failedSources.add("Plati")
+                sourceFailed = true
                 failure = listOf(failure, "Не все карточки Plati удалось проверить").filter { it.isNotBlank() }.joinToString(" · ")
             }
-            var ggselFailure = ""
-            if (generation == activeCatalogGeneration.get() && !Thread.currentThread().isInterrupted) {
-                try {
-                    found.addAll(GgselBuyerApi.find(reference,
-                        active = { generation == activeCatalogGeneration.get() && !Thread.currentThread().isInterrupted },
-                        editionSearchTerms = selectedEdition?.let { marketQueries }.orEmpty()))
-                    if (generation == activeCatalogGeneration.get()) runOnUiThread {
-                        if (generation == activeCatalogGeneration.get()) progress(progressPages, progressPages, found.size)
-                    }
-                } catch (e: Exception) {
-                    failedSources.add("GGSEL")
-                    ggselFailure = "GGSEL: ${e.message ?: "каталог временно недоступен"}"
-                }
-            }
-            val matchedEditionOffers = (enriched + found.filter { it.marketplace == "GGSEL" })
-                .filter { selectedEdition == null || ManualContentRules.matchesSelectedSteamEdition(it.name, reference.canonical, selectedEdition.name, availableEditions.map { option -> option.name }) }
-            val finalOffers = matchedEditionOffers
-                .distinctBy { "${it.marketplace}:${it.id}" }.sortedBy { it.price }
-            if (ggselFailure.isNotBlank()) failure = listOf(failure, ggselFailure).filter { it.isNotBlank() }.joinToString(" · ")
             var aliasSuggestions = emptyList<String>()
-            if (finalOffers.isEmpty() && selectedEdition == null && failure.isBlank() && generation == activeCatalogGeneration.get()) {
+            if (enriched.isEmpty() && selectedEdition == null && failure.isBlank() && active()) {
                 val core = CatalogAliasResolver.fallbackQuery(reference.canonical)
                 if (core != null && !reference.aliases.any { GameSearchResolver.normalized(it) == GameSearchResolver.normalized(core) }) {
                     runCatching {
                         val params = linkedMapOf("query" to core, "searchmode" to "10", "sortmode" to "2", "pagesize" to "100",
                             "pagenum" to "1", "owner" to "1", "details" to "1", "checkhidesales" to "1", "host" to "plati.market")
                             .entries.joinToString("&") { (k, v) -> "${URLEncoder.encode(k, "UTF-8")}=${URLEncoder.encode(v, "UTF-8")}" }
-                        val root = getCatalogJson("https://api.digiseller.com/api/products/search2?$params")
+                        val root = getCatalogJson("https://api.digiseller.com/api/products/search2?$params", active)
                         if (root.optInt("retval", 0) == 0) {
                             val result = root.optJSONObject("result")
                             val raw = root.optJSONObject("items")?.optJSONArray("item") ?: root.optJSONArray("items") ?: result?.optJSONArray("items")
@@ -388,8 +395,26 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-            if (generation == activeCatalogGeneration.get()) runOnUiThread {
-                if (generation == activeCatalogGeneration.get()) callback(finalOffers, failure, aliasSuggestions, failedSources.toSet())
+
+                CatalogSourceResult(selected(enriched), aliasSuggestions, sourceFailed)
+            },
+            "GGSEL" to { running: () -> Boolean ->
+                val active = { running() && externalActive() }
+                check(active())
+                val rows = GgselBuyerApi.find(reference, active = active,
+                    editionSearchTerms = selectedEdition?.let { marketQueries }.orEmpty())
+                check(active())
+                CatalogSourceResult(selected(rows))
+            }
+        )) { result ->
+            val found = result.values.values.flatMap { it.offers }
+                .distinctBy { "${it.marketplace}:${it.id}" }.sortedBy { it.price }
+            val failed = result.failedSources + result.values.filterValues { it.failed }.keys
+            val aliases = if (result.finished && !result.cancelled && failed.isEmpty() && found.isEmpty()) result.values.values.flatMap { it.aliases }.distinct() else emptyList()
+            runOnUiThread {
+                if (externalActive() && priceRequestVersions[requestKey] == requestVersion) callback(found,
+                    if (failed.isNotEmpty()) "Не удалось обновить часть цен" else "",
+                    aliases, failed, result.values.keys + result.failedSources, result.finished, result.cancelled)
             }
         }
     }
@@ -1044,10 +1069,10 @@ class MainActivity : ComponentActivity() {
                     }
                 )
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    OutlinedButton(onClick = onSearchPrice, enabled = searchEnabled && marketplacePrices?.checking != true,
+                    OutlinedButton(onClick = onSearchPrice, enabled = searchEnabled || marketplacePrices?.checking == true,
                         modifier = Modifier.weight(1f).height(36.dp), contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
-                        Text(if (marketplacePrices?.checking == true) "Ищем цены…" else "Цены",
+                        Text(if (marketplacePrices?.checking == true) "Стоп" else if (!marketplacePrices?.message.isNullOrBlank()) "Повторить" else "Цены",
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold), maxLines = 1, color = Color(0xFF17212D))
                     }
                     OutlinedButton(onClick = onMonitor, modifier = Modifier.weight(1f).height(36.dp),
@@ -1184,9 +1209,8 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    @Composable
-    private fun ScreenSection(content: @Composable () -> Unit) {
-        content()
+    private fun LazyListScope.ScreenSection(content: @Composable () -> Unit) {
+        item { Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) { content() } }
     }
 
     private class CatalogueUiState(prefs: android.content.SharedPreferences, context: android.content.Context) {
@@ -1696,9 +1720,9 @@ class MainActivity : ComponentActivity() {
             if (leader) OfferPriceCache.leaderFilters(manualFilters) else manualFilters,
             GameRuleStore.read(this@MainActivity, title), ignoredIds, searchTotalPages, comparisonSavedAliases[appId].orEmpty())
         fun recordComparison(key: String, minima: Map<String, Double>, failed: Set<String>,
-                             started: Long, finished: Long, reason: String): CachedGamePrices {
-            val saved = runCatching { OfferPriceCacheStore.update(this@MainActivity, key, minima, failed, started, finished, reason) }
-                .getOrElse { OfferPriceCache.merge(catalogueUi.priceCache[key], minima, failed, started, finished, reason) }
+                             started: Long, finished: Long, reason: String, sources: Set<String> = setOf("Plati", "GGSEL")): CachedGamePrices {
+            val saved = runCatching { OfferPriceCacheStore.update(this@MainActivity, key, minima, failed, started, finished, reason, sources) }
+                .getOrElse { OfferPriceCache.merge(catalogueUi.priceCache[key], minima, failed, started, finished, reason, sources) }
             catalogueUi.priceCache = catalogueUi.priceCache + (key to saved)
             return saved
         }
@@ -1706,16 +1730,7 @@ class MainActivity : ComponentActivity() {
             if (!catalogueUi.priceBatch.running) return
             val current = catalogueUi.priceBatch.current
             catalogueUi.priceBatch = catalogueUi.priceBatch.cancel()
-            searchGeneration++
-            activeCatalogGeneration.set(searchGeneration)
-            searching = false
-            catalogueUi.wishlistSearchingKeys.forEach { catalogueUi.wishlistSearchStatuses = catalogueUi.wishlistSearchStatuses + (it to "Проверка остановлена") }
-            catalogueUi.wishlistSearchingKeys = emptySet()
-            current?.let { target ->
-                leaderOfferPrices[target.appId]?.let {
-                    leaderOfferPrices = leaderOfferPrices + (target.appId to it.copy(checking = false, message = "Проверка остановлена"))
-                }
-            }
+            current?.let { priceSearches.cancel(if (it.profileId != null) "wishlist:${it.profileId}:${it.appId}" else "leader:${it.appId}") }
         }
         fun startCatalogSearch(
             candidateOverride: GameSearchResolver.Candidate? = null,
@@ -1726,7 +1741,6 @@ class MainActivity : ComponentActivity() {
             filtersOverride: ManualSearchFilters? = null,
             pagesOverride: Int? = null
         ) {
-            if (catalogueUi.priceBatch.running && onFinished == null) return
             if (searching && candidateOverride == null) return
             val requestedFilters = filtersOverride ?: manualFilters
             val requestedPages = pagesOverride ?: searchTotalPages
@@ -1766,26 +1780,27 @@ class MainActivity : ComponentActivity() {
                 leaderOfferPrices = leaderOfferPrices + (leaderboardAppId to previous.copy(checking = true, message = "Проверяем Plati и GGSEL…", scopeKey = primaryCacheKey.orEmpty()))
             }
 
-            catalogueUi.wishlistSearchingKeys.forEach { key -> catalogueUi.wishlistSearchStatuses = catalogueUi.wishlistSearchStatuses + (key to "Поиск остановлен") }
-            catalogueUi.wishlistSearchingKeys = emptySet()
             val wishlistKey = wishlistProfileId?.let { "$it:${identity?.appId ?: candidateOverride?.appId}" }
             if (hiddenWishlistSearch && wishlistKey != null) {
-                catalogueUi.wishlistSearchingKeys = setOf(wishlistKey)
+                catalogueUi.wishlistSearchingKeys = catalogueUi.wishlistSearchingKeys + wishlistKey
                 catalogueUi.wishlistSearchStatuses = catalogueUi.wishlistSearchStatuses + (wishlistKey to "Ищем минимальную цену…")
             }
 
             if (!backgroundSearch) {
                 searchGeneration++
                 activeCatalogGeneration.set(searchGeneration)
+            priceSearches.cancel("manual")
             }
             val generation = searchGeneration
             visibleOfferLimit = 30
             if (!backgroundSearch) searching = true
             searchPage = 0
             searchFound = 0
+            val snapshotKey = primaryCacheKey ?: "manual:$requestedGame:${requestFilters}:$requestedPages"
+            val snapshot = recentSearchOffers[snapshotKey]?.takeIf { requestedAt - it.first < 15 * 60_000L }?.second.orEmpty()
             if (!backgroundSearch) {
-                offers = emptyList()
-                searchMessage = if (candidateOverride != null)
+                offers = snapshot
+                searchMessage = if (snapshot.isNotEmpty()) "Обновляем предложения…" else if (candidateOverride != null)
                     "Автопоиск цен · выполняется для «$requestedGame»…"
                 else "Поиск предложений…"
                 query = requestedGame
@@ -1798,12 +1813,18 @@ class MainActivity : ComponentActivity() {
             if (identity != null) ManualSearchSettings.rememberGame(this@MainActivity, identity)
             if (!backgroundSearch) steamGame = null
 
-            searchCatalog(requestedGame, requestedPages, generation, identity?.appId, identity?.aliases.orEmpty(), requestedEdition, steamEditions, { page, _, count ->
+            val requestKey = when {
+                leaderboardAppId != null -> "leader:$leaderboardAppId"
+                hiddenWishlistSearch && wishlistKey != null -> "wishlist:$wishlistKey"
+                else -> "manual"
+            }
+            searchCatalog(requestedGame, requestedPages, generation, identity?.appId, identity?.aliases.orEmpty(), requestedEdition, steamEditions,
+                requestKey, background = onFinished != null, externalActive = { backgroundSearch || generation == activeCatalogGeneration.get() }, { page, _, count ->
                 if (generation == searchGeneration) {
                     searchPage = page
                     searchFound = count
                 }
-            }) { found, failure, aliasSuggestions, failedSources ->
+            }) { found, failure, aliasSuggestions, failedSources, completedSources, finished, cancelled ->
                 if (generation != searchGeneration && !backgroundSearch) return@searchCatalog
                 if (aliasSuggestions.isNotEmpty() && identity != null) {
                     if (leaderboardAppId != null || onFinished != null) {
@@ -1839,14 +1860,17 @@ class MainActivity : ComponentActivity() {
                     }
                     return@searchCatalog
                 }
-                val results = found.map { offer ->
+                val freshResults = found.map { offer ->
                     offer.copy(
                         canonical = offer.canonical.ifBlank { identity?.name ?: requestedGame },
                         steamAppId = offer.steamAppId.takeIf { it > 0 } ?: identity?.appId ?: 0
                     )
                 }
+                val retained = snapshot.filter { it.marketplace !in completedSources || it.marketplace in failedSources }
+                val results = (freshResults + retained).distinctBy { "${it.marketplace}:${it.id}" }.sortedBy { it.price }
+                if (results.isNotEmpty() || (finished && failedSources.isEmpty())) recentSearchOffers[snapshotKey] = requestedAt to results
                 if (!backgroundSearch) offers = results
-                if (!backgroundSearch) searching = false
+                if (!backgroundSearch) searching = !finished
                 val ready = results.count { ManualContentRules.visible(it, "Игра", "Все") }
                 val wishlistSearch = wishlistProfileId != null && identity?.appId != null
                 val minimaByMarketplace = OfferPriceCache.minima(results, requestFilters, requestRules, requestIgnored)
@@ -1855,17 +1879,17 @@ class MainActivity : ComponentActivity() {
                 val hasWishlistMinimum = platiMinimum != null || ggselMinimum != null
                 val finishedAt = System.currentTimeMillis()
                 val cached = primaryCacheKey?.let {
-                    recordComparison(it, minimaByMarketplace, failedSources, requestedAt, finishedAt, failure)
+                    recordComparison(it, minimaByMarketplace, failedSources, requestedAt, finishedAt, failure, completedSources)
                 }
                 if (leaderCacheKey != null && leaderCacheKey != primaryCacheKey) {
                     val leaderMinima = LeaderOfferSelector.minimumConfirmedByMarketplace(results, requestedFilters, requestRules, requestIgnored)
-                    recordComparison(leaderCacheKey, leaderMinima, failedSources, requestedAt, finishedAt, failure)
+                    recordComparison(leaderCacheKey, leaderMinima, failedSources, requestedAt, finishedAt, failure, completedSources)
                 }
                 if (leaderboardAppId != null) {
                     leaderOfferPrices = leaderOfferPrices + (leaderboardAppId to LeaderOfferPrices(
-                        checking = false, platiMinimum = cached?.plati?.price, ggselMinimum = cached?.ggsel?.price,
+                        checking = !finished, platiMinimum = cached?.plati?.price, ggselMinimum = cached?.ggsel?.price,
                         checkedAt = cached?.let { maxOf(it.plati.checkedAt, it.ggsel.checkedAt).takeIf { time -> time > 0 } },
-                        message = if (failedSources.isNotEmpty()) "Часть источников не обновилась" else "",
+                        message = if (cancelled) "Проверка остановлена" else if (failedSources.isNotEmpty()) "Не удалось обновить часть цен" else "",
                         scopeKey = primaryCacheKey.orEmpty()
                     ))
                 }
@@ -1884,15 +1908,20 @@ class MainActivity : ComponentActivity() {
                         prefs.edit().putString("wishlist_games", SteamWishlist.encode(catalogueUi.wishlistGames)).apply()
                     }
                     val key = "$wishlistProfileId:${identity.appId}"
-                    catalogueUi.wishlistSearchingKeys = catalogueUi.wishlistSearchingKeys - key
+                    if (finished) catalogueUi.wishlistSearchingKeys = catalogueUi.wishlistSearchingKeys - key
                     catalogueUi.wishlistSearchStatuses = catalogueUi.wishlistSearchStatuses + (key to when {
-                        failedSources.isNotEmpty() -> "Есть ошибки обновления"
+                        !finished -> "Ищем минимальную цену…"
+                        cancelled -> "Проверка остановлена"
+                        failedSources.isNotEmpty() -> "Не удалось обновить часть цен"
                         hasWishlistMinimum -> "Минимум обновлён"
                         else -> "Подтверждённая цена не найдена"
                     })
                 }
                 if (!backgroundSearch) {
                     val summary = when {
+                        !finished -> "Обновляем предложения…"
+                        cancelled -> "Поиск остановлен. Найденные предложения сохранены."
+                        failedSources.isNotEmpty() && ready == 0 -> "Не удалось обновить цены. Попробуйте ещё раз."
                         ready > 0 -> "Найдено предложений: $ready."
                         else -> "Подходящих предложений не найдено. Попробуйте изменить название или фильтры."
                     } + if (wishlistSearch) {
@@ -1905,12 +1934,12 @@ class MainActivity : ComponentActivity() {
                     } else ""
                     searchMessage = summary
                 }
-                onFinished?.invoke()
+                if (finished) onFinished?.invoke()
             }
         }
-        LaunchedEffect(catalogueUi.priceBatch.current, catalogueUi.priceBatch.completed, searching) {
+        LaunchedEffect(catalogueUi.priceBatch.current, catalogueUi.priceBatch.completed) {
             val target = catalogueUi.priceBatch.current
-            if (catalogueUi.priceBatch.running && !searching && target != null) {
+            if (catalogueUi.priceBatch.running && target != null) {
                 startCatalogSearch(GameSearchResolver.Candidate(target.appId, target.title),
                     wishlistProfileId = target.profileId, hiddenWishlistSearch = target.profileId != null,
                     leaderboardAppId = target.appId.takeIf { target.profileId == null },
@@ -1929,10 +1958,22 @@ class MainActivity : ComponentActivity() {
             pendingAliasSuggestions = emptyList()
             pendingAliasProfileId = null
         }
-        val searchScroll = rememberScrollState()
-        val productsScroll = rememberScrollState()
-        val watchScroll = rememberScrollState()
-        val directoryScroll = rememberScrollState()
+        val searchScroll = rememberLazyListState()
+        val productsScroll = rememberLazyListState()
+        val watchScroll = rememberLazyListState()
+        val directoryScroll = rememberLazyListState()
+        val wishlistListState = rememberLazyListState()
+        val bestsellersListState = rememberLazyListState()
+        val newReleasesListState = rememberLazyListState()
+        val discountsListState = rememberLazyListState()
+        val salesListState = rememberLazyListState()
+        val leaderListState = when (leaderSection) {
+            SteamLeaderSection.TOP_SELLERS -> bestsellersListState
+            SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleasesListState
+            SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountsListState
+            SteamLeaderSection.THEMED_SALES -> salesListState
+        }
+        LaunchedEffect(leaderFilterInput, topAvailabilityFilter) { leaderVisibleLimit = 20 }
         Column(Modifier.fillMaxSize().background(Color(0xFFF4F6F8))) {
             val aliasGame = pendingAliasGame
             if (aliasGame != null && pendingAliasSuggestions.isNotEmpty()) {
@@ -1979,7 +2020,12 @@ class MainActivity : ComponentActivity() {
                     showDirectory = false
                 })
             PriceBatchStatus(catalogueUi.priceBatch, onStop = { stopPriceBatch() })
-            Column(Modifier.fillMaxSize().background(Color(0xFFF4F6F8)).verticalScroll(if (settingsOpen) directoryScroll else when(activeTab) { 0 -> searchScroll; 1 -> productsScroll; 2 -> watchScroll; else -> directoryScroll }).padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (settingsOpen || activeTab !in setOf(3, 4)) {
+            LazyColumn(state = if (settingsOpen) directoryScroll else when(activeTab) {
+                0 -> searchScroll; 1 -> productsScroll; 2 -> watchScroll; else -> directoryScroll
+            }, modifier = Modifier.fillMaxSize().testTag("page-list"),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)) {
             ScreenSection {
             if (activeTab == 0 && !settingsOpen) {
             Text("Цены на игры Steam · ₽", style = MaterialTheme.typography.labelSmall,
@@ -1998,6 +2044,7 @@ class MainActivity : ComponentActivity() {
                 gameSuggestions = emptyList()
                 searchGeneration++
                 activeCatalogGeneration.set(searchGeneration)
+            priceSearches.cancel("manual")
                 searching = false
                 offers = emptyList()
                 steamGame = null
@@ -2055,6 +2102,7 @@ class MainActivity : ComponentActivity() {
                         offers=emptyList()
                         searchGeneration++
                         activeCatalogGeneration.set(searchGeneration)
+            priceSearches.cancel("manual")
                         searching=false
                         ManualSearchSettings.rememberGame(this@MainActivity,candidate)
                     },modifier=Modifier.fillMaxWidth()) {Text(candidate.name)}
@@ -2074,6 +2122,7 @@ class MainActivity : ComponentActivity() {
                             TextButton(onClick = {
                                 searchGeneration++
                                 activeCatalogGeneration.set(searchGeneration)
+            priceSearches.cancel("manual")
                                 searching = false
                                 offers = emptyList()
                                 steamGame = null
@@ -2116,9 +2165,9 @@ class MainActivity : ComponentActivity() {
                         onClick = { editionFilter = edition }, label = { Text(edition) })
                 }
             }
-            OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { startCatalogSearch() },
-                enabled = query.isNotBlank() && !searching && !suggestionBusy && manualFilters.valid) {
-                Text(if (searching) "Ищем..." else selectedSteamEdition?.let { "Искать ${it.name}" } ?: "Искать")
+            OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { if (searching) priceSearches.cancel("manual") else startCatalogSearch() },
+                enabled = searching || (query.isNotBlank() && !suggestionBusy && manualFilters.valid)) {
+                Text(if (searching) "Остановить поиск" else selectedSteamEdition?.let { "Искать ${it.name}" } ?: "Искать")
             }
             if (searching) {
                 LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -2166,9 +2215,11 @@ class MainActivity : ComponentActivity() {
             }
             Spacer(Modifier.height(8.dp))
             Text("Отслеживаемые товары: ${items.size}", style = MaterialTheme.typography.titleMedium)
-            val sortedTrackedItems = remember(items) { items.sortedBy { it.price ?: Double.MAX_VALUE } }
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                sortedTrackedItems.take(trackedVisibleLimit).forEach { item ->
+            }
+            }
+            if (activeTab == 1 && !settingsOpen) {
+                val sortedTrackedItems = items.sortedBy { it.price ?: Double.MAX_VALUE }
+                items(sortedTrackedItems.take(trackedVisibleLimit), key = { "product:${it.storageKey}" }, contentType = { "product" }) { item ->
                     OutlinedCard(Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                         border = BorderStroke(1.dp, Color(0xFFDCE2E8)),
                         colors = CardDefaults.outlinedCardColors(containerColor = Color.White)) {
@@ -2202,7 +2253,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-            }
+                ScreenSection {
             if (sortedTrackedItems.size > trackedVisibleLimit) {
                 OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { trackedVisibleLimit += 30 }, modifier = Modifier.fillMaxWidth()) {
                     Text("Показать ещё · ${minOf(trackedVisibleLimit, sortedTrackedItems.size)} из ${sortedTrackedItems.size}")
@@ -2294,7 +2345,10 @@ class MainActivity : ComponentActivity() {
                     Text("По этому фильтру игр нет.", style = MaterialTheme.typography.bodySmall)
                 }
             }
-            for (watchEntry in visibleWatchEntries) {
+            }
+            }
+            if (activeTab == 2 && !settingsOpen) {
+                items(visibleWatchEntries, key = { "watch:${it.originalIndex}" }, contentType = { "watch" }) { watchEntry ->
                 val wi = watchEntry.originalIndex
                 val w = watchEntry.game
                 OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
@@ -2333,7 +2387,7 @@ class MainActivity : ComponentActivity() {
                         }
                         val checkedAt = w.optLong("checked", 0L)
                         val monitorDate = java.text.SimpleDateFormat("dd.MM HH:mm", Locale("ru", "RU"))
-                        var resultsExpanded by remember(w.optString("name")) { mutableStateOf(false) }
+                        var resultsExpanded by rememberSaveable(w.optString("name")) { mutableStateOf(false) }
                         val bestOffers = w.optJSONArray("topOffers") ?: JSONArray()
                         if (checkedAt > 0L) Text("Проверено ${monitorDate.format(java.util.Date(checkedAt))}",
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -2400,7 +2454,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                         val history=WatchHistory.points(w.optJSONArray("history") ?: JSONArray())
-                        var historyExpanded by remember(w.optString("name")) {mutableStateOf(false)}
+                        var historyExpanded by rememberSaveable(w.optString("name")) {mutableStateOf(false)}
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick={historyExpanded=!historyExpanded},
                                 modifier = Modifier.weight(1f).heightIn(min = 40.dp),
@@ -2431,7 +2485,8 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-            }
+                }
+                ScreenSection {
             Spacer(Modifier.height(18.dp))
             HorizontalDivider()
             val alerts = remember(alertLog) { JSONArray(alertLog) }
@@ -2496,17 +2551,18 @@ class MainActivity : ComponentActivity() {
             Text("В результатах — активные товары с подтверждённой ценой и регионом.",
                 style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
-            if (offers.isNotEmpty()) {
-                val currentRules = remember(query, rulesRevision) { GameRuleStore.read(this@MainActivity, query) }
-                val filteredOffers = remember(offers, manualFilters, currentRules, ignoredIds, selectedMarketplace) {
-                    offers.filter { (selectedMarketplace == "Все" || it.marketplace == selectedMarketplace) &&
-                        ManualSearchFilter.rejection(it,manualFilters,currentRules,ignoredIds)==null }
-                }
+            }
+            }
+            if (activeTab == 0 && !settingsOpen && offers.isNotEmpty()) {
+                val currentRules = GameRuleStore.read(this@MainActivity, query)
+                val filteredOffers = offers.filter { (selectedMarketplace == "Все" || it.marketplace == selectedMarketplace) &&
+                    ManualSearchFilter.rejection(it, manualFilters, currentRules, ignoredIds) == null }
                 val visibleCount = filteredOffers.size
-                Text("Предложения по цене ↑ · $visibleCount", style = MaterialTheme.typography.titleMedium)
-                if (visibleCount == 0) Text("По выбранным фильтрам предложений нет. Уточните название или проверьте регион в заголовках.", style = MaterialTheme.typography.bodySmall)
-                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    filteredOffers.take(visibleOfferLimit).forEach { offer ->
+                ScreenSection {
+                    Text("Предложения по цене ↑ · $visibleCount", style = MaterialTheme.typography.titleMedium)
+                    if (visibleCount == 0) Text("По выбранным фильтрам предложений нет.", style = MaterialTheme.typography.bodySmall)
+                }
+                items(filteredOffers.take(visibleOfferLimit), key = { "offer:${it.marketplace}:${it.id}" }, contentType = { "offer" }) { offer ->
                         val offerAppId = offer.steamAppId.takeIf { it > 0 } ?: selectedGame?.appId ?: 0
                         OutlinedCard(Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                             border = BorderStroke(1.dp, Color(0xFFDCE2E8)),
@@ -2583,294 +2639,14 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         }
-                    }
+                }
+                ScreenSection {
                     if (visibleCount > visibleOfferLimit) {
                         OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { visibleOfferLimit += 30 }, modifier = Modifier.fillMaxWidth()) {
                             Text("Показать ещё 30 · отображено ${minOf(visibleOfferLimit, visibleCount)} из $visibleCount")
                         }
                     }
-                }
-            }
             } // конец вкладки поиска
-            }
-            ScreenSection {
-            if (activeTab == 3 && !settingsOpen) {
-                val wishlistCacheKeys = remember(catalogueUi.wishlistGames, manualFilters, rulesRevision,
-                    ignoredIds, searchTotalPages, comparisonSavedAliases) {
-                    catalogueUi.wishlistGames.associate { it.appId to comparisonKey(it.appId, it.title, false) }
-                }
-                WishlistPanel(
-                    profiles = catalogueUi.wishlistProfiles, selectedId = catalogueUi.selectedWishlistId, games = catalogueUi.wishlistGames,
-                    filterInput = wishlistFilterInput, onFilterInput = { wishlistFilterInput = it },
-                    input = catalogueUi.wishlistProfile, busy = catalogueUi.wishlistBusy, message = catalogueUi.wishlistMessage,
-                    importedAt = catalogueUi.wishlistImportedAt, visibleLimit = catalogueUi.wishlistVisibleLimit,
-                    genresLoading = catalogueUi.wishlistGenresLoading,
-                    searchingKeys = catalogueUi.wishlistSearchingKeys, searchStatuses = catalogueUi.wishlistSearchStatuses,
-                    searchEnabled = manualFilters.valid && !catalogueUi.priceBatch.running,
-                    onInput = { catalogueUi.wishlistProfile = it }, onImport = { importWishlist() },
-                    onSelect = { profile ->
-                        catalogueUi.selectedWishlistId = profile.steamId64
-                        catalogueUi.wishlistProfile = ""
-                        catalogueUi.wishlistGames = profile.games
-                        catalogueUi.wishlistImportedAt = profile.importedAt
-                        catalogueUi.wishlistVisibleLimit = 30
-                        catalogueUi.wishlistMessage = "Выбран профиль «${profile.displayName}»."
-                        prefs.edit().putString("wishlist_selected_profile", profile.steamId64)
-                            .putString("wishlist_profile", profile.input)
-                            .putString("wishlist_games", SteamWishlist.encode(profile.games))
-                            .putLong("wishlist_imported_at", profile.importedAt).apply()
-                    },
-                    onDelete = {
-                        val active = catalogueUi.wishlistProfiles.firstOrNull { it.steamId64 == catalogueUi.selectedWishlistId }
-                        if (active != null) {
-                            val remaining = catalogueUi.wishlistProfiles.filterNot { it.steamId64 == active.steamId64 }
-                            persistWishlistProfiles(remaining)
-                            val next = remaining.firstOrNull()
-                            catalogueUi.selectedWishlistId = next?.steamId64
-                            catalogueUi.wishlistProfile = ""
-                            catalogueUi.wishlistGames = next?.games.orEmpty()
-                            catalogueUi.wishlistImportedAt = next?.importedAt ?: 0L
-                            prefs.edit().putString("wishlist_selected_profile", next?.steamId64)
-                                .putString("wishlist_profile", next?.input.orEmpty())
-                                .putString("wishlist_games", SteamWishlist.encode(next?.games.orEmpty()))
-                                .putLong("wishlist_imported_at", next?.importedAt ?: 0L).apply()
-                        }
-                    },
-                    onOpenSearch = { game ->
-                        startCatalogSearch(
-                            candidateOverride = GameSearchResolver.Candidate(game.appId, game.title),
-                            wishlistProfileId = catalogueUi.selectedWishlistId
-                        )
-                    },
-                    onSearchPrice = { game ->
-                        val profileId = catalogueUi.selectedWishlistId
-                        if (profileId != null) startCatalogSearch(
-                            candidateOverride = GameSearchResolver.Candidate(game.appId, game.title),
-                            wishlistProfileId = profileId,
-                            hiddenWishlistSearch = true
-                        )
-                    },
-                    onMonitor = { game -> openGameMonitoring(game.appId, game.title) },
-                    cachedPrices = { game -> wishlistCacheKeys[game.appId]?.let { catalogueUi.priceCache[it] } },
-                    onDetails = { game ->
-                        val initial = SteamTopSeller(
-                            appId = game.appId,
-                            title = game.title,
-                            headerImageUrl = "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${game.appId}/header.jpg"
-                        )
-                        leaderDetailsGame = initial
-                        leaderDetailsLoading = true
-                        detailExecutor.execute {
-                            val detailed = checkTopSellerRu(initial)
-                            runOnUiThread {
-                                if (leaderDetailsGame?.appId == game.appId) {
-                                    leaderDetailsGame = detailed
-                                    leaderDetailsLoading = false
-                                }
-                            }
-                        }
-                    },
-                    onShowMore = { catalogueUi.wishlistVisibleLimit += 30 }
-                )
-            }
-            }
-            ScreenSection {
-            if (activeTab == 4 && !settingsOpen) {
-                if (topBusy) LinearProgressIndicator(Modifier.fillMaxWidth())
-                if (topError.isNotBlank()) Text("Не удалось загрузить игры. Попробуйте ещё раз.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SteamLeaderSection.values().forEach { section ->
-                        FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = leaderSection == section,
-                            onClick = { leaderSection = section; topError = "" },
-                            label = { Text(section.label, maxLines = 1, style = MaterialTheme.typography.labelSmall) })
-                    }
-                }
-                val sectionGames = remember(leaderSection, newReleaseGames, topGames, discountedExtraGames, themedSaleGames) {
-                    when (leaderSection) {
-                        SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseGames
-                        SteamLeaderSection.TOP_SELLERS -> topGames
-                        SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> topGames + discountedExtraGames
-                        SteamLeaderSection.THEMED_SALES -> themedSaleGames
-                    }
-                }
-                val reviewFiltersActive = (leaderFilterInput.minimumReviewText.toIntOrNull() ?: 0) > 0 ||
-                    (leaderFilterInput.minimumReviewCountText.toLongOrNull() ?: 0L) > 0L
-                LaunchedEffect(sectionGames, reviewFiltersActive) {
-                    if (reviewFiltersActive) {
-                        val loaded = withContext(Dispatchers.IO) { loadReviewSummaries(sectionGames) }
-                        if (loaded.isNotEmpty()) {
-                            fun attachReviews(games: List<SteamTopSeller>) = games.map { game ->
-                                loaded[game.appId]?.let { game.copy(reviewSummary = it) } ?: game
-                            }
-                            topGames = attachReviews(topGames)
-                            newReleaseGames = attachReviews(newReleaseGames)
-                            discountedExtraGames = attachReviews(discountedExtraGames)
-                        }
-                    }
-                }
-                val countLabel = when (leaderSection) {
-                    SteamLeaderSection.TOP_SELLERS -> "Загружено: ${sectionGames.size} из 100"
-                    SteamLeaderSection.POPULAR_NEW_RELEASES -> "Новинок: ${sectionGames.size}"
-                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> "Со скидкой: ${SteamLeaderSection.DISCOUNTED_TOP_SELLERS.filter(sectionGames).size}"
-                    SteamLeaderSection.THEMED_SALES -> "Игры в текущих фестах: ${sectionGames.size}"
-                }
-                val availableLeaderGenres = remember(sectionGames) {
-                    sectionGames.asSequence().flatMap { it.genres.asSequence() }.distinct().sorted().toList()
-                }
-                Text(countLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                SteamLeaderFiltersPanel(
-                    leaderFilterInput,
-                    { leaderFilterInput = it },
-                    availableGenres = availableLeaderGenres,
-                    availabilityFilter = topAvailabilityFilter,
-                    onAvailabilitySelected = { filter ->
-                        topAvailabilityFilter = filter
-                    },
-                    onReset = { topAvailabilityFilter = "Все игры" }
-                )
-                val availabilityFilteredGames = remember(sectionGames, leaderSection, topAvailabilityFilter) {
-                    leaderSection.filter(sectionGames).filter { game ->
-                        game.isGame && when (topAvailabilityFilter) {
-                            "Доступны в Steam RU" -> game.availability == SteamRuAvailability.AVAILABLE
-                            "Недоступны в Steam RU" -> game.availability == SteamRuAvailability.UNAVAILABLE
-                            else -> true
-                        }
-                    }
-                }
-                val visibleTopGames = remember(availabilityFilteredGames, leaderFilterInput) {
-                    SteamLeaderFilter.apply(availabilityFilteredGames, leaderFilterInput.toFilters())
-                }
-                LaunchedEffect(leaderSection, leaderFilterInput, topAvailabilityFilter) {
-                    leaderVisibleLimit = 20
-                }
-                val displayedTopGames = remember(visibleTopGames, leaderVisibleLimit) {
-                    visibleTopGames.take(leaderVisibleLimit)
-                }
-                val leaderHasMore = when (leaderSection) {
-                    SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseHasMore
-                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedHasMore
-                    SteamLeaderSection.THEMED_SALES, SteamLeaderSection.TOP_SELLERS -> false
-                }
-                val leaderInitialLoaded = when (leaderSection) {
-                    SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseInitialLoaded
-                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedInitialLoaded
-                    SteamLeaderSection.THEMED_SALES -> themedSalesInitialLoaded
-                    SteamLeaderSection.TOP_SELLERS -> false
-                }
-                LaunchedEffect(activeTab, settingsOpen, leaderSection, leaderFilterInput, topAvailabilityFilter,
-                    visibleTopGames.size, newReleaseNextStart, discountedNextStart, leaderHasMore,
-                    leaderInitialLoaded, topBusy, loadMoreBusy) {
-                    if (activeTab == 4 && !settingsOpen && leaderInitialLoaded && !topBusy && !loadMoreBusy &&
-                        SteamLeaderFilter.shouldLoadMoreMatching(leaderSection, visibleTopGames.size, leaderHasMore)) {
-                        loadMoreLeaderGames()
-                    }
-                }
-                Text("Показано: ${visibleTopGames.size}", style = MaterialTheme.typography.labelMedium)
-                if (leaderInitialLoaded) {
-                    SteamLeaderFilter.paginationStatus(
-                        leaderSection,
-                        visibleTopGames.size,
-                        leaderHasMore,
-                        topBusy || loadMoreBusy
-                    )?.let { status ->
-                        Text(status, style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                if (!topBusy && topError.isBlank() && visibleTopGames.isEmpty()) {
-                    Text(
-                        when (leaderSection) {
-                            SteamLeaderSection.DISCOUNTED_TOP_SELLERS ->
-                                "В загруженном топе нет игр с подтверждённой скидкой Steam RU."
-                            SteamLeaderSection.THEMED_SALES ->
-                                "В текущих тематических распродажах нет подходящих игр со скидкой в Steam RU."
-                            else -> "Подходящих игр пока нет."
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                val sectionHasMore = when (leaderSection) {
-                    SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseHasMore
-                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedHasMore
-                    SteamLeaderSection.THEMED_SALES, SteamLeaderSection.TOP_SELLERS -> false
-                }
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 560.dp),
-                    contentPadding = PaddingValues(vertical = 2.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    itemsIndexed(displayedTopGames, key = { _, game -> game.appId }) { index, game ->
-                    val cacheKey = remember(game.appId, game.title, manualFilters, rulesRevision, ignoredIds,
-                        searchTotalPages, comparisonSavedAliases[game.appId]) { comparisonKey(game.appId, game.title, true) }
-                    SteamLeaderCard(index, game, leaderOfferPrices[game.appId]?.takeIf { it.scopeKey == cacheKey },
-                        searchEnabled = !catalogueUi.priceBatch.running && manualFilters.valid,
-                        cachedPrices = catalogueUi.priceCache[cacheKey],
-                        onOpenSearch = {
-                                    if (!catalogueUi.priceBatch.running) {
-                                        searchGeneration++
-                                        activeCatalogGeneration.set(searchGeneration)
-                                        searching = false
-                                    }
-                                    steamGame = null
-                                    selectedGame = GameSearchResolver.Candidate(game.appId, game.title)
-                                    query = game.title
-                                    offers = emptyList()
-                                    searchMessage = "Игра выбрана. Нажмите «Искать», чтобы проверить предложения с активацией в РФ."
-                                    activeTab = 0
-
-                        },
-                        onDetails = { leaderDetailsGame = game; leaderDetailsLoading = false },
-                        onSearchPrice = {
-                            startCatalogSearch(
-                                candidateOverride = GameSearchResolver.Candidate(game.appId, game.title),
-                                leaderboardAppId = game.appId
-                            )
-                        },
-                        onMonitor = { openGameMonitoring(game.appId, game.title) })
-                    }
-                }
-                if (visibleTopGames.size > leaderVisibleLimit) {
-                    OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { leaderVisibleLimit += 20 }, modifier = Modifier.fillMaxWidth()) {
-                        Text("Показать ещё · ${minOf(leaderVisibleLimit, visibleTopGames.size)} из ${visibleTopGames.size}")
-                    }
-                }
-                if (sectionHasMore) {
-                    OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), 
-                        onClick = { loadMoreLeaderGames() },
-                        enabled = !loadMoreBusy && !topBusy,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(if (loadMoreBusy) "Загружаем…" else "Загрузить ещё")
-                    }
-                }
-
-            }
-                leaderDetailsGame?.let { game ->
-                    AlertDialog(
-                        onDismissRequest = { leaderDetailsGame = null },
-                        title = { Text(game.title) },
-                        text = {
-                            Column(
-                                Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                SteamArtwork(game.headerImageUrl, Modifier.fillMaxWidth().height(176.dp), appId = game.appId)
-                                if (game.description.isNotBlank()) {
-                                    Text(Html.fromHtml(game.description, Html.FROM_HTML_MODE_COMPACT).toString().trim())
-                                } else if (leaderDetailsLoading) {
-                                    LinearProgressIndicator(Modifier.fillMaxWidth())
-                                    Text("Загружаем описание Steam…")
-                                } else {
-                                    Text("Описание Steam для этой игры не получено.")
-                                }
-                            }
-                        },
-                        confirmButton = {
-                            TextButton(onClick = { leaderDetailsGame = null }) { Text("Закрыть") }
-                        }
-                    )
-                }
             }
             ScreenSection {
             if (settingsOpen && !showDirectory) {
@@ -3034,7 +2810,293 @@ class MainActivity : ComponentActivity() {
                 }
             }
             }
-            } // прокручиваемое содержимое
+            } // lazy page
+            } // non-catalogue page
+            if (activeTab == 3 && !settingsOpen) {
+                val wishlistCacheKeys = remember(catalogueUi.wishlistGames, manualFilters, rulesRevision,
+                    ignoredIds, searchTotalPages, comparisonSavedAliases) {
+                    catalogueUi.wishlistGames.associate { it.appId to comparisonKey(it.appId, it.title, false) }
+                }
+                WishlistPanel(
+                    listState = wishlistListState,
+                    profiles = catalogueUi.wishlistProfiles, selectedId = catalogueUi.selectedWishlistId, games = catalogueUi.wishlistGames,
+                    filterInput = wishlistFilterInput, onFilterInput = { wishlistFilterInput = it },
+                    input = catalogueUi.wishlistProfile, busy = catalogueUi.wishlistBusy, message = catalogueUi.wishlistMessage,
+                    importedAt = catalogueUi.wishlistImportedAt, visibleLimit = catalogueUi.wishlistVisibleLimit,
+                    genresLoading = catalogueUi.wishlistGenresLoading,
+                    searchingKeys = catalogueUi.wishlistSearchingKeys, searchStatuses = catalogueUi.wishlistSearchStatuses,
+                    searchEnabled = manualFilters.valid,
+                    onInput = { catalogueUi.wishlistProfile = it }, onImport = { importWishlist() },
+                    onSelect = { profile ->
+                        catalogueUi.selectedWishlistId = profile.steamId64
+                        catalogueUi.wishlistProfile = ""
+                        catalogueUi.wishlistGames = profile.games
+                        catalogueUi.wishlistImportedAt = profile.importedAt
+                        catalogueUi.wishlistVisibleLimit = 30
+                        catalogueUi.wishlistMessage = "Выбран профиль «${profile.displayName}»."
+                        prefs.edit().putString("wishlist_selected_profile", profile.steamId64)
+                            .putString("wishlist_profile", profile.input)
+                            .putString("wishlist_games", SteamWishlist.encode(profile.games))
+                            .putLong("wishlist_imported_at", profile.importedAt).apply()
+                    },
+                    onDelete = {
+                        val active = catalogueUi.wishlistProfiles.firstOrNull { it.steamId64 == catalogueUi.selectedWishlistId }
+                        if (active != null) {
+                            val remaining = catalogueUi.wishlistProfiles.filterNot { it.steamId64 == active.steamId64 }
+                            persistWishlistProfiles(remaining)
+                            val next = remaining.firstOrNull()
+                            catalogueUi.selectedWishlistId = next?.steamId64
+                            catalogueUi.wishlistProfile = ""
+                            catalogueUi.wishlistGames = next?.games.orEmpty()
+                            catalogueUi.wishlistImportedAt = next?.importedAt ?: 0L
+                            prefs.edit().putString("wishlist_selected_profile", next?.steamId64)
+                                .putString("wishlist_profile", next?.input.orEmpty())
+                                .putString("wishlist_games", SteamWishlist.encode(next?.games.orEmpty()))
+                                .putLong("wishlist_imported_at", next?.importedAt ?: 0L).apply()
+                        }
+                    },
+                    onOpenSearch = { game ->
+                        startCatalogSearch(
+                            candidateOverride = GameSearchResolver.Candidate(game.appId, game.title),
+                            wishlistProfileId = catalogueUi.selectedWishlistId
+                        )
+                    },
+                    onSearchPrice = { game ->
+                        val profileId = catalogueUi.selectedWishlistId
+                        if (profileId != null && "$profileId:${game.appId}" in catalogueUi.wishlistSearchingKeys)
+                            priceSearches.cancel("wishlist:$profileId:${game.appId}")
+                        else if (profileId != null) startCatalogSearch(
+                            candidateOverride = GameSearchResolver.Candidate(game.appId, game.title),
+                            wishlistProfileId = profileId,
+                            hiddenWishlistSearch = true
+                        )
+                    },
+                    onMonitor = { game -> openGameMonitoring(game.appId, game.title) },
+                    cachedPrices = { game -> wishlistCacheKeys[game.appId]?.let { catalogueUi.priceCache[it] } },
+                    onDetails = { game ->
+                        val initial = SteamTopSeller(
+                            appId = game.appId,
+                            title = game.title,
+                            headerImageUrl = "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${game.appId}/header.jpg"
+                        )
+                        leaderDetailsGame = initial
+                        leaderDetailsLoading = true
+                        detailExecutor.execute {
+                            val detailed = checkTopSellerRu(initial)
+                            runOnUiThread {
+                                if (leaderDetailsGame?.appId == game.appId) {
+                                    leaderDetailsGame = detailed
+                                    leaderDetailsLoading = false
+                                }
+                            }
+                        }
+                    },
+                    onShowMore = { catalogueUi.wishlistVisibleLimit += 30 }
+                )
+            }
+            if (activeTab == 4 && !settingsOpen) {
+                val sectionGames = remember(leaderSection, newReleaseGames, topGames, discountedExtraGames, themedSaleGames) {
+                    when (leaderSection) {
+                        SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseGames
+                        SteamLeaderSection.TOP_SELLERS -> topGames
+                        SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> topGames + discountedExtraGames
+                        SteamLeaderSection.THEMED_SALES -> themedSaleGames
+                    }
+                }
+                val reviewFiltersActive = (leaderFilterInput.minimumReviewText.toIntOrNull() ?: 0) > 0 ||
+                    (leaderFilterInput.minimumReviewCountText.toLongOrNull() ?: 0L) > 0L
+                LaunchedEffect(sectionGames, reviewFiltersActive) {
+                    if (reviewFiltersActive) {
+                        val loaded = withContext(Dispatchers.IO) { loadReviewSummaries(sectionGames) }
+                        if (loaded.isNotEmpty()) {
+                            fun attachReviews(games: List<SteamTopSeller>) = games.map { game ->
+                                loaded[game.appId]?.let { game.copy(reviewSummary = it) } ?: game
+                            }
+                            topGames = attachReviews(topGames)
+                            newReleaseGames = attachReviews(newReleaseGames)
+                            discountedExtraGames = attachReviews(discountedExtraGames)
+                        }
+                    }
+                }
+                val countLabel = when (leaderSection) {
+                    SteamLeaderSection.TOP_SELLERS -> "Загружено: ${sectionGames.size} из 100"
+                    SteamLeaderSection.POPULAR_NEW_RELEASES -> "Новинок: ${sectionGames.size}"
+                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> "Со скидкой: ${SteamLeaderSection.DISCOUNTED_TOP_SELLERS.filter(sectionGames).size}"
+                    SteamLeaderSection.THEMED_SALES -> "Игры в текущих фестах: ${sectionGames.size}"
+                }
+                val availableLeaderGenres = remember(sectionGames) {
+                    sectionGames.asSequence().flatMap { it.genres.asSequence() }.distinct().sorted().toList()
+                }
+                val availabilityFilteredGames = remember(sectionGames, leaderSection, topAvailabilityFilter) {
+                    leaderSection.filter(sectionGames).filter { game ->
+                        game.isGame && when (topAvailabilityFilter) {
+                            "Доступны в Steam RU" -> game.availability == SteamRuAvailability.AVAILABLE
+                            "Недоступны в Steam RU" -> game.availability == SteamRuAvailability.UNAVAILABLE
+                            else -> true
+                        }
+                    }
+                }
+                val visibleTopGames = remember(availabilityFilteredGames, leaderFilterInput) {
+                    SteamLeaderFilter.apply(availabilityFilteredGames, leaderFilterInput.toFilters())
+                }
+                val displayedTopGames = remember(visibleTopGames, leaderVisibleLimit) {
+                    visibleTopGames.take(leaderVisibleLimit)
+                }
+                val leaderHasMore = when (leaderSection) {
+                    SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseHasMore
+                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedHasMore
+                    SteamLeaderSection.THEMED_SALES, SteamLeaderSection.TOP_SELLERS -> false
+                }
+                val leaderInitialLoaded = when (leaderSection) {
+                    SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseInitialLoaded
+                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedInitialLoaded
+                    SteamLeaderSection.THEMED_SALES -> themedSalesInitialLoaded
+                    SteamLeaderSection.TOP_SELLERS -> false
+                }
+                LaunchedEffect(activeTab, settingsOpen, leaderSection, leaderFilterInput, topAvailabilityFilter,
+                    visibleTopGames.size, newReleaseNextStart, discountedNextStart, leaderHasMore,
+                    leaderInitialLoaded, topBusy, loadMoreBusy) {
+                    if (activeTab == 4 && !settingsOpen && leaderInitialLoaded && !topBusy && !loadMoreBusy &&
+                        SteamLeaderFilter.shouldLoadMoreMatching(leaderSection, visibleTopGames.size, leaderHasMore)) {
+                        loadMoreLeaderGames()
+                    }
+                }
+                val sectionHasMore = when (leaderSection) {
+                    SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseHasMore
+                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedHasMore
+                    SteamLeaderSection.THEMED_SALES, SteamLeaderSection.TOP_SELLERS -> false
+                }
+                LazyColumn(
+                    state = leaderListState,
+                    modifier = Modifier.fillMaxSize().testTag("leaders-list"),
+                    contentPadding = PaddingValues(vertical = 2.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    item(key = "leader-header", contentType = "header") {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (topBusy) LinearProgressIndicator(Modifier.fillMaxWidth())
+                if (topError.isNotBlank()) Text("Не удалось загрузить игры. Попробуйте ещё раз.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SteamLeaderSection.values().forEach { section ->
+                        FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = leaderSection == section,
+                            onClick = { leaderSection = section; topError = "" },
+                            label = { Text(section.label, maxLines = 1, style = MaterialTheme.typography.labelSmall) })
+                    }
+                }
+                Text(countLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                SteamLeaderFiltersPanel(
+                    leaderFilterInput,
+                    { leaderFilterInput = it },
+                    availableGenres = availableLeaderGenres,
+                    availabilityFilter = topAvailabilityFilter,
+                    onAvailabilitySelected = { filter ->
+                        topAvailabilityFilter = filter
+                    },
+                    onReset = { topAvailabilityFilter = "Все игры" }
+                )
+                Text("Показано: ${visibleTopGames.size}", style = MaterialTheme.typography.labelMedium)
+                if (leaderInitialLoaded) {
+                    SteamLeaderFilter.paginationStatus(
+                        leaderSection,
+                        visibleTopGames.size,
+                        leaderHasMore,
+                        topBusy || loadMoreBusy
+                    )?.let { status ->
+                        Text(status, style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                if (!topBusy && topError.isBlank() && visibleTopGames.isEmpty()) {
+                    Text(
+                        when (leaderSection) {
+                            SteamLeaderSection.DISCOUNTED_TOP_SELLERS ->
+                                "В загруженном топе нет игр с подтверждённой скидкой Steam RU."
+                            SteamLeaderSection.THEMED_SALES ->
+                                "В текущих тематических распродажах нет подходящих игр со скидкой в Steam RU."
+                            else -> "Подходящих игр пока нет."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                        }
+                    }
+                    itemsIndexed(displayedTopGames, key = { _, game -> game.appId }, contentType = { _, _ -> "game" }) { index, game ->
+                    val cacheKey = remember(game.appId, game.title, manualFilters, rulesRevision, ignoredIds,
+                        searchTotalPages, comparisonSavedAliases[game.appId]) { comparisonKey(game.appId, game.title, true) }
+                    SteamLeaderCard(index, game, leaderOfferPrices[game.appId]?.takeIf { it.scopeKey == cacheKey },
+                        searchEnabled = manualFilters.valid,
+                        cachedPrices = catalogueUi.priceCache[cacheKey],
+                        onOpenSearch = {
+                                    if (!catalogueUi.priceBatch.running) {
+                                        searchGeneration++
+                                        activeCatalogGeneration.set(searchGeneration)
+            priceSearches.cancel("manual")
+                                        searching = false
+                                    }
+                                    steamGame = null
+                                    selectedGame = GameSearchResolver.Candidate(game.appId, game.title)
+                                    query = game.title
+                                    offers = emptyList()
+                                    searchMessage = "Игра выбрана. Нажмите «Искать», чтобы проверить предложения с активацией в РФ."
+                                    activeTab = 0
+
+                        },
+                        onDetails = { leaderDetailsGame = game; leaderDetailsLoading = false },
+                        onSearchPrice = {
+                            if (leaderOfferPrices[game.appId]?.checking == true) priceSearches.cancel("leader:${game.appId}")
+                            else startCatalogSearch(
+                                candidateOverride = GameSearchResolver.Candidate(game.appId, game.title),
+                                leaderboardAppId = game.appId
+                            )
+                        },
+                        onMonitor = { openGameMonitoring(game.appId, game.title) })
+                    }
+                    item(key = "leader-footer", contentType = "footer") {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (visibleTopGames.size > leaderVisibleLimit) {
+                    OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { leaderVisibleLimit += 20 }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Показать ещё · ${minOf(leaderVisibleLimit, visibleTopGames.size)} из ${visibleTopGames.size}")
+                    }
+                }
+                if (sectionHasMore) {
+                    OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), 
+                        onClick = { loadMoreLeaderGames() },
+                        enabled = !loadMoreBusy && !topBusy,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(if (loadMoreBusy) "Загружаем…" else "Загрузить ещё")
+                    }
+                }
+                        }
+                    }
+                }
+            }
+                leaderDetailsGame?.let { game ->
+                    AlertDialog(
+                        onDismissRequest = { leaderDetailsGame = null },
+                        title = { Text(game.title) },
+                        text = {
+                            Column(
+                                Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                SteamArtwork(game.headerImageUrl, Modifier.fillMaxWidth().height(176.dp), appId = game.appId)
+                                if (game.description.isNotBlank()) {
+                                    Text(Html.fromHtml(game.description, Html.FROM_HTML_MODE_COMPACT).toString().trim())
+                                } else if (leaderDetailsLoading) {
+                                    LinearProgressIndicator(Modifier.fillMaxWidth())
+                                    Text("Загружаем описание Steam…")
+                                } else {
+                                    Text("Описание Steam для этой игры не получено.")
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { leaderDetailsGame = null }) { Text("Закрыть") }
+                        }
+                    )
+                }
         } // экран с вкладками
     }
     @Composable
@@ -3252,6 +3314,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun WishlistPanel(
+        listState: LazyListState,
         profiles: List<WishlistProfile>,
         selectedId: String?,
         games: List<WishlistGame>,
@@ -3277,6 +3340,18 @@ class MainActivity : ComponentActivity() {
         onMonitor: (WishlistGame) -> Unit,
         cachedPrices: (WishlistGame) -> CachedGamePrices?
     ) {
+        val selected = profiles.firstOrNull { it.steamId64 == selectedId }
+        val availableGenres = remember(games) {
+            games.asSequence().flatMap { it.genres.asSequence() }.distinct().sorted().toList()
+        }
+        val visibleGames = remember(games, filterInput) {
+            SteamLeaderFilter.applyWishlist(games, filterInput.toFilters())
+        }
+        LazyColumn(state = listState, modifier = Modifier.fillMaxSize().testTag("wishlist-list"),
+            contentPadding = PaddingValues(vertical = 2.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            item(key = "wishlist-header", contentType = "header") {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text("ЖЕЛАЕМОЕ STEAM", style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (profiles.isNotEmpty()) {
@@ -3295,7 +3370,6 @@ class MainActivity : ComponentActivity() {
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
-        val selected = profiles.firstOrNull { it.steamId64 == selectedId }
         OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = onImport, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
             Text(if (busy) "Загружаем из Steam…" else if (input.isBlank() && selected != null)
                 "Обновить «${selected.displayName}» · Steam RU" else "Загрузить и закрепить профиль")
@@ -3315,14 +3389,8 @@ class MainActivity : ComponentActivity() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Spacer(Modifier.height(8.dp))
-        val availableGenres = remember(games) {
-            games.asSequence().flatMap { it.genres.asSequence() }.distinct().sorted().toList()
-        }
         SteamLeaderFiltersPanel(filterInput, onFilterInput, includeReviewFilters = false,
             availableGenres = availableGenres)
-        val visibleGames = remember(games, filterInput) {
-            SteamLeaderFilter.applyWishlist(games, filterInput.toFilters())
-        }
         Text("Показано: ${visibleGames.size} из ${games.size}", style = MaterialTheme.typography.labelMedium)
         if (games.isEmpty() && importedAt == 0L) {
             Text("Вставьте открытый профиль Steam и загрузите его, чтобы закрепить в списке профилей.", style = MaterialTheme.typography.bodyMedium)
@@ -3330,12 +3398,9 @@ class MainActivity : ComponentActivity() {
             Text("По выбранным фильтрам игр нет.", style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth().heightIn(max = 560.dp),
-            contentPadding = PaddingValues(vertical = 2.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-        items(visibleGames.take(visibleLimit), key = { it.appId }) { game ->
+                }
+            }
+        items(visibleGames.take(visibleLimit), key = { it.appId }, contentType = { "game" }) { game ->
             OutlinedCard(Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, Color(0xFFDCE2E8)), colors = CardDefaults.outlinedCardColors(containerColor = Color.White)) {
                     Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -3360,10 +3425,10 @@ class MainActivity : ComponentActivity() {
                             prices?.ggsel?.price ?: game.lowestGgselPrice)
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             OutlinedButton(onClick = { onSearchPrice(game) },
-                                enabled = searchEnabled && selectedId != null && "$selectedId:${game.appId}" !in searchingKeys,
+                                enabled = selectedId != null && (searchEnabled || "$selectedId:${game.appId}" in searchingKeys),
                                 modifier = Modifier.weight(1f).height(36.dp), contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
                                 shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
-                                Text(if (selectedId != null && "$selectedId:${game.appId}" in searchingKeys) "Ищем цены…" else "Цены",
+                                Text(if (selectedId != null && "$selectedId:${game.appId}" in searchingKeys) "Стоп" else if (searchStatuses["$selectedId:${game.appId}"]?.startsWith("Не удалось") == true) "Повторить" else "Цены",
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold), color = Color(0xFF17212D), maxLines = 1)
                             }
                             OutlinedButton(onClick = { onMonitor(game) }, enabled = game.appId > 0,
@@ -3388,11 +3453,13 @@ class MainActivity : ComponentActivity() {
                     }
             }
         }
-        }
+        item(key = "wishlist-footer", contentType = "footer") {
         if (visibleGames.size > visibleLimit) {
             OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = onShowMore, modifier = Modifier.fillMaxWidth()) {
                 Text("Показать ещё · ${minOf(visibleLimit, visibleGames.size)} из ${visibleGames.size}")
             }
+        }
+        }
         }
     }
 
@@ -3470,4 +3537,5 @@ private fun WatchListControls(
         }
     }
 }
+
 

@@ -1,5 +1,8 @@
 package ru.igrolov.app
 
+import androidx.compose.ui.test.hasScrollToIndexAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -12,6 +15,10 @@ import androidx.compose.ui.test.assertIsDisplayed
 
 object UiTestScroll {
     fun reveal(compose: ComposeTestRule, text: String, contains: Boolean = false) {
+        val lists = compose.onAllNodes(hasScrollToIndexAction())
+        if (lists.fetchSemanticsNodes().isNotEmpty()) {
+            runCatching { lists.onFirst().performScrollToNode(hasText(text, substring = contains)) }
+        }
         repeat(8) {
             val nodes = compose.onAllNodesWithText(text, substring = contains)
             if (nodes.fetchSemanticsNodes().isNotEmpty()) {
@@ -37,3 +44,4 @@ object UiTestScroll {
             false
         }
 }
+

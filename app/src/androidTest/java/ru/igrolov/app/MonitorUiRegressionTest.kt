@@ -111,6 +111,7 @@ class MonitorUiRegressionTest {
         }
         assertFalse(device.hasObject(By.text("1,00 ₽")))
         compose.onNodeWithText("Мониторинг").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.onNodeWithTag("page-list").performScrollToIndex(0)
         compose.onAllNodes(hasSetTextAction()).onFirst().performScrollTo()
         compose.onAllNodes(hasSetTextAction()).onFirst().performTextInput("Стелларис")
         compose.waitUntil(15000) {
@@ -126,3 +127,4 @@ class MonitorUiRegressionTest {
         context.getSharedPreferences("tracked_products",0).edit().putString("ids","").remove("product_cache_10000").commit()
     }
 }
+

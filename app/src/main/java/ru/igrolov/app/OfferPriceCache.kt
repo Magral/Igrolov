@@ -46,10 +46,10 @@ object OfferPriceCache {
 
     /** A failed source keeps its old price AND its old successful-check time. */
     fun merge(previous: CachedGamePrices?, minima: Map<String, Double>, failed: Set<String>,
-              startedAt: Long, finishedAt: Long, reason: String): CachedGamePrices {
+              startedAt: Long, finishedAt: Long, reason: String, sources: Set<String> = setOf("Plati", "GGSEL")): CachedGamePrices {
         val old = previous ?: CachedGamePrices()
         fun source(name: String, before: SourcePriceCheck): SourcePriceCheck {
-            if (startedAt < before.requestStartedAt) return before
+            if (name !in sources || startedAt < before.requestStartedAt) return before
             if (name in failed) return before.copy(failedAt = finishedAt, error = reason.take(240), requestStartedAt = startedAt)
             return SourcePriceCheck(minima[name]?.takeIf { it.isFinite() && it > 0 }, finishedAt, requestStartedAt = startedAt)
         }
@@ -73,3 +73,4 @@ object OfferPriceCache {
         CachedGamePrices(source("Plati"), source("GGSEL")).takeIf { it.plati.hasData || it.ggsel.hasData }
     }.getOrNull()
 }
+
