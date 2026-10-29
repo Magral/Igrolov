@@ -1405,6 +1405,7 @@ class MainActivity : ComponentActivity() {
         var ignoredIds by remember { mutableStateOf(IgnoredStore.ids(this@MainActivity)) }
         var showIgnored by remember { mutableStateOf(false) }
         var checkingNow by remember { mutableStateOf(false) }
+        var monitorPending by remember { mutableStateOf(false) }
         var watchType by remember { mutableStateOf("Все") }
         val watchRf = true
         val searchPrefs = remember { getSharedPreferences("search_history", MODE_PRIVATE) }
@@ -1452,46 +1453,40 @@ class MainActivity : ComponentActivity() {
         DisposableEffect(Unit) {
             val live = WorkManager.getInstance(this@MainActivity)
                 .getWorkInfosForUniqueWorkLiveData("plati_manual_price_check")
-            var manualRunning=false
-            var periodicRunning=false
-            val observer = Observer<List<WorkInfo>> { infos ->
-                val running = infos.any { it.state == WorkInfo.State.RUNNING || it.state == WorkInfo.State.ENQUEUED }
-                manualRunning=running
-                checkingNow = manualRunning || periodicRunning
-                val info = infos.firstOrNull { it.state == WorkInfo.State.RUNNING } ?: infos.firstOrNull()
-                if(manualRunning || !periodicRunning) {
-                    monitorDone = info?.progress?.getInt("done", 0) ?: 0
-                    monitorTotal = info?.progress?.getInt("total", 0) ?: 0
-                    monitorCurrent = info?.progress?.getString("game") ?: ""
+            var manualInfos=emptyList<WorkInfo>()
+            var periodicInfos=emptyList<WorkInfo>()
+            fun renderMonitorState() {
+                fun jobs(infos:List<WorkInfo>)=infos.map { info ->
+                    MonitorRunState.Job(info.state.name,info.progress.getInt("done",0),
+                        info.progress.getInt("total",0),info.progress.getBoolean("complete",false),
+                        info.progress.getString("game").orEmpty())
                 }
-                if (infos.isNotEmpty() && !running && !periodicRunning) {
+                val state=MonitorRunState.reduce(jobs(manualInfos),jobs(periodicInfos))
+                checkingNow=state.active!=null
+                monitorPending=state.waiting
+                monitorDone=state.active?.done ?: 0
+                monitorTotal=state.active?.total ?: 0
+                monitorCurrent=state.active?.game.orEmpty()
+                val stopped=watchMessage in setOf("Останавливаем проверку…", "Проверка остановлена. Сохранённые цены не изменены.")
+                if(state.active!=null) {
+                    if(watchMessage!="Останавливаем проверку…")watchMessage="Обновляем цены…"
+                } else if(state.waiting) {
+                    if(!stopped)watchMessage="Проверка ожидает запуска."
+                } else {
                     reloadWatches()
-                    if (watchMessage !in setOf("Останавливаем проверку…", "Проверка остановлена. Сохранённые цены не изменены.")) {
-                        watchMessage = when {
-                            infos.any { it.state == WorkInfo.State.SUCCEEDED } -> "Проверка завершена. Минимальные цены обновлены."
-                            infos.all { it.state == WorkInfo.State.CANCELLED } -> "Проверка остановлена. Сохранённые цены не изменены."
-                            else -> "Не удалось обновить цены. Попробуйте позже."
+                    if(!stopped) {
+                        watchMessage=when {
+                            manualInfos.any {it.state==WorkInfo.State.FAILED} -> "Не удалось обновить часть цен. Попробуйте позже."
+                            state.finished -> "Проверка завершена. Сохранённые цены — в карточках игр."
+                            manualInfos.isNotEmpty() && manualInfos.all {it.state==WorkInfo.State.CANCELLED} -> "Проверка остановлена. Сохранённые цены не изменены."
+                            else -> watchMessage
                         }
                     }
                 }
             }
+            val observer=Observer<List<WorkInfo>> {infos->manualInfos=infos;renderMonitorState()}
             val periodic=WorkManager.getInstance(this@MainActivity).getWorkInfosForUniqueWorkLiveData("plati_game_price_watch")
-            val periodicObserver=Observer<List<WorkInfo>> {infos->
-                val running=infos.firstOrNull {it.state==WorkInfo.State.RUNNING}
-                periodicRunning=running!=null
-                checkingNow=manualRunning || periodicRunning
-                if(running!=null) {
-                    monitorDone=running.progress.getInt("done",0)
-                    monitorTotal=running.progress.getInt("total",0)
-                    monitorCurrent=running.progress.getString("game") ?: ""
-                    watchMessage="Автоматическая проверка цен…"
-                } else {
-                    reloadWatches()
-                    if(!manualRunning && infos.isNotEmpty() && watchMessage !in setOf(
-                            "Останавливаем проверку…", "Проверка остановлена. Сохранённые цены не изменены."))
-                        watchMessage="Проверка завершена. Сохранённые цены — в карточках игр."
-                }
-            }
+            val periodicObserver=Observer<List<WorkInfo>> {infos->periodicInfos=infos;renderMonitorState()}
             live.observe(this@MainActivity, observer)
             periodic.observe(this@MainActivity,periodicObserver)
             onDispose {live.removeObserver(observer);periodic.removeObserver(periodicObserver)}
@@ -2367,12 +2362,13 @@ class MainActivity : ComponentActivity() {
                     Text("Отслеживать игру", maxLines = 1)
                 }
                 OutlinedButton(onClick = {
-                    if (checkingNow) {
+                    if (checkingNow || monitorPending) {
                         watchMessage = "Останавливаем проверку…"
                         ioExecutor.execute {
                             WatchScheduler.stop(this@MainActivity)
                             runOnUiThread {
                                 checkingNow = false
+                                monitorPending = false
                                 monitorCurrent = ""
                                 watchMessage = "Проверка остановлена. Сохранённые цены не изменены."
                                 reloadWatches()
@@ -2382,15 +2378,15 @@ class MainActivity : ComponentActivity() {
                         WatchScheduler.checkNow(this@MainActivity)
                         watchMessage = "Проверка запущена..."
                     }
-                }, enabled = checkingNow || JSONArray(watches).length() > 0,
+                }, enabled = checkingNow || monitorPending || JSONArray(watches).length() > 0,
                     modifier = Modifier.weight(1f),
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)) {
-                    Text(if (checkingNow) "Остановить" else "Проверить сейчас", maxLines = 1)
+                    Text(if (checkingNow || monitorPending) "Остановить" else "Проверить сейчас", maxLines = 1)
                 }
             }
             if (checkingNow) {
-                LinearProgressIndicator(Modifier.fillMaxWidth())
-                Text("Обновляем цены…", style = MaterialTheme.typography.bodySmall)
+                LinearProgressIndicator(Modifier.fillMaxWidth().testTag("monitor-progress"))
+                Text(if(monitorTotal>0) "Обновляем цены · ${monitorDone.coerceAtMost(monitorTotal)} из $monitorTotal" else "Обновляем цены…", style = MaterialTheme.typography.bodySmall)
             }
             if (watchMessage != "Укажите название игры и цену в рублях") {
                 Text(watchMessage, style = MaterialTheme.typography.labelSmall,

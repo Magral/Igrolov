@@ -12,6 +12,8 @@ import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.ByteArrayOutputStream
+import java.util.concurrent.atomic.AtomicInteger
 import java.io.ByteArrayInputStream
 import java.net.HttpURLConnection
 import java.net.URL
@@ -24,6 +26,7 @@ import java.util.concurrent.TimeUnit
 class MonitorEditionUiTest {
     @get:Rule val compose = createEmptyComposeRule()
     @Test fun royalEditionCanBeSelectedAndRunningCheckCanBeStopped() {
+        val packageRequests = AtomicInteger()
         val started = CountDownLatch(1)
         val release = CountDownLatch(1)
         val title = "Kingdom Come: Deliverance II"
@@ -34,11 +37,13 @@ class MonitorEditionUiTest {
                 override fun disconnect() {}
                 override fun usingProxy() = false
                 override fun getResponseCode() = 200
+                override fun getOutputStream() = ByteArrayOutputStream()
                 override fun getInputStream(): ByteArrayInputStream {
                     val json = when {
                         url.path.contains("storesearch") -> """{"items":[{"id":1771300,"name":"$title"}]}"""
                         url.path.contains("appdetails") -> """{"1771300":{"success":true,"data":{"type":"game","name":"$title","dlc":[],"package_groups":[{"subs":[{"packageid":990001},{"packageid":990002}]}]}}}"""
                         url.path.contains("packagedetails") -> {
+                            packageRequests.incrementAndGet()
                             val id = if (url.query.contains("990002")) 990002 else 990001
                             val name = if (id == 990002) royal else title
                             """{"$id":{"success":true,"data":{"name":"$name","apps":[{"id":1771300}]}}}"""
@@ -71,6 +76,7 @@ class MonitorEditionUiTest {
             compose.onNodeWithTag("monitor-edition").performClick()
             compose.onNodeWithText(royal).performClick()
             compose.onAllNodes(hasSetTextAction()).onLast().performTextInput("2000")
+            val packagesBeforeCheck = packageRequests.get()
             UiTestScroll.reveal(compose, "Отслеживать игру")
             compose.onNodeWithText("Отслеживать игру").performClick()
             compose.waitUntil(10000) { WatchStore.read(context).length() == 1 }
@@ -91,6 +97,18 @@ class MonitorEditionUiTest {
             assertFalse(manager.getWorkInfosForUniqueWork("plati_game_price_watch").get()
                 .any { it.state == androidx.work.WorkInfo.State.RUNNING })
             assertEquals(-1.0, WatchStore.read(context).getJSONObject(0).getDouble("last"), 0.0)
+            release.countDown()
+            UiTestScroll.reveal(compose,"Проверить сейчас")
+            compose.onNodeWithText("Проверить сейчас").performClick()
+            compose.waitUntil(15000) { WatchStore.read(context).getJSONObject(0).optLong("checked")>0 }
+            compose.waitUntil(10000) {
+                manager.getWorkInfosForUniqueWork("plati_manual_price_check").get().all {it.state.isFinished} &&
+                    compose.onAllNodesWithText("Проверить сейчас").fetchSemanticsNodes().isNotEmpty()
+            }
+            assertTrue(manager.getWorkInfosForUniqueWork("plati_manual_price_check").get()
+                .any {it.state==androidx.work.WorkInfo.State.SUCCEEDED})
+            compose.onNodeWithTag("monitor-progress").assertDoesNotExist()
+            assertEquals("Monitoring must reuse the saved edition without package lookups",packagesBeforeCheck,packageRequests.get())
         } finally {
             release.countDown()
             WatchScheduler.stop(context)

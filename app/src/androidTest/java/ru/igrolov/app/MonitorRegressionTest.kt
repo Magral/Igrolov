@@ -68,6 +68,7 @@ class MonitorRegressionTest {
         val context=ApplicationProvider.getApplicationContext<Context>()
         val mode=AtomicInteger(0)
         val calls=AtomicInteger(0)
+        val catalogCalls=AtomicInteger(0)
         val changed=AtomicBoolean(false)
         val ggselEnabled=AtomicBoolean(false)
         val ggselOffline=AtomicBoolean(false)
@@ -89,6 +90,7 @@ class MonitorRegressionTest {
                              "price_for_one_wmr":"50","is_preorder":false,"options_check":false,"options":[]}] }""")
                         url.path.contains("appdetails") -> JSONObject("""{"1091500":{"success":true,"data":{"name":"Cyberpunk 2077","type":"game","dlc":[2138330]}}}""")
                         url.path.endsWith("search2") -> {
+                            catalogCalls.incrementAndGet()
                             val items=JSONArray()
                             for(i in 0..7)items.put(JSONObject().put("id",10000+i).put("name","Cyberpunk 2077 Steam Key РФ").put("price_rur",1+i))
                             JSONObject().put("items",JSONObject().put("item",items))
@@ -125,10 +127,17 @@ class MonitorRegressionTest {
         val firstResult=worker().doWork()
         assertEquals(WatchStore.read(context).toString(),ListenableWorker.Result.success(),firstResult)
         assertEquals(8,calls.get())
+        assertEquals("A short page without pagination must finish the catalog",1,catalogCalls.get())
         var watch=WatchStore.read(context).getJSONObject(0)
         assertEquals("10005",watch.getString("bestId"));assertEquals(105.0,watch.getDouble("last"),0.001)
         assertEquals(1091500,watch.getInt("steamAppId"));assertEquals(3,watch.getInt("verifiedCount"))
         assertEquals(3,AlertJournal.read(context).length())
+        val callsBeforeCancelled=catalogCalls.get()
+        try {
+            CatalogCheck.find("Cyberpunk 2077",100,active={false})
+            fail("A cancelled catalog must not issue a request")
+        } catch (_:java.util.concurrent.CancellationException) { }
+        assertEquals(callsBeforeCancelled,catalogCalls.get())
         val manager=context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         assertTrue(manager.activeNotifications.isNotEmpty())
         assertEquals(ListenableWorker.Result.success(),worker().doWork());assertEquals(3,AlertJournal.read(context).length())
@@ -198,3 +207,4 @@ class MonitorRegressionTest {
         manager.cancelAll()
     }
 }
+

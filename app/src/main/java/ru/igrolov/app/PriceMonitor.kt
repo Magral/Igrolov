@@ -462,22 +462,25 @@ object CatalogPageSettings {
 
 object CatalogCheck {
     data class Snapshot(val offers:List<Offer>,val sellers:Map<String,String>)
-    fun find(name: String, pageCount: Int, reference:ManualGameReference.Game?=null): Snapshot {
+    fun find(name: String, pageCount: Int, reference:ManualGameReference.Game?=null, active:()->Boolean={true}): Snapshot {
+        fun requireActive() { if (!active() || Thread.currentThread().isInterrupted) throw java.util.concurrent.CancellationException() }
         val offers = mutableListOf<Offer>()
         val seen = mutableSetOf<String>()
         val sellers=mutableMapOf<String,String>()
         val terms=(listOf(name)+reference?.aliases.orEmpty()).distinct()
         val marketQuery=reference?.aliases?.firstOrNull {it.isNotBlank() && it.all {c->c.code<128}} ?: name
         for (page in 1..pageCount) {
+        requireActive()
         val params = linkedMapOf(
             "query" to marketQuery, "searchmode" to "10", "sortmode" to "2", "pagesize" to "100",
             "pagenum" to page.toString(), "owner" to "1", "details" to "1", "checkhidesales" to "1", "host" to "plati.market"
         ).entries.joinToString("&") { (k,v) -> "${URLEncoder.encode(k,"UTF-8") }=${URLEncoder.encode(v,"UTF-8")}" }
         var root: JSONObject? = null
         for (attempt in 0..2) {
+            requireActive()
             try {
                 val conn = URL("https://api.digiseller.com/api/products/search2?$params").openConnection() as HttpURLConnection
-                conn.connectTimeout = 15000; conn.readTimeout = 20000
+                conn.connectTimeout = 3000; conn.readTimeout = 5000
                 conn.setRequestProperty("Accept", "application/json")
                 try {
                     val status = conn.responseCode
@@ -498,12 +501,14 @@ object CatalogCheck {
             }
         }
         val response = root ?: error("Нет ответа каталога")
+        var rawCount = 0
         if (true) {
             if (response.optInt("retval",0) != 0) error(response.optString("retdesc", "Ошибка API"))
             val result = response.optJSONObject("result")
             val raw = response.optJSONObject("items")?.optJSONArray("item")
                 ?: response.optJSONArray("items") ?: result?.optJSONArray("items")
                 ?: if(result?.optInt("total",-1)==0) JSONArray() else error("Неполный ответ каталога")
+            rawCount = raw.length()
             for (i in 0 until raw.length()) {
                 val item = raw.optJSONObject(i) ?: continue
                 val id = item.optString("id",item.optString("id_goods",""))
@@ -518,8 +523,8 @@ object CatalogCheck {
                 }
             }
         }
-        val totalPages=response.optJSONObject("result")?.optInt("total_pages",pageCount) ?: pageCount
-        if(page>=totalPages)break
+        val totalPages=response.optJSONObject("result")?.optInt("total_pages",0)?.takeIf {it>0}
+        if(rawCount==0 || (totalPages!=null && page>=totalPages) || (totalPages==null && rawCount<100))break
         }
         return Snapshot(offers.distinctBy {it.id},sellers)
     }
@@ -550,7 +555,7 @@ object WatchScheduler {
     // Keep the trigger injectable so queue semantics can be tested without network work.
     internal fun enqueueManualCheck(context: Context, request: androidx.work.OneTimeWorkRequest) =
         WorkManager.getInstance(context).enqueueUniqueWork("plati_manual_price_check", ExistingWorkPolicy.KEEP, request)
-    fun start(context: Context, delayed: Boolean = false) {
+    fun start(context: Context, delayed: Boolean = true) {
         val request = PeriodicWorkRequestBuilder<PriceWatchWorker>(MonitorSchedule.CHECK_INTERVAL_MILLIS, TimeUnit.MILLISECONDS).setConstraints(connected)
             .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL,30,TimeUnit.SECONDS)
             .setInitialDelay(if (delayed) MonitorSchedule.CHECK_INTERVAL_MILLIS else 0L, TimeUnit.MILLISECONDS).build()
@@ -561,7 +566,7 @@ object WatchScheduler {
 class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     companion object {private val runLock=java.util.concurrent.locks.ReentrantLock()}
     override suspend fun doWork(): Result {
-        if(!runLock.tryLock())return Result.retry()
+        if(!runLock.tryLock())return Result.success()
         return try {runChecks()} finally {runLock.unlock()}
     }
     private fun runChecks(): Result {
@@ -569,7 +574,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
         val watches = WatchStore.read(applicationContext)
         val ignored = IgnoredStore.ids(applicationContext)
         var failed = false
-        setProgressAsync(workDataOf("done" to 0, "total" to watches.length(), "game" to "Подготовка"))
+        setProgressAsync(workDataOf("done" to 0, "total" to watches.length(), "game" to "Подготовка", "complete" to false))
         for (i in 0 until watches.length()) {
             if (isStopped) return Result.success()
             val watch = watches.optJSONObject(i) ?: continue
@@ -585,9 +590,10 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 val savedAliases=ManualSearchSettings.games(applicationContext).firstOrNull {it.appId==selectedId}?.aliases.orEmpty()
                 val baseReference=ManualGameReference.lookup(name,selectedId,savedAliases)
                 val savedEdition=watch.optString("steamEditionName").takeIf { it.isNotBlank() }
-                val editions=if(savedEdition!=null) SteamEditionReference.discover(baseReference.appId) else emptyList()
-                val packageId=watch.optInt("steamPackageId").takeIf { it>0 }
-                val selectedEdition=savedEdition?.let { title -> editions.firstOrNull { it.packageId==packageId }?.name ?: title }
+                // The exact verified edition was saved when the watch was created.
+                // Refreshing every Steam package here delays every price check unnecessarily.
+                val selectedEdition=savedEdition
+                val editionNames=listOfNotNull(savedEdition)
                 val editionReference=selectedEdition?.let { edition ->
                     baseReference.copy(aliases=(listOf(edition)+ManualContentRules.localizedEditionAliases(baseReference.canonical,edition)+baseReference.aliases).distinct())
                 } ?: baseReference
@@ -598,9 +604,9 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 data class SourceOffers(val offers:List<Offer>,val total:Int)
                 val sources=MonitorSourceCheck.run(active,mapOf(
                     "Plati" to { active: () -> Boolean ->
-                        val catalog=CatalogCheck.find(name,catalogPages,reference)
+                        val catalog=CatalogCheck.find(name,catalogPages,reference,active)
                         val checked=VerifiedMonitorCheck.run(catalog,reference,kind,rules,ignored,active,
-                            selectedEdition=selectedEdition,allEditions=editions.map { it.name })
+                            selectedEdition=selectedEdition,allEditions=editionNames)
                         SourceOffers(checked.verified,catalog.offers.size)
                     },
                     "GGSEL" to { active: () -> Boolean ->
@@ -620,7 +626,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 val sourceOffers=sources.values.flatMap {it.offers}
                 val verified=sourceOffers.filter { offer ->
                     MonitorPolicy.eligible(offer,kind,latestRules,latestIgnored) &&
-                        (selectedEdition == null || ManualContentRules.matchesSelectedSteamEdition(offer.name,reference.canonical,selectedEdition,editions.map { it.name }))
+                        (selectedEdition == null || ManualContentRules.matchesSelectedSteamEdition(offer.name,reference.canonical,selectedEdition,editionNames))
                 }.distinctBy {"${it.marketplace}:${it.id}"}.sortedBy {it.price}
                 val reliableOffers=verified.take(3)
                 current.put("steamAppId",reference.appId)
@@ -696,6 +702,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
             }
             setProgressAsync(workDataOf("done" to (i + 1), "total" to watches.length(), "game" to name))
         }
+        setProgressAsync(workDataOf("done" to watches.length(), "total" to watches.length(), "complete" to true)).get()
         return if (failed) Result.failure() else Result.success()
     }
     private fun sendNotification(offer: Offer, game: String, watchKey: String) {
@@ -717,4 +724,5 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
         manager.notify("watch:$watchKey", 0, notification)
     }
 }
+
 
