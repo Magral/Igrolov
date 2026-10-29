@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.semantics.SemanticsActions
 import org.junit.Rule
@@ -80,6 +81,8 @@ class OfferPriceCacheUiTest {
         launchWishlist()
         reveal("Stellaris")
         compose.onNodeWithText("Stellaris").assertIsDisplayed()
+        compose.onAllNodesWithTag("price-freshness:Plati",useUnmergedTree=true).onFirst().assertTextContains("Не обновлено",substring=true)
+        compose.onAllNodesWithTag("price-freshness:GGSEL",useUnmergedTree=true).onFirst().assertTextContains("2 ч назад",substring=true)
         assertFalse(device.hasObject(By.text("Выбрать первые 5")))
         assertFalse(device.hasObject(By.textContains("Проверить выбранные")))
         assertTrue(OfferPriceCacheStore.readAll(context).values.any { it.plati.price == 500.0 })
@@ -155,4 +158,5 @@ class OfferPriceCacheUiTest {
         WorkManager.getInstance(context).cancelAllWork().result.get()
     }
 }
+
 
