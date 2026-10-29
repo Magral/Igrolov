@@ -71,16 +71,16 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-29T15:27:45.781Z
+- Обновлено (UTC): 2026-10-29T15:34:26.022Z
 - Ветка: `main`.
-- HEAD: [`89d66a2e26ce`](https://github.com/Magral/Igrolov/commit/89d66a2e26ceb00224b33970525e7480f5467c20).
+- HEAD: [`ec8ca9235246`](https://github.com/Magral/Igrolov/commit/ec8ca9235246410181c05d4002b495de01d706b9).
 - Последний опубликованный стабильный GitHub Release: [v1.8.0](https://github.com/Magral/Igrolov/releases/tag/v1.8.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [ec8ca92](https://github.com/Magral/Igrolov/commit/ec8ca9235246410181c05d4002b495de01d706b9) — test: compare persisted watch history across target edits
 - [89d66a2](https://github.com/Magral/Igrolov/commit/89d66a2e26ceb00224b33970525e7480f5467c20) — feat: edit monitored target price without losing history
 - [c8ea3db](https://github.com/Magral/Igrolov/commit/c8ea3db9d49a5bd14c19a9f8786b74b155d9513b) — release: Игролов 1.8.0 — мониторинг, карточки и сохранение фильтров
 - [0a70437](https://github.com/Magral/Igrolov/commit/0a704370a140c15215a70a3a2fbe34309c2fc140) — fix: stop empty leader reload loop and expose manual refresh
-- [16fb739](https://github.com/Magral/Igrolov/commit/16fb739cd27b6e92316665dea905a2227f04ea21) — test: verify reset from collapsed catalogue filter panel
 <!-- AUTO_CONTEXT_END -->
 
 
