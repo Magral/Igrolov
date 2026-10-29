@@ -91,5 +91,5 @@ grep -E 'OK \(1 test\)' device-results/concurrent-prices.txt
 
 adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class ru.igrolov.app.MonitorEditionUiTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/monitor-edition.txt
-grep -E 'OK \\(1 test\\)' device-results/monitor-edition.txt
+grep -F 'OK (1 test)' device-results/monitor-edition.txt
 
