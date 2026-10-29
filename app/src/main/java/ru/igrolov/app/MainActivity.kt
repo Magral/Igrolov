@@ -1075,10 +1075,11 @@ class MainActivity : ComponentActivity() {
                         Text(if (marketplacePrices?.checking == true) "Стоп" else if (!marketplacePrices?.message.isNullOrBlank()) "Повторить" else "Цены",
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold), maxLines = 1, color = Color(0xFF17212D))
                     }
-                    OutlinedButton(onClick = onMonitor, modifier = Modifier.weight(1f).height(36.dp),
+                    OutlinedButton(onClick = onMonitor, enabled = game.appId > 0,
+                        modifier = Modifier.weight(1.45f).height(36.dp).testTag("leader-monitor:${game.appId}"),
                         contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp),
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
-                        Text("Следить",
+                        Text("В мониторинг",
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                             color = Color(0xFF17212D), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
@@ -3593,6 +3594,7 @@ private fun WatchListControls(
         }
     }
 }
+
 
 
 
