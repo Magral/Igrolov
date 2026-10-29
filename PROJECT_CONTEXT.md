@@ -71,16 +71,16 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-29T16:38:07.994Z
+- Обновлено (UTC): 2026-10-29T16:53:50.924Z
 - Ветка: `main`.
-- HEAD: [`aa46a209a64b`](https://github.com/Magral/Igrolov/commit/aa46a209a64b6a99bd3e5fcbc592cc7e9c78be09).
+- HEAD: [`e4a1fe4504d1`](https://github.com/Magral/Igrolov/commit/e4a1fe4504d103da4e163abe443dac4b32288129).
 - Последний опубликованный стабильный GitHub Release: [v1.8.0](https://github.com/Magral/Igrolov/releases/tag/v1.8.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [e4a1fe4](https://github.com/Magral/Igrolov/commit/e4a1fe4504d103da4e163abe443dac4b32288129) — feat: show per-store price check age and retained-price status
 - [aa46a20](https://github.com/Magral/Igrolov/commit/aa46a209a64b6a99bd3e5fcbc592cc7e9c78be09) — test: expect precise marketplace prices in wishlist cards
 - [1bee444](https://github.com/Magral/Igrolov/commit/1bee444d6ef8bd2267d77650c02977cc954adbd4) — feat: open exact minimum-price product from game cards
 - [ec8ca92](https://github.com/Magral/Igrolov/commit/ec8ca9235246410181c05d4002b495de01d706b9) — test: compare persisted watch history across target edits
-- [89d66a2](https://github.com/Magral/Igrolov/commit/89d66a2e26ceb00224b33970525e7480f5467c20) — feat: edit monitored target price without losing history
 <!-- AUTO_CONTEXT_END -->
 
 
