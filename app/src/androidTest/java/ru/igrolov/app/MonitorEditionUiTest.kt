@@ -64,8 +64,8 @@ class MonitorEditionUiTest {
             compose.onNodeWithText("Мониторинг").performSemanticsAction(SemanticsActions.OnClick) { it() }
             compose.onNodeWithTag("page-list").performScrollToIndex(0)
             compose.onAllNodes(hasSetTextAction()).onFirst().performTextInput(title)
-            compose.waitUntil(15000) { compose.onAllNodes(hasText(title) and hasClickAction()).fetchSemanticsNodes().isNotEmpty() }
-            compose.onAllNodes(hasText(title) and hasClickAction()).onLast()
+            compose.waitUntil(15000) { compose.onAllNodes(hasText(title) and hasClickAction() and hasSetTextAction().not()).fetchSemanticsNodes().isNotEmpty() }
+            compose.onAllNodes(hasText(title) and hasClickAction() and hasSetTextAction().not()).onLast()
                 .performSemanticsAction(SemanticsActions.OnClick) { it() }
             compose.waitUntil(10000) { compose.onAllNodes(hasTestTag("monitor-edition") and isEnabled()).fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithTag("monitor-edition").performClick()
