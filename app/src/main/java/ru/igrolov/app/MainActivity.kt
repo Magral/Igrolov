@@ -1253,9 +1253,6 @@ class MainActivity : ComponentActivity() {
                         color = Color(0xFF566273), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
-            IconButton(onClick = { onTab(0) }, modifier = Modifier.size(38.dp)) {
-                Icon(painterResource(R.drawable.ic_search), contentDescription = "Поиск", tint = Color(0xFF17212D), modifier = Modifier.size(22.dp))
-            }
             IconButton(onClick = onSettings, modifier = Modifier.size(38.dp)) {
                 Icon(painterResource(R.drawable.ic_settings), contentDescription = if (settingsOpen) "Закрыть настройки" else "Настройки",
                     tint = Color(0xFF17212D), modifier = Modifier.size(22.dp))
