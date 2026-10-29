@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  APP_VERSION: 1.7.2
+  APP_VERSION: 1.8.0
 
 permissions:
   contents: read
@@ -211,6 +211,7 @@ jobs:
           body_path: release-notes.md
           files: release/Igrolov-${{ env.APP_VERSION }}.apk
           fail_on_unmatched_files: true
+
 
 
 
