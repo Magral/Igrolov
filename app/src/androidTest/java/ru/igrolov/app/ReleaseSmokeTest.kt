@@ -147,15 +147,15 @@ class ReleaseSmokeTest {
             UiTestScroll.await(compose, 60000) {
                 compose.onAllNodesWithContentDescription("Обложка Steam 281990 загружена", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
             })
-        if (!device.hasObject(By.text("750 ₽"))) {
-            UiTestScroll.reveal(compose,"750 ₽")
+        if (!device.hasObject(By.text("750,00 ₽"))) {
+            UiTestScroll.reveal(compose,"750,00 ₽")
         }
         UiTestScroll.reveal(compose, "900 ₽")
         compose.onNodeWithText("900 ₽").assertIsDisplayed()
         // Compose's text matcher confirms the discount note is rendered; UIAutomator
         // does not expose this nested Text as an exact standalone accessibility node.
         UiTestScroll.reveal(compose,"−50%")
-        compose.onNodeWithText("750 ₽").assertIsDisplayed()
+        compose.onNodeWithText("750,00 ₽").assertIsDisplayed()
         UiTestScroll.reveal(compose, "Цены")
         compose.onNodeWithText("Цены").assertIsDisplayed()
         assertFalse(device.hasObject(By.text("Искать Plati")))
