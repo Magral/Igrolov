@@ -1660,9 +1660,9 @@ class MainActivity : ComponentActivity() {
         LaunchedEffect(activeTab, settingsOpen, leaderSection, topBusy) {
             if (activeTab == 4 && !settingsOpen && !topBusy) {
                 val needsLoad = when (leaderSection) {
-                    SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseGames.isEmpty()
-                    SteamLeaderSection.THEMED_SALES -> themedSaleGames.isEmpty()
-                    SteamLeaderSection.TOP_SELLERS, SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> topGames.isEmpty()
+                    SteamLeaderSection.POPULAR_NEW_RELEASES -> !newReleaseInitialLoaded
+                    SteamLeaderSection.THEMED_SALES -> !themedSalesInitialLoaded
+                    SteamLeaderSection.TOP_SELLERS, SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> !discountedInitialLoaded
                 }
                 if (needsLoad) refreshTop()
             }
@@ -3037,7 +3037,7 @@ class MainActivity : ComponentActivity() {
                     SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseInitialLoaded
                     SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedInitialLoaded
                     SteamLeaderSection.THEMED_SALES -> themedSalesInitialLoaded
-                    SteamLeaderSection.TOP_SELLERS -> false
+                    SteamLeaderSection.TOP_SELLERS -> discountedInitialLoaded
                 }
                 LaunchedEffect(activeTab, settingsOpen, leaderSection, leaderFilterInput, topAvailabilityFilter,
                     visibleTopGames.size, newReleaseNextStart, discountedNextStart, leaderHasMore,
@@ -3069,7 +3069,14 @@ class MainActivity : ComponentActivity() {
                             label = { Text(section.label, maxLines = 1, style = MaterialTheme.typography.labelSmall) })
                     }
                 }
-                Text(countLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,
+                    horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                    Text(countLabel,modifier=Modifier.weight(1f),style=MaterialTheme.typography.labelSmall,
+                        color=MaterialTheme.colorScheme.onSurfaceVariant)
+                    TextButton(onClick={refreshTop()},enabled=!topBusy && !loadMoreBusy,
+                        modifier=Modifier.testTag("leader-refresh"),
+                        contentPadding=PaddingValues(horizontal=6.dp,vertical=0.dp)) {Text("Обновить")}
+                }
                 SteamLeaderFiltersPanel(
                     leaderFilterInput,
                     { leaderFilterInput = it },
