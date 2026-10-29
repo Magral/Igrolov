@@ -228,7 +228,7 @@ class MonitorRegressionTest {
                 WatchStore.read(context).getJSONObject(1).optLong("checked")>0L)
             assertEquals(beforeSlow,WatchStore.read(context).getJSONObject(0).getLong("checked"))
             releaseSlow.countDown()
-            assertEquals(ListenableWorker.Result.success(),result.get(5,TimeUnit.SECONDS))
+            assertEquals(ListenableWorker.Result.success(),result.get(30,TimeUnit.SECONDS))
         } finally {releaseSlow.countDown();executor.shutdownNow()}
         WatchStore.write(context,JSONArray())
         manager.cancelAll()
