@@ -67,9 +67,7 @@ class ReleaseSmokeTest {
         compose.onNodeWithText("Недоступны в Steam RU").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(device.hasObject(By.text("Steam RU · Нет")))
-        compose.onNodeWithText("Ещё").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        compose.waitForIdle()
-        compose.onNodeWithText("Сбросить").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.onNodeWithText("Сбросить всё").performSemanticsAction(SemanticsActions.OnClick) { it() }
         assertTrue(UiTestScroll.await(compose, 5000) {
             compose.onAllNodesWithText("Steam RU · Все").fetchSemanticsNodes().isNotEmpty()
         })
