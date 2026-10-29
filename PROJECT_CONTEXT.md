@@ -66,15 +66,15 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-29T11:45:42.966Z
+- Обновлено (UTC): 2026-10-29T12:23:42.277Z
 - Ветка: `main`.
-- HEAD: [`684ec68567f7`](https://github.com/Magral/Igrolov/commit/684ec68567f755498f3d0facec72921f388b3a3b).
-- Последний опубликованный стабильный GitHub Release: [v1.7.0](https://github.com/Magral/Igrolov/releases/tag/v1.7.0); APK-файлы: есть вложение APK.
+- HEAD: [`985ab801f696`](https://github.com/Magral/Igrolov/commit/985ab801f6963102c476c737dc69d48087624500).
+- Последний опубликованный стабильный GitHub Release: [v1.7.1](https://github.com/Magral/Igrolov/releases/tag/v1.7.1); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [985ab80](https://github.com/Magral/Igrolov/commit/985ab801f6963102c476c737dc69d48087624500) — release: Игролов 1.7.2 — завершение и ускорение мониторинга
 - [684ec68](https://github.com/Magral/Igrolov/commit/684ec68567f755498f3d0facec72921f388b3a3b) — release: Игролов 1.7.1 — finalize monitoring regression gate
 - [97b174a](https://github.com/Magral/Igrolov/commit/97b174ab69b23b3cb54bb46fd43df53f3b108137) — release: Игролов 1.7.1 — preserve stopped monitoring status
 - [a912c5e](https://github.com/Magral/Igrolov/commit/a912c5ef3a5c6dc2c328a18ec4a449040f27b72b) — release: Игролов 1.7.1 — verify exact edition selection before publishing
-- [cd1eea7](https://github.com/Magral/Igrolov/commit/cd1eea7501afc6f3c976e9a41ae9d601d8446fcb) — release: Игролов 1.7.1 — издания и остановка мониторинга
 <!-- AUTO_CONTEXT_END -->
 
