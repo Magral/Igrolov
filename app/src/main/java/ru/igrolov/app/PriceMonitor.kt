@@ -573,15 +573,20 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
         val generation = WatchScheduler.generation()
         val watches = WatchStore.read(applicationContext)
         val ignored = IgnoredStore.ids(applicationContext)
-        var failed = false
-        setProgressAsync(workDataOf("done" to 0, "total" to watches.length(), "game" to "Подготовка", "complete" to false))
-        for (i in 0 until watches.length()) {
-            if (isStopped) return Result.success()
-            val watch = watches.optJSONObject(i) ?: continue
-            if (!WatchScheduler.active(watch, generation)) continue
-            val active = { !isStopped && WatchScheduler.active(watch, generation) }
-            val name = watch.optString("name")
-            setProgressAsync(workDataOf("done" to i, "total" to watches.length(), "game" to name))
+        val items=(0 until watches.length()).mapNotNull {watches.optJSONObject(it)}
+        setProgressAsync(workDataOf("done" to 0, "total" to items.size, "game" to "Подготовка", "complete" to false))
+        val failed=MonitorCheckBatch.run(items,{!isStopped && WatchScheduler.generation()==generation},
+            {done,total,watch->setProgressAsync(workDataOf("done" to done,"total" to total,"game" to watch?.optString("name").orEmpty()))}
+        ) {watch,alive->checkWatch(watch,ignored,generation,alive)}
+        if(isStopped || WatchScheduler.generation()!=generation)return Result.success()
+        setProgressAsync(workDataOf("done" to items.size, "total" to items.size, "complete" to true)).get()
+        return if (failed) Result.failure() else Result.success()
+    }
+    private fun checkWatch(watch:JSONObject,ignored:Set<String>,generation:Long,alive:()->Boolean):Boolean {
+        val active = { alive() && WatchScheduler.active(watch, generation) }
+        if(!active())return false
+        val name = watch.optString("name")
+        var failed=false
             val checkStarted=System.currentTimeMillis()
             try {
                 val kind = watch.optString("kind", "Все")
@@ -617,7 +622,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                     }
                 ))
                 val sourceTotal=sources.values.sumOf {it.total}
-                if (!active()) continue
+                if (!active()) return false
                 WatchStore.updateIfCurrent(applicationContext,watch) {current ->
                 if (!active()) return@updateIfCurrent
                 if(current.optLong("checked",0L)>checkStarted)return@updateIfCurrent
@@ -679,7 +684,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 current.put("notified",remaining)
                 }
             } catch (e: Exception) {
-                if (!active()) continue
+                if (!active()) return false
                 val retained=WatchStore.updateIfCurrent(applicationContext,watch) {current ->
                     if (!active()) return@updateIfCurrent
                     if(current.optLong("checked",0L)<=checkStarted) {
@@ -700,10 +705,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 }
                 failed=failed || retained
             }
-            setProgressAsync(workDataOf("done" to (i + 1), "total" to watches.length(), "game" to name))
-        }
-        setProgressAsync(workDataOf("done" to watches.length(), "total" to watches.length(), "complete" to true)).get()
-        return if (failed) Result.failure() else Result.success()
+        return failed
     }
     private fun sendNotification(offer: Offer, game: String, watchKey: String) {
         val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -724,5 +726,6 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
         manager.notify("watch:$watchKey", 0, notification)
     }
 }
+
 
 

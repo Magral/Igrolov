@@ -72,6 +72,9 @@ class MonitorRegressionTest {
         val changed=AtomicBoolean(false)
         val ggselEnabled=AtomicBoolean(false)
         val ggselOffline=AtomicBoolean(false)
+        val parallelMode=AtomicBoolean(false)
+        val firstSlow=java.util.concurrent.CountDownLatch(1)
+        val releaseSlow=java.util.concurrent.CountDownLatch(1)
         URL.setURLStreamHandlerFactory { protocol -> if(protocol!="https") null else object:URLStreamHandler() {
             override fun openConnection(url:URL):URLConnection=object:HttpURLConnection(url) {
                 override fun connect(){}
@@ -88,9 +91,16 @@ class MonitorRegressionTest {
                         url.host=="api4.ggsel.com" && url.path.endsWith("/categories") -> JSONObject("""{"items":[
                             {"id_goods":77777,"url":"cyberpunk-steam-key-ru","name":"Cyberpunk 2077 Steam Key РФ","forbidden_type":0,
                              "price_for_one_wmr":"50","is_preorder":false,"options_check":false,"options":[]}] }""")
+                        url.path.contains("appdetails") && url.query.contains("281990") -> JSONObject("""{"281990":{"success":true,"data":{"name":"Stellaris","type":"game","dlc":[]}}}""")
                         url.path.contains("appdetails") -> JSONObject("""{"1091500":{"success":true,"data":{"name":"Cyberpunk 2077","type":"game","dlc":[2138330]}}}""")
                         url.path.endsWith("search2") -> {
                             catalogCalls.incrementAndGet()
+                            if(parallelMode.get() && url.query.contains("Stellaris"))
+                                return ByteArrayInputStream("""{"items":{"item":[]}}""".toByteArray())
+                            if(parallelMode.get()) {
+                                firstSlow.countDown()
+                                check(releaseSlow.await(10,TimeUnit.SECONDS))
+                            }
                             val items=JSONArray()
                             for(i in 0..7)items.put(JSONObject().put("id",10000+i).put("name","Cyberpunk 2077 Steam Key РФ").put("price_rur",1+i))
                             JSONObject().put("items",JSONObject().put("item",items))
@@ -204,7 +214,25 @@ class MonitorRegressionTest {
         assertEquals(savedHistory,watch.getJSONArray("history").length())
         assertTrue(watch.getString("error").contains("GGSEL HTTP 503"))
         ggselOffline.set(false)
+        val beforeSlow=watch.getLong("checked")
+        WatchStore.add(context,"Stellaris","Все",1000.0,appId=281990)
+        parallelMode.set(true)
+        val executor=java.util.concurrent.Executors.newSingleThreadExecutor()
+        try {
+            val result=executor.submit<ListenableWorker.Result> {runBlocking {worker().doWork()}}
+            assertTrue(firstSlow.await(3,TimeUnit.SECONDS))
+            val until=System.currentTimeMillis()+5000
+            while(WatchStore.read(context).getJSONObject(1).optLong("checked")==0L && System.currentTimeMillis()<until)
+                Thread.sleep(20)
+            assertTrue("Second watch must save its result before the slow first watch finishes",
+                WatchStore.read(context).getJSONObject(1).optLong("checked")>0L)
+            assertEquals(beforeSlow,WatchStore.read(context).getJSONObject(0).getLong("checked"))
+            releaseSlow.countDown()
+            assertEquals(ListenableWorker.Result.success(),result.get(5,TimeUnit.SECONDS))
+        } finally {releaseSlow.countDown();executor.shutdownNow()}
+        WatchStore.write(context,JSONArray())
         manager.cancelAll()
     }
 }
+
 
