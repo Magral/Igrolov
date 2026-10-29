@@ -1104,6 +1104,46 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun WatchTargetDialog(watch:JSONObject,onDismiss:()->Unit,onSaved:(String)->Unit) {
+        val watchId=WatchStore.identity(watch)
+        var price by remember(watchId) {mutableStateOf(String.format(Locale("ru","RU"),"%.2f",watch.optDouble("limit")))}
+        var saving by remember(watchId) {mutableStateOf(false)}
+        var error by remember(watchId) {mutableStateOf("")}
+        AlertDialog(onDismissRequest={if(!saving)onDismiss()},title={Text("Изменить цель")},text={
+            Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                Text(watch.optString("name"),style=MaterialTheme.typography.titleSmall)
+                watch.optString("steamEditionName").takeIf {it.isNotBlank() && it!=watch.optString("name")}?.let {
+                    Text(it,style=MaterialTheme.typography.bodySmall)
+                }
+                OutlinedTextField(price,{price=it;error=""},label={Text("Желаемая цена, ₽")},singleLine=true,
+                    enabled=!saving,keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),
+                    modifier=Modifier.fillMaxWidth().testTag("watch-target-input"))
+                if(error.isNotBlank())Text(error,color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodySmall)
+            }
+        },confirmButton={
+            OutlinedButton(enabled=!saving,onClick={
+                val amount=price.trim().replace(',','.').toDoubleOrNull()
+                if(amount==null || !amount.isFinite() || amount<=0)error="Введите положительную цену"
+                else {
+                    saving=true
+                    ioExecutor.execute {
+                        val result=runCatching {
+                            if(WatchStore.updateTarget(this@MainActivity,watchId,amount))
+                                WatchStore.read(this@MainActivity).toString() else null
+                        }
+                        runOnUiThread {
+                            saving=false
+                            result.onSuccess {saved->
+                                if(saved!=null)onSaved(saved) else error="Игра уже удалена из мониторинга."
+                            }.onFailure {error="Не удалось сохранить цену. Повторите попытку."}
+                        }
+                    }
+                }
+            }) {Text(if(saving) "Сохраняем…" else "Сохранить")}
+        },dismissButton={TextButton(enabled=!saving,onClick=onDismiss) {Text("Отмена")}})
+    }
+
+    @Composable
     private fun GameMonitoringDialog(
         game: GameSearchResolver.Candidate,
         onDismiss: () -> Unit,
@@ -1549,6 +1589,7 @@ class MainActivity : ComponentActivity() {
         var leaderDetailsGame by remember { mutableStateOf<SteamTopSeller?>(null) }
         var leaderDetailsLoading by remember { mutableStateOf(false) }
         var pendingWatchGame by remember { mutableStateOf<GameSearchResolver.Candidate?>(null) }
+        var targetWatchToEdit by remember {mutableStateOf<JSONObject?>(null)}
         val watchEntries = remember(watches) {
             val array = runCatching { JSONArray(watches) }.getOrDefault(JSONArray())
             (0 until array.length()).mapNotNull { array.optJSONObject(it) }
@@ -2036,6 +2077,11 @@ class MainActivity : ComponentActivity() {
                 GameMonitoringDialog(game, onDismiss = { pendingWatchGame = null },
                     onSaved = { saved -> watches = saved; pendingWatchGame = null })
             }
+            targetWatchToEdit?.let {watch->
+                WatchTargetDialog(watch,onDismiss={targetWatchToEdit=null},onSaved={saved->
+                    watches=saved;targetWatchToEdit=null;watchMessage="Целевая цена сохранена."
+                })
+            }
             NavigationHeader(if (settingsOpen) -1 else activeTab, settingsOpen,
                 onSettings = {
                     keyboardController?.hide()
@@ -2437,10 +2483,10 @@ class MainActivity : ComponentActivity() {
                                 Text(w.optString("name"), style = MaterialTheme.typography.titleSmall, maxLines = 1,
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                                 Text(listOfNotNull(w.optString("kind"), w.optString("steamEditionName").takeIf { it.isNotBlank() },
-                                    "цель ${w.optDouble("limit").toInt()} ₽", "РФ ${if (w.optBoolean("rf",true)) "да" else "не обязательно"}").joinToString(" · "),
+                                    "цель ${String.format(Locale("ru","RU"),"%.2f",w.optDouble("limit"))} ₽", "РФ ${if (w.optBoolean("rf",true)) "да" else "не обязательно"}").joinToString(" · "),
                                     style = MaterialTheme.typography.bodySmall, maxLines = 1,
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                                Text(if (w.optDouble("last", -1.0) > 0) "Минимум: ${w.optDouble("last").toInt()} ₽" else "Подходящих цен пока нет",
+                                Text(if (w.optDouble("last", -1.0) > 0) "Минимум: ${String.format(Locale("ru","RU"),"%.2f",w.optDouble("last"))} ₽" else "Подходящих цен пока нет",
                                     style = MaterialTheme.typography.bodyMedium)
                             }
                         }
@@ -2545,6 +2591,13 @@ class MainActivity : ComponentActivity() {
                         val history=WatchHistory.points(w.optJSONArray("history") ?: JSONArray())
                         var historyExpanded by rememberSaveable(w.optString("name")) {mutableStateOf(false)}
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            OutlinedButton(shape=androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                                onClick={targetWatchToEdit=JSONObject(w.toString())},
+                                modifier=Modifier.weight(1f).heightIn(min=40.dp)
+                                    .testTag("watch-edit-target:${WatchStore.identity(w)}"),
+                                contentPadding=PaddingValues(horizontal=4.dp,vertical=0.dp)) {
+                                Text("Изменить цель",maxLines=1,softWrap=false,fontSize=11.sp)
+                            }
                             OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick={historyExpanded=!historyExpanded},
                                 modifier = Modifier.weight(1f).heightIn(min = 40.dp),
                                 contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
@@ -3643,6 +3696,7 @@ private fun WatchListControls(
         }
     }
 }
+
 
 
 

@@ -269,6 +269,16 @@ object WatchStore {
     internal fun identity(w:JSONObject)=w.optString("watchId").ifBlank {
         java.util.UUID.nameUUIDFromBytes((w.optString("name").lowercase(Locale.ROOT)+"|"+w.optString("kind")).toByteArray(Charsets.UTF_8)).toString()
     }
+    /** Edit only the threshold on the latest row; never recreate a deleted watch or replace its history. */
+    fun updateTarget(context:Context,watchId:String,limit:Double):Boolean = synchronized(lock) {
+        require(limit.isFinite() && limit>0)
+        val watches=read(context)
+        val current=(0 until watches.length()).mapNotNull {watches.optJSONObject(it)}
+            .firstOrNull {identity(it)==watchId} ?: return false
+        current.put("limit",limit)
+        write(context,watches)
+        true
+    }
     private fun config(w:JSONObject)=listOf(w.optString("name"),w.optString("kind"),w.optDouble("limit"),w.optBoolean("rf",true),w.optInt("steamAppId"),w.optString("steamEditionName"),w.optInt("steamPackageId"))
     /** Only the short local merge is locked. Deleted/edited watches cannot be resurrected by a slow request. */
     fun updateIfCurrent(context:Context,snapshot:JSONObject,update:(JSONObject)->Unit):Boolean = synchronized(lock) {
@@ -729,6 +739,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
         manager.notify("watch:$watchKey", 0, notification)
     }
 }
+
 
 
 

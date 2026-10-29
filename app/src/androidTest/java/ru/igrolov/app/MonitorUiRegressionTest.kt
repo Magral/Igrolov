@@ -78,6 +78,27 @@ class MonitorUiRegressionTest {
         assertFalse(device.hasObject(By.text("Источники · Plati: 0 · GGSEL: 1")))
         assertFalse(device.hasObject(By.textStartsWith("Следующая проверка")))
         device.takeScreenshot(File(context.getExternalFilesDir(null),"monitor-compact.png"))
+        val beforeEdit=WatchStore.read(context).getJSONObject(0)
+        UiTestScroll.reveal(compose,"Изменить цель")
+        compose.onNodeWithText("Изменить цель").performSemanticsAction(SemanticsActions.OnClick) {it()}
+        compose.onNodeWithTag("watch-target-input").performTextReplacement("0")
+        compose.onNodeWithText("Сохранить").performClick()
+        compose.onNodeWithText("Введите положительную цену").assertExists()
+        compose.onNodeWithTag("watch-target-input").performTextReplacement("1250,50")
+        compose.onNodeWithText("Сохранить").performClick()
+        compose.waitUntil(5000) {WatchStore.read(context).getJSONObject(0).optDouble("limit")==1250.50}
+        compose.waitUntil(5000) {compose.onAllNodesWithTag("watch-target-input").fetchSemanticsNodes().isEmpty()}
+        val afterEdit=WatchStore.read(context).getJSONObject(0)
+        assertEquals(WatchStore.identity(beforeEdit),WatchStore.identity(afterEdit))
+        assertEquals(beforeEdit.getJSONArray("history").toString(),afterEdit.getJSONArray("history").toString())
+        assertEquals(800.0,afterEdit.getDouble("last"),0.0)
+        assertEquals("Gift",afterEdit.getString("kind"))
+        assertEquals(281990,afterEdit.getInt("steamAppId"))
+        compose.onNodeWithText("Изменить цель").performSemanticsAction(SemanticsActions.OnClick) {it()}
+        compose.onNodeWithTag("watch-target-input").performTextReplacement("2000")
+        compose.onNodeWithText("Отмена").performClick()
+        assertEquals(1250.50,WatchStore.read(context).getJSONObject(0).getDouble("limit"),0.0)
+
         UiTestScroll.reveal(compose, "Обновить цену")
         compose.onNodeWithText("Обновить цену").assertExists()
         UiTestScroll.reveal(compose, "Цены (1)")
@@ -129,5 +150,6 @@ class MonitorUiRegressionTest {
         context.getSharedPreferences("tracked_products",0).edit().putString("ids","").remove("product_cache_10000").commit()
     }
 }
+
 
 

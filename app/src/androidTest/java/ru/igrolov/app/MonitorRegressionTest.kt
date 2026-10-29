@@ -49,8 +49,26 @@ class MonitorRegressionTest {
             "Kingdom Come: Deliverance II Royal Edition", 123)
         val removed = WatchStore.read(context).getJSONObject(0)
         val generation = WatchScheduler.generation()
+        val seeded=JSONObject(removed.toString()).put("last",1800.25).put("checked",123456L)
+            .put("history",JSONArray().put(JSONObject().put("at",123456L).put("price",1800.25)))
+            .put("notifiedPrices",JSONObject().put("12345",1800.25))
+        WatchStore.write(context,JSONArray().put(seeded))
+        assertTrue(WatchStore.updateTarget(context,WatchStore.identity(seeded),1500.50))
+        val edited=WatchStore.read(context).getJSONObject(0)
+        assertEquals(1500.50,edited.getDouble("limit"),0.0)
+        assertEquals(1800.25,edited.getDouble("last"),0.0)
+        assertEquals(123456L,edited.getLong("checked"))
+        assertEquals(seeded.getJSONArray("history").toString(),edited.getJSONArray("history").toString())
+        assertEquals(seeded.getJSONObject("notifiedPrices").toString(),edited.getJSONObject("notifiedPrices").toString())
+        assertEquals(123,edited.getInt("steamPackageId"))
+        assertEquals(seeded.getString("steamEditionName"),edited.getString("steamEditionName"))
+        assertFalse("A stale check cannot overwrite an edited threshold",WatchStore.updateIfCurrent(context,seeded) {it.put("last",1)})
+        assertTrue(runCatching {WatchStore.updateTarget(context,WatchStore.identity(seeded),Double.NaN)}.isFailure)
+        assertEquals(1500.50,WatchStore.read(context).getJSONObject(0).getDouble("limit"),0.0)
         assertTrue(WatchScheduler.active(removed, generation))
         WatchStore.remove(context, 0)
+        assertFalse(WatchStore.updateTarget(context,WatchStore.identity(removed),1600.0))
+        assertEquals(0,WatchStore.read(context).length())
         assertFalse(WatchScheduler.active(removed, generation))
         WatchStore.add(context, "Kingdom Come: Deliverance II", "Все", 2000.0, true, 1771300,
             "Kingdom Come: Deliverance II Royal Edition", 123)
@@ -248,6 +266,7 @@ class MonitorRegressionTest {
         manager.cancelAll()
     }
 }
+
 
 
 
