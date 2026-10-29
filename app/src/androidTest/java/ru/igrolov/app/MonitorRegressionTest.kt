@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit
 /** Exercises the actual WorkManager worker, transport, verifier, persistence and notifications. */
 @RunWith(AndroidJUnit4::class)
 class MonitorRegressionTest {
-    @Test fun manualChecksQueueBehindAnExistingCheck() {
+    @Test fun manualChecksDoNotAccumulateAndCanBeStopped() {
         val context=ApplicationProvider.getApplicationContext<Context>()
         val manager=androidx.work.WorkManager.getInstance(context)
         manager.cancelUniqueWork("plati_manual_price_check").result.get()
@@ -36,8 +36,32 @@ class MonitorRegressionTest {
         WatchScheduler.enqueueManualCheck(context,first).result.get()
         WatchScheduler.enqueueManualCheck(context,second).result.get()
         val queued=manager.getWorkInfosForUniqueWork("plati_manual_price_check").get()
-        assertEquals("A second refresh must remain queued behind the active refresh",2,queued.size)
+        assertEquals("Repeated refreshes must not accumulate", 1, queued.count { !it.state.isFinished })
+        WatchScheduler.stop(context)
+        assertTrue(manager.getWorkInfosForUniqueWork("plati_manual_price_check").get().all { it.state.isFinished })
         manager.cancelUniqueWork("plati_manual_price_check").result.get()
+    }
+
+    @Test fun deletedWatchCancelsOnlyItsRequestsAndReaddingUsesNewIdentity() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        WatchStore.write(context, JSONArray())
+        WatchStore.add(context, "Kingdom Come: Deliverance II", "Все", 2000.0, true, 1771300,
+            "Kingdom Come: Deliverance II Royal Edition", 123)
+        val removed = WatchStore.read(context).getJSONObject(0)
+        val generation = WatchScheduler.generation()
+        assertTrue(WatchScheduler.active(removed, generation))
+        WatchStore.remove(context, 0)
+        assertFalse(WatchScheduler.active(removed, generation))
+        WatchStore.add(context, "Kingdom Come: Deliverance II", "Все", 2000.0, true, 1771300,
+            "Kingdom Come: Deliverance II Royal Edition", 123)
+        val added = WatchStore.read(context).getJSONObject(0)
+        assertTrue(WatchScheduler.active(added, generation))
+        assertEquals("Kingdom Come: Deliverance II Royal Edition", added.getString("steamEditionName"))
+        assertEquals(123, added.getInt("steamPackageId"))
+        WatchScheduler.stop(context)
+        assertFalse(WatchScheduler.active(added, generation))
+        WatchStore.write(context, JSONArray())
+        androidx.work.WorkManager.getInstance(context).cancelAllWork().result.get()
     }
 
     @Test fun verifiedPricesFurtherDropsRetriesAndConcurrentWatchEdits() = runBlocking {
@@ -111,7 +135,7 @@ class MonitorRegressionTest {
         val oldHistory=WatchStore.read(context).getJSONObject(0).getJSONArray("history").length()
         for(failure in listOf(1,2)) {
             mode.set(failure)
-            assertEquals(ListenableWorker.Result.retry(),worker().doWork())
+            assertEquals(ListenableWorker.Result.failure(),worker().doWork())
             watch=WatchStore.read(context).getJSONObject(0)
             assertEquals(oldHistory,watch.getJSONArray("history").length())
             assertEquals(105.0,watch.getDouble("last"),0.001);assertTrue(watch.has("error"))
@@ -165,7 +189,7 @@ class MonitorRegressionTest {
         // An unavailable provider cannot turn its previous confirmed price into zero or a history gap.
         val savedHistory=watch.getJSONArray("history").length()
         ggselOffline.set(true)
-        assertEquals(ListenableWorker.Result.retry(),worker().doWork())
+        assertEquals(ListenableWorker.Result.failure(),worker().doWork())
         watch=WatchStore.read(context).getJSONObject(0)
         assertEquals(50.0,watch.getDouble("last"),0.001)
         assertEquals(savedHistory,watch.getJSONArray("history").length())

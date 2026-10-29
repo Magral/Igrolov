@@ -266,7 +266,7 @@ object WatchStore {
         arr.put(watch)
         write(context, arr)
     }
-    private fun identity(w:JSONObject)=w.optString("watchId").ifBlank {
+    internal fun identity(w:JSONObject)=w.optString("watchId").ifBlank {
         java.util.UUID.nameUUIDFromBytes((w.optString("name").lowercase(Locale.ROOT)+"|"+w.optString("kind")).toByteArray(Charsets.UTF_8)).toString()
     }
     private fun config(w:JSONObject)=listOf(w.optString("name"),w.optString("kind"),w.optDouble("limit"),w.optBoolean("rf",true),w.optInt("steamAppId"),w.optString("steamEditionName"),w.optInt("steamPackageId"))
@@ -281,6 +281,7 @@ object WatchStore {
     }
     fun remove(context: Context, index: Int) = synchronized(lock) {
         val old = read(context); val result = JSONArray()
+        old.optJSONObject(index)?.let { WatchScheduler.cancelWatch(identity(it)) }
         for (i in 0 until old.length()) if (i != index) result.put(old.get(i))
         write(context, result)
     }
@@ -525,6 +526,21 @@ object CatalogCheck {
 }
 
 object WatchScheduler {
+    private val cancelledWatches = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+    private val stopGeneration = java.util.concurrent.atomic.AtomicLong()
+    internal fun cancelWatch(id: String) { cancelledWatches.add(id) }
+    internal fun generation() = stopGeneration.get()
+    internal fun active(watch: JSONObject, generation: Long) =
+        stopGeneration.get() == generation && WatchStore.identity(watch) !in cancelledWatches
+    /** Called off the main thread. Stop persisted queued/running work as well as live requests. */
+    fun stop(context: Context) {
+        stopGeneration.incrementAndGet()
+        val manager = WorkManager.getInstance(context)
+        manager.cancelUniqueWork("plati_manual_price_check").result.get()
+        manager.cancelUniqueWork("plati_game_price_watch").result.get()
+        if (WatchStore.read(context).length() > 0) start(context, delayed = true)
+    }
+
     private val connected=androidx.work.Constraints.Builder().setRequiredNetworkType(androidx.work.NetworkType.CONNECTED).build()
     fun checkNow(context: Context) {
         val request = OneTimeWorkRequestBuilder<PriceWatchWorker>().setConstraints(connected)
@@ -533,10 +549,11 @@ object WatchScheduler {
     }
     // Keep the trigger injectable so queue semantics can be tested without network work.
     internal fun enqueueManualCheck(context: Context, request: androidx.work.OneTimeWorkRequest) =
-        WorkManager.getInstance(context).enqueueUniqueWork("plati_manual_price_check", ExistingWorkPolicy.APPEND_OR_REPLACE, request)
-    fun start(context: Context) {
+        WorkManager.getInstance(context).enqueueUniqueWork("plati_manual_price_check", ExistingWorkPolicy.KEEP, request)
+    fun start(context: Context, delayed: Boolean = false) {
         val request = PeriodicWorkRequestBuilder<PriceWatchWorker>(MonitorSchedule.CHECK_INTERVAL_MILLIS, TimeUnit.MILLISECONDS).setConstraints(connected)
-            .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL,30,TimeUnit.SECONDS).build()
+            .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL,30,TimeUnit.SECONDS)
+            .setInitialDelay(if (delayed) MonitorSchedule.CHECK_INTERVAL_MILLIS else 0L, TimeUnit.MILLISECONDS).build()
         WorkManager.getInstance(context).enqueueUniquePeriodicWork("plati_game_price_watch", ExistingPeriodicWorkPolicy.UPDATE, request)
     }
 }
@@ -548,6 +565,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
         return try {runChecks()} finally {runLock.unlock()}
     }
     private fun runChecks(): Result {
+        val generation = WatchScheduler.generation()
         val watches = WatchStore.read(applicationContext)
         val ignored = IgnoredStore.ids(applicationContext)
         var failed = false
@@ -555,6 +573,8 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
         for (i in 0 until watches.length()) {
             if (isStopped) return Result.success()
             val watch = watches.optJSONObject(i) ?: continue
+            if (!WatchScheduler.active(watch, generation)) continue
+            val active = { !isStopped && WatchScheduler.active(watch, generation) }
             val name = watch.optString("name")
             setProgressAsync(workDataOf("done" to i, "total" to watches.length(), "game" to name))
             val checkStarted=System.currentTimeMillis()
@@ -576,7 +596,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 val catalogPages=CatalogPageSettings.pages(applicationContext)
                 val rules=GameRuleStore.read(applicationContext,name)
                 data class SourceOffers(val offers:List<Offer>,val total:Int)
-                val sources=MonitorSourceCheck.run({!isStopped},mapOf(
+                val sources=MonitorSourceCheck.run(active,mapOf(
                     "Plati" to { active: () -> Boolean ->
                         val catalog=CatalogCheck.find(name,catalogPages,reference)
                         val checked=VerifiedMonitorCheck.run(catalog,reference,kind,rules,ignored,active,
@@ -591,8 +611,9 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                     }
                 ))
                 val sourceTotal=sources.values.sumOf {it.total}
-                if(isStopped)return Result.success()
+                if (!active()) continue
                 WatchStore.updateIfCurrent(applicationContext,watch) {current ->
+                if (!active()) return@updateIfCurrent
                 if(current.optLong("checked",0L)>checkStarted)return@updateIfCurrent
                 val latestRules=GameRuleStore.read(applicationContext,name)
                 val latestIgnored=IgnoredStore.ids(applicationContext)
@@ -652,8 +673,9 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 current.put("notified",remaining)
                 }
             } catch (e: Exception) {
-                if(isStopped)return Result.success()
+                if (!active()) continue
                 val retained=WatchStore.updateIfCurrent(applicationContext,watch) {current ->
+                    if (!active()) return@updateIfCurrent
                     if(current.optLong("checked",0L)<=checkStarted) {
                         current.put("error", e.message ?: "Ошибка сети")
                         current.put("failedAt", System.currentTimeMillis())
@@ -674,7 +696,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
             }
             setProgressAsync(workDataOf("done" to (i + 1), "total" to watches.length(), "game" to name))
         }
-        return if (failed) {if(runAttemptCount<5) Result.retry() else Result.failure()} else Result.success()
+        return if (failed) Result.failure() else Result.success()
     }
     private fun sendNotification(offer: Offer, game: String, watchKey: String) {
         val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

@@ -1387,6 +1387,23 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+        var watchEditions by remember { mutableStateOf<List<SteamEditionReference.Edition>>(emptyList()) }
+        var watchEdition by remember { mutableStateOf<SteamEditionReference.Edition?>(null) }
+        var watchEditionsLoading by remember { mutableStateOf(false) }
+        var watchEditionMenu by remember { mutableStateOf(false) }
+        LaunchedEffect(watchSelection?.appId) {
+            watchEditions = emptyList(); watchEdition = null; watchEditionMenu = false
+            val candidate = watchSelection
+            watchEditionsLoading = candidate != null
+            if (candidate != null) {
+                val found = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    runCatching { SteamEditionReference.discover(candidate.appId) }.getOrDefault(emptyList())
+                }
+                watchEditions = found
+                watchEdition = found.firstOrNull { it.isBase }
+                watchEditionsLoading = false
+            }
+        }
         var targetPrice by remember { mutableStateOf("") }
         var ignoredIds by remember { mutableStateOf(IgnoredStore.ids(this@MainActivity)) }
         var showIgnored by remember { mutableStateOf(false) }
@@ -2279,6 +2296,25 @@ class MainActivity : ComponentActivity() {
                     ManualSearchSettings.rememberGame(this@MainActivity,candidate)
                 }) {Text(candidate.name)}
             }
+            if (watchSelection != null) {
+                Box {
+                    OutlinedButton(onClick = { watchEditionMenu = true }, enabled = !watchEditionsLoading,
+                        modifier = Modifier.testTag("monitor-edition")) {
+                        Text(if (watchEditionsLoading) "Загружаем издания…" else watchEdition?.name ?: "Основная игра")
+                    }
+                    DropdownMenu(expanded = watchEditionMenu, onDismissRequest = { watchEditionMenu = false }) {
+                        DropdownMenuItem(text = { Text("Основная игра") }, onClick = {
+                            watchEdition = watchEditions.firstOrNull { it.isBase }; watchEditionMenu = false
+                        })
+                        watchEditions.filterNot { it.isBase }.forEach { edition ->
+                            DropdownMenuItem(text = { Text(edition.name) }, onClick = {
+                                watchEdition = edition; watchEditionMenu = false
+                            })
+                        }
+                    }
+                }
+                watchEdition?.let { Text(steamRuEditionLabel(it), style = MaterialTheme.typography.bodySmall) }
+            }
             OutlinedTextField(targetPrice, { targetPrice = it }, label = { Text("Желаемая цена, ₽") },
                 singleLine = true, modifier = Modifier.fillMaxWidth())
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -2297,13 +2333,22 @@ class MainActivity : ComponentActivity() {
                         watchMessage = "Введите название игры и положительную желаемую цену"
                     } else {
                         val identity=watchSelection ?: GameSearchResolver.exact(watchGame,watchSuggestions+GameSearchResolver.seeds)
-                        if(identity==null && watchSuggestions.isNotEmpty()) {
+                        if(identity==null) {
                             watchMessage="Выберите точную игру Steam"
                             return@OutlinedButton
                         }
+                        if (watchSelection == null) {
+                            watchSelection = identity
+                            watchGame = identity.name
+                            watchMessage = "Игра выбрана. Выберите издание и нажмите «Отслеживать игру»."
+                            return@OutlinedButton
+                        }
                         watchMessage="Добавляем игру…"
+                        val selectedEdition = watchEdition
+                        val selectedKind = watchType
                         ioExecutor.execute {
-                            WatchStore.add(this@MainActivity,identity?.name ?: watchGame.trim(),watchType,amount,watchRf,identity?.appId)
+                            WatchStore.add(this@MainActivity,identity.name,selectedKind,amount,watchRf,identity.appId,
+                                selectedEdition?.name,selectedEdition?.packageId)
                             runOnUiThread {
                                 WatchScheduler.start(this@MainActivity)
                                 WatchScheduler.checkNow(this@MainActivity)
@@ -2313,17 +2358,30 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
-                }, enabled = !watchSuggesting, modifier = Modifier.weight(1f),
+                }, enabled = !watchSuggesting && !watchEditionsLoading, modifier = Modifier.weight(1f),
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)) {
                     Text("Отслеживать игру", maxLines = 1)
                 }
                 OutlinedButton(onClick = {
-                    WatchScheduler.checkNow(this@MainActivity)
-                    watchMessage = "Проверка запущена..."
-                }, enabled = !checkingNow && JSONArray(watches).length() > 0,
+                    if (checkingNow) {
+                        watchMessage = "Останавливаем проверку…"
+                        ioExecutor.execute {
+                            WatchScheduler.stop(this@MainActivity)
+                            runOnUiThread {
+                                checkingNow = false
+                                monitorCurrent = ""
+                                watchMessage = "Проверка остановлена. Сохранённые цены не изменены."
+                                reloadWatches()
+                            }
+                        }
+                    } else {
+                        WatchScheduler.checkNow(this@MainActivity)
+                        watchMessage = "Проверка запущена..."
+                    }
+                }, enabled = checkingNow || JSONArray(watches).length() > 0,
                     modifier = Modifier.weight(1f),
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)) {
-                    Text(if (checkingNow) "Проверяем..." else "Проверить сейчас", maxLines = 1)
+                    Text(if (checkingNow) "Остановить" else "Проверить сейчас", maxLines = 1)
                 }
             }
             if (checkingNow) {
@@ -2464,7 +2522,7 @@ class MainActivity : ComponentActivity() {
                                 Text(if(historyExpanded) "Скрыть историю" else "История цен (${history.size})",
                                     maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, fontSize = 11.sp)
                             }
-                            OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { ioExecutor.execute { WatchStore.remove(this@MainActivity, wi); runOnUiThread { reloadWatches() } } },
+                            OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { ioExecutor.execute { WatchStore.remove(this@MainActivity, wi); if (WatchStore.read(this@MainActivity).length() == 0) WatchScheduler.stop(this@MainActivity); runOnUiThread { reloadWatches() } } },
                                 modifier = Modifier.weight(1f).heightIn(min = 40.dp),
                                 contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
                                 Text("Убрать игру", maxLines = 1, softWrap = false, fontSize = 11.sp)
