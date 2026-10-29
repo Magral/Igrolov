@@ -654,8 +654,10 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                     val cacheFilters=ManualSearchFilters(type=kind,edition="Игра",confirmedRf=true)
                     val cacheAliases=if(selectedEdition==null) savedAliases else reference.aliases
                     val cacheKey=OfferPriceCache.key(reference.appId,cacheFilters,rules,ignored,catalogPages,cacheAliases)
-                    val minima=verified.groupBy {it.marketplace}.mapValues {(_,offers)->offers.minOf {it.price}}
-                    runCatching { OfferPriceCacheStore.update(applicationContext,cacheKey,minima,emptySet(),checkStarted,checkedAt,"") }
+                    val best=verified.groupBy {it.marketplace}.mapValues {(_,offers)->offers.minBy {it.price}}
+                    val minima=best.mapValues {it.value.price}
+                    val urls=best.mapValues {OfferProductLink.forOffer(it.value)}
+                    runCatching { OfferPriceCacheStore.update(applicationContext,cacheKey,minima,emptySet(),checkStarted,checkedAt,"",productUrls=urls) }
                 }
                 current.put("last", cheapest?.price ?: -1.0)
                 current.put("checked", checkedAt)
@@ -739,6 +741,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
         manager.notify("watch:$watchKey", 0, notification)
     }
 }
+
 
 
 

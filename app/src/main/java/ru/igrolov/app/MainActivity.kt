@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.graphics.Color
@@ -881,6 +882,14 @@ class MainActivity : ComponentActivity() {
     private fun comparisonAliases(appId: Int, supplied: List<String> = emptyList()): List<String> =
         (supplied + ManualSearchSettings.games(this).firstOrNull { it.appId == appId }?.aliases.orEmpty()).distinct()
 
+    private fun openOfferPage(url:String) {
+        runCatching {
+            startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE))
+        }.onFailure {
+            android.widget.Toast.makeText(this,"Не удалось открыть браузер.",android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
     @Composable
     private fun CachedPriceLines(cached: CachedGamePrices?, legacyPlati: Double? = null, legacyGgsel: Double? = null) {
         val date = remember { java.text.SimpleDateFormat("dd.MM HH:mm", Locale("ru", "RU")) }
@@ -905,17 +914,20 @@ class MainActivity : ComponentActivity() {
         discountPercent: Int,
         platiPrice: Double?,
         ggselPrice: Double?,
-        steamAvailable: Boolean? = null
+        steamAvailable: Boolean? = null,
+        platiUrl:String = "",ggselUrl:String = ""
     ) {
         val cheapest = listOfNotNull(platiPrice?.let { "Plati" to it }, ggselPrice?.let { "GGSEL" to it })
             .filter { it.second.isFinite() && it.second > 0.0 }.minByOrNull { it.second }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Top) {
             DealPriceCell("Steam RU", if (steamAvailable == false) "Нет в РФ" else steamPrice.replace(" руб.", " ₽").replace(" руб", " ₽").ifBlank { "—" },
                 Modifier.weight(1f), false, if (discountPercent > 0) "−$discountPercent%" else null)
-            DealPriceCell("Plati", platiPrice?.let { String.format(Locale("ru", "RU"), "%.0f ₽", it) } ?: "—",
-                Modifier.weight(1f), cheapest?.first == "Plati", if (cheapest?.first == "Plati") "Лучшая цена" else null)
-            DealPriceCell("GGSEL", ggselPrice?.let { String.format(Locale("ru", "RU"), "%.0f ₽", it) } ?: "—",
-                Modifier.weight(1f), cheapest?.first == "GGSEL", if (cheapest?.first == "GGSEL") "Лучшая цена" else null)
+            DealPriceCell("Plati", platiPrice?.let { String.format(Locale("ru", "RU"), "%.2f ₽", it) } ?: "—",
+                Modifier.weight(1f), cheapest?.first == "Plati", if (cheapest?.first == "Plati") "Лучшая цена" else null,
+                if(platiPrice!=null)platiUrl else "")
+            DealPriceCell("GGSEL", ggselPrice?.let { String.format(Locale("ru", "RU"), "%.2f ₽", it) } ?: "—",
+                Modifier.weight(1f), cheapest?.first == "GGSEL", if (cheapest?.first == "GGSEL") "Лучшая цена" else null,
+                if(ggselPrice!=null)ggselUrl else "")
         }
     }
 
@@ -937,8 +949,11 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun DealPriceCell(label: String, price: String, modifier: Modifier, highlighted: Boolean, note: String? = null) {
-        Surface(modifier = modifier.heightIn(min = 65.dp),
+    private fun DealPriceCell(label: String, price: String, modifier: Modifier, highlighted: Boolean, note: String? = null, productUrl:String = "") {
+        val link=OfferProductLink.validated(label,productUrl)
+        val clickable=if(link.isNotBlank())Modifier.clickable(role=Role.Button,
+            onClickLabel="Открыть предложение $label в браузере") {openOfferPage(link)}.testTag("offer-price:$label") else Modifier
+        Surface(modifier = modifier.heightIn(min = 65.dp).then(clickable),
             color = if (highlighted) Color(0xFFE0F4E9) else Color.Transparent,
             shape = MaterialTheme.shapes.medium,
             border = if (highlighted) BorderStroke(1.dp, Color(0xFFB8E1C9)) else null) {
@@ -949,7 +964,8 @@ class MainActivity : ComponentActivity() {
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold), color = Color.White, maxLines = 1)
                 }
                 Text(label, style = MaterialTheme.typography.labelSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), maxLines = 1, color = Color(0xFF17212D))
-                Text(price, style = MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                Text(price, style = MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    textDecoration=if(link.isNotBlank())TextDecoration.Underline else TextDecoration.None),
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (note != null && note != "Лучшая цена") Surface(color = Color(0xFFFFE4AA), shape = MaterialTheme.shapes.small) {
                     Text(note, Modifier.padding(horizontal = 4.dp, vertical = 1.dp), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
@@ -1064,6 +1080,8 @@ class MainActivity : ComponentActivity() {
                 }
                 DealPriceStrip(
                     steamPrice = game.steamPrice.ifBlank { "—" }, discountPercent = game.discountPercent,
+                    platiUrl = cachedPrices?.plati?.takeIf {it.price==platiPrice}?.productUrl.orEmpty(),
+                    ggselUrl = cachedPrices?.ggsel?.takeIf {it.price==ggselPrice}?.productUrl.orEmpty(),
                     platiPrice = platiPrice, ggselPrice = ggselPrice,
                     steamAvailable = when (game.availability) {
                         SteamRuAvailability.AVAILABLE -> true
@@ -1790,9 +1808,10 @@ class MainActivity : ComponentActivity() {
             if (leader) OfferPriceCache.leaderFilters(manualFilters) else manualFilters,
             GameRuleStore.read(this@MainActivity, title), ignoredIds, searchTotalPages, comparisonSavedAliases[appId].orEmpty())
         fun recordComparison(key: String, minima: Map<String, Double>, failed: Set<String>,
-                             started: Long, finished: Long, reason: String, sources: Set<String> = setOf("Plati", "GGSEL")): CachedGamePrices {
-            val saved = runCatching { OfferPriceCacheStore.update(this@MainActivity, key, minima, failed, started, finished, reason, sources) }
-                .getOrElse { OfferPriceCache.merge(catalogueUi.priceCache[key], minima, failed, started, finished, reason, sources) }
+                             started: Long, finished: Long, reason: String, sources: Set<String> = setOf("Plati", "GGSEL"),
+                             productUrls:Map<String,String> = emptyMap()): CachedGamePrices {
+            val saved = runCatching { OfferPriceCacheStore.update(this@MainActivity, key, minima, failed, started, finished, reason, sources, productUrls) }
+                .getOrElse { OfferPriceCache.merge(catalogueUi.priceCache[key], minima, failed, started, finished, reason, sources, productUrls) }
             catalogueUi.priceCache = catalogueUi.priceCache + (key to saved)
             return saved
         }
@@ -1945,17 +1964,20 @@ class MainActivity : ComponentActivity() {
                 if (!backgroundSearch) searching = !finished
                 val ready = results.count { ManualContentRules.visible(it, "Игра", "Все") }
                 val wishlistSearch = wishlistProfileId != null && identity?.appId != null
-                val minimaByMarketplace = OfferPriceCache.minima(results, requestFilters, requestRules, requestIgnored)
+                val bestByMarketplace = OfferPriceCache.bestOffers(results, requestFilters, requestRules, requestIgnored)
+                val minimaByMarketplace = bestByMarketplace.mapValues {it.value.price}
+                val productUrls = bestByMarketplace.mapValues {OfferProductLink.forOffer(it.value)}
                 val platiMinimum = minimaByMarketplace["Plati"]
                 val ggselMinimum = minimaByMarketplace["GGSEL"]
                 val hasWishlistMinimum = platiMinimum != null || ggselMinimum != null
                 val finishedAt = System.currentTimeMillis()
                 val cached = primaryCacheKey?.let {
-                    recordComparison(it, minimaByMarketplace, failedSources, requestedAt, finishedAt, failure, completedSources)
+                    recordComparison(it, minimaByMarketplace, failedSources, requestedAt, finishedAt, failure, completedSources, productUrls)
                 }
                 if (leaderCacheKey != null && leaderCacheKey != primaryCacheKey) {
-                    val leaderMinima = LeaderOfferSelector.minimumConfirmedByMarketplace(results, requestedFilters, requestRules, requestIgnored)
-                    recordComparison(leaderCacheKey, leaderMinima, failedSources, requestedAt, finishedAt, failure, completedSources)
+                    val leaderBest = OfferPriceCache.bestOffers(results, OfferPriceCache.leaderFilters(requestedFilters), requestRules, requestIgnored)
+                    recordComparison(leaderCacheKey, leaderBest.mapValues {it.value.price}, failedSources, requestedAt, finishedAt, failure, completedSources,
+                        leaderBest.mapValues {OfferProductLink.forOffer(it.value)})
                 }
                 if (leaderboardAppId != null) {
                     leaderOfferPrices = leaderOfferPrices + (leaderboardAppId to LeaderOfferPrices(
@@ -2313,8 +2335,12 @@ class MainActivity : ComponentActivity() {
                                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically) {
+                                    val trackedLink=if(item.price!=null)OfferProductLink.forProduct(item.marketplace,item.id,item.url) else ""
                                     Text(item.price?.let { String.format(Locale("ru", "RU"), "%.2f ₽", it) } ?: "Цена недоступна",
-                                        style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                                        modifier=if(trackedLink.isNotBlank())Modifier.clickable(role=Role.Button,
+                                            onClickLabel="Открыть товар в браузере") {openOfferPage(trackedLink)} else Modifier,
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            textDecoration=if(trackedLink.isNotBlank())TextDecoration.Underline else TextDecoration.None), maxLines = 1)
                                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                         OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.url))) },
                                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) { Text("Открыть") }
@@ -2486,8 +2512,13 @@ class MainActivity : ComponentActivity() {
                                     "цель ${String.format(Locale("ru","RU"),"%.2f",w.optDouble("limit"))} ₽", "РФ ${if (w.optBoolean("rf",true)) "да" else "не обязательно"}").joinToString(" · "),
                                     style = MaterialTheme.typography.bodySmall, maxLines = 1,
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                val minimumLink=OfferProductLink.monitorMinimum(w)
                                 Text(if (w.optDouble("last", -1.0) > 0) "Минимум: ${String.format(Locale("ru","RU"),"%.2f",w.optDouble("last"))} ₽" else "Подходящих цен пока нет",
-                                    style = MaterialTheme.typography.bodyMedium)
+                                    modifier=if(minimumLink.isNotBlank())Modifier.clickable(role=Role.Button,
+                                        onClickLabel="Открыть минимальное предложение в браузере") {openOfferPage(minimumLink)}
+                                        .testTag("monitor-minimum:${WatchStore.identity(w)}") else Modifier,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        textDecoration=if(minimumLink.isNotBlank())TextDecoration.Underline else TextDecoration.None))
                             }
                         }
                         WatchHistory.priceChange(w.optJSONArray("history") ?: JSONArray())?.let { change ->
@@ -2720,8 +2751,13 @@ class MainActivity : ComponentActivity() {
                                         verticalAlignment = Alignment.CenterVertically) {
                                         Text(offer.marketplace, style = MaterialTheme.typography.labelSmall,
                                             color = Color(0xFF17212D), maxLines = 1)
+                                        val priceLink=OfferProductLink.forOffer(offer)
                                         Text(String.format(Locale("ru", "RU"), "%.2f ₽", offer.price),
-                                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                                            modifier=if(priceLink.isNotBlank())Modifier.clickable(role=Role.Button,
+                                                onClickLabel="Открыть товар в браузере") {openOfferPage(priceLink)}
+                                                .testTag("offer-row-price:${offer.marketplace}:${offer.id}") else Modifier,
+                                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                                textDecoration=if(priceLink.isNotBlank())TextDecoration.Underline else TextDecoration.None),
                                             color = Color(0xFF17212D), maxLines = 1)
                                     }
                                     Text(offer.name, style = MaterialTheme.typography.bodyMedium, maxLines = 2,
@@ -3581,7 +3617,8 @@ class MainActivity : ComponentActivity() {
                         }
                         DealPriceStrip(game.steamPrice, game.discountPercent,
                             prices?.plati?.price ?: game.lowestPlatiPrice,
-                            prices?.ggsel?.price ?: game.lowestGgselPrice)
+                            prices?.ggsel?.price ?: game.lowestGgselPrice,
+                            platiUrl=prices?.plati?.productUrl.orEmpty(),ggselUrl=prices?.ggsel?.productUrl.orEmpty())
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             OutlinedButton(onClick = { onSearchPrice(game) },
                                 enabled = selectedId != null && (searchEnabled || "$selectedId:${game.appId}" in searchingKeys),
@@ -3696,6 +3733,7 @@ private fun WatchListControls(
         }
     }
 }
+
 
 
 

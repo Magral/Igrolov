@@ -12,10 +12,11 @@ object OfferPriceCacheStore {
         }.toMap()
     }
     fun update(context: Context, key: String, minima: Map<String, Double>, failed: Set<String>,
-               startedAt: Long, finishedAt: Long, reason: String, sources: Set<String> = setOf("Plati", "GGSEL")): CachedGamePrices = synchronized(lock) {
+               startedAt: Long, finishedAt: Long, reason: String, sources: Set<String> = setOf("Plati", "GGSEL"),
+               productUrls:Map<String,String> = emptyMap()): CachedGamePrices = synchronized(lock) {
         val preferences = prefs(context)
         val merged = OfferPriceCache.merge(OfferPriceCache.decode(preferences.all[key] as? String),
-            minima, failed, startedAt, finishedAt, reason, sources)
+            minima, failed, startedAt, finishedAt, reason, sources, productUrls)
         val entries = readAll(context) + (key to merged)
         val keep = entries.entries.sortedByDescending { it.value.updatedAt }.take(200).map { it.key }.toSet()
         val edit = preferences.edit().putString(key, OfferPriceCache.encode(merged))
@@ -24,4 +25,5 @@ object OfferPriceCacheStore {
         merged
     }
 }
+
 
