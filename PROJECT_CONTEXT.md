@@ -71,16 +71,16 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-29T14:47:16.061Z
+- Обновлено (UTC): 2026-10-29T15:08:24.222Z
 - Ветка: `main`.
-- HEAD: [`0a704370a140`](https://github.com/Magral/Igrolov/commit/0a704370a140c15215a70a3a2fbe34309c2fc140).
+- HEAD: [`c8ea3db9d49a`](https://github.com/Magral/Igrolov/commit/c8ea3db9d49a5bd14c19a9f8786b74b155d9513b).
 - Последний опубликованный стабильный GitHub Release: [v1.7.2](https://github.com/Magral/Igrolov/releases/tag/v1.7.2); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [c8ea3db](https://github.com/Magral/Igrolov/commit/c8ea3db9d49a5bd14c19a9f8786b74b155d9513b) — release: Игролов 1.8.0 — мониторинг, карточки и сохранение фильтров
 - [0a70437](https://github.com/Magral/Igrolov/commit/0a704370a140c15215a70a3a2fbe34309c2fc140) — fix: stop empty leader reload loop and expose manual refresh
 - [16fb739](https://github.com/Magral/Igrolov/commit/16fb739cd27b6e92316665dea905a2227f04ea21) — test: verify reset from collapsed catalogue filter panel
 - [ad95ef3](https://github.com/Magral/Igrolov/commit/ad95ef3314bd38fd2eb7a2cc4a48d9c3656d96e8) — feat: persist catalogue filters and mark monitored game cards
-- [c2ed81d](https://github.com/Magral/Igrolov/commit/c2ed81d8e60aeb3c4b4454f12e3d21e0e5047211) — feat: refresh one monitored game from its card
 <!-- AUTO_CONTEXT_END -->
 
 
