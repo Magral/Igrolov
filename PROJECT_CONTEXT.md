@@ -66,16 +66,16 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-29T05:07:03.381Z
+- Обновлено (UTC): 2026-10-29T05:14:28.172Z
 - Ветка: `main`.
-- HEAD: [`5ab528bc83ca`](https://github.com/Magral/Igrolov/commit/5ab528bc83cad9a8edbf83a80e126ccfec96bbad).
+- HEAD: [`7a09a5572eea`](https://github.com/Magral/Igrolov/commit/7a09a5572eeaa9a1173f70ef938be2e8bc244dc7).
 - Последний опубликованный стабильный GitHub Release: [v1.7.0](https://github.com/Magral/Igrolov/releases/tag/v1.7.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [7a09a55](https://github.com/Magral/Igrolov/commit/7a09a5572eeaa9a1173f70ef938be2e8bc244dc7) — fix: retain provider failure cause in monitor diagnostics
 - [5ab528b](https://github.com/Magral/Igrolov/commit/5ab528bc83cad9a8edbf83a80e126ccfec96bbad) — perf: bound and parallelize monitoring marketplace checks
 - [e699eca](https://github.com/Magral/Igrolov/commit/e699eca29bff3390cc8cf1732421b5e53dd80f12) — release: Игролов 1.7.0 — повтор зависшего прогона Android 29
 - [fe01122](https://github.com/Magral/Igrolov/commit/fe011224d75c33b39a775cb26dc519e9ef0ce3a0) — release: Игролов 1.7.0 — плавные списки и независимые проверки цен
 - [9d66065](https://github.com/Magral/Igrolov/commit/9d66065601f64276aedb6f34380a48ee81601d6f) — test: exercise independent price checks and retain pending prices
-- [ab7d553](https://github.com/Magral/Igrolov/commit/ab7d553f7a46bea4d94164a863b92b9c6059ead7) — perf: unify scrolling and isolate cancellable price checks
 <!-- AUTO_CONTEXT_END -->
 
