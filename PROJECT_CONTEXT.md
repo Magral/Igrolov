@@ -71,16 +71,16 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-29T16:57:04.316Z
+- Обновлено (UTC): 2026-10-29T17:58:25.586Z
 - Ветка: `main`.
-- HEAD: [`7351ac6f1ced`](https://github.com/Magral/Igrolov/commit/7351ac6f1cedaec8b57e9d9c0078d765156ee3a4).
+- HEAD: [`c3165a9034af`](https://github.com/Magral/Igrolov/commit/c3165a9034afeaf3e24b53fb951fe0a03f53bb48).
 - Последний опубликованный стабильный GitHub Release: [v1.8.0](https://github.com/Magral/Igrolov/releases/tag/v1.8.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [c3165a9](https://github.com/Magral/Igrolov/commit/c3165a9034afeaf3e24b53fb951fe0a03f53bb48) — feat: pause individual monitored games without losing prices or history
 - [7351ac6](https://github.com/Magral/Igrolov/commit/7351ac6f1cedaec8b57e9d9c0078d765156ee3a4) — fix: retain failed-refresh status for legacy prices without timestamps
 - [e4a1fe4](https://github.com/Magral/Igrolov/commit/e4a1fe4504d103da4e163abe443dac4b32288129) — feat: show per-store price check age and retained-price status
 - [aa46a20](https://github.com/Magral/Igrolov/commit/aa46a209a64b6a99bd3e5fcbc592cc7e9c78be09) — test: expect precise marketplace prices in wishlist cards
-- [1bee444](https://github.com/Magral/Igrolov/commit/1bee444d6ef8bd2267d77650c02977cc954adbd4) — feat: open exact minimum-price product from game cards
 <!-- AUTO_CONTEXT_END -->
 
 
