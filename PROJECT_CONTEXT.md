@@ -66,15 +66,15 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-29T11:17:05.404Z
+- Обновлено (UTC): 2026-10-29T11:22:22.876Z
 - Ветка: `main`.
-- HEAD: [`ebadbdb344ed`](https://github.com/Magral/Igrolov/commit/ebadbdb344eda8ad8f7209091ea73bb233e93831).
+- HEAD: [`cd1eea7501af`](https://github.com/Magral/Igrolov/commit/cd1eea7501afc6f3c976e9a41ae9d601d8446fcb).
 - Последний опубликованный стабильный GitHub Release: [v1.7.0](https://github.com/Magral/Igrolov/releases/tag/v1.7.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [cd1eea7](https://github.com/Magral/Igrolov/commit/cd1eea7501afc6f3c976e9a41ae9d601d8446fcb) — release: Игролов 1.7.1 — издания и остановка мониторинга
 - [ebadbdb](https://github.com/Magral/Igrolov/commit/ebadbdb344eda8ad8f7209091ea73bb233e93831) — ci: expect all three monitoring regression tests
 - [1fd3391](https://github.com/Magral/Igrolov/commit/1fd33916e617ee84c4c5ed6f288f1b1b7d1af442) — ui: remove duplicate search shortcut from header
 - [f415431](https://github.com/Magral/Igrolov/commit/f415431561f7a82806c9370e86d942896284961e) — fix: select monitored editions and stop persistent price checks
-- [7a09a55](https://github.com/Magral/Igrolov/commit/7a09a5572eeaa9a1173f70ef938be2e8bc244dc7) — fix: retain provider failure cause in monitor diagnostics
 <!-- AUTO_CONTEXT_END -->
 
