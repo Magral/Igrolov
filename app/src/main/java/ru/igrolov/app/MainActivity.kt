@@ -1789,13 +1789,15 @@ class MainActivity : ComponentActivity() {
             if (!backgroundSearch) {
                 searchGeneration++
                 activeCatalogGeneration.set(searchGeneration)
-            priceSearches.cancel("manual")
+                priceSearches.cancel("manual")
             }
             val generation = searchGeneration
-            visibleOfferLimit = 30
-            if (!backgroundSearch) searching = true
-            searchPage = 0
-            searchFound = 0
+            if (!backgroundSearch) {
+                visibleOfferLimit = 30
+                searching = true
+                searchPage = 0
+                searchFound = 0
+            }
             val snapshotKey = primaryCacheKey ?: "manual:$requestedGame:${requestFilters}:$requestedPages"
             val snapshot = recentSearchOffers[snapshotKey]?.takeIf { requestedAt - it.first < 15 * 60_000L }?.second.orEmpty()
             if (!backgroundSearch) {
@@ -1820,7 +1822,7 @@ class MainActivity : ComponentActivity() {
             }
             searchCatalog(requestedGame, requestedPages, generation, identity?.appId, identity?.aliases.orEmpty(), requestedEdition, steamEditions,
                 requestKey, background = onFinished != null, externalActive = { backgroundSearch || generation == activeCatalogGeneration.get() }, { page, _, count ->
-                if (generation == searchGeneration) {
+                if (!backgroundSearch && generation == searchGeneration) {
                     searchPage = page
                     searchFound = count
                 }
@@ -1868,7 +1870,7 @@ class MainActivity : ComponentActivity() {
                 }
                 val retained = snapshot.filter { it.marketplace !in completedSources || it.marketplace in failedSources }
                 val results = (freshResults + retained).distinctBy { "${it.marketplace}:${it.id}" }.sortedBy { it.price }
-                if (results.isNotEmpty() || (finished && failedSources.isEmpty())) recentSearchOffers[snapshotKey] = requestedAt to results
+                if (results.isNotEmpty() || (finished && failedSources.isEmpty())) recentSearchOffers[snapshotKey] = requestedAt to results.take(500)
                 if (!backgroundSearch) offers = results
                 if (!backgroundSearch) searching = !finished
                 val ready = results.count { ManualContentRules.visible(it, "Игра", "Все") }
@@ -2044,7 +2046,7 @@ class MainActivity : ComponentActivity() {
                 gameSuggestions = emptyList()
                 searchGeneration++
                 activeCatalogGeneration.set(searchGeneration)
-            priceSearches.cancel("manual")
+                priceSearches.cancel("manual")
                 searching = false
                 offers = emptyList()
                 steamGame = null
@@ -2102,7 +2104,7 @@ class MainActivity : ComponentActivity() {
                         offers=emptyList()
                         searchGeneration++
                         activeCatalogGeneration.set(searchGeneration)
-            priceSearches.cancel("manual")
+                        priceSearches.cancel("manual")
                         searching=false
                         ManualSearchSettings.rememberGame(this@MainActivity,candidate)
                     },modifier=Modifier.fillMaxWidth()) {Text(candidate.name)}
@@ -2122,7 +2124,7 @@ class MainActivity : ComponentActivity() {
                             TextButton(onClick = {
                                 searchGeneration++
                                 activeCatalogGeneration.set(searchGeneration)
-            priceSearches.cancel("manual")
+                                priceSearches.cancel("manual")
                                 searching = false
                                 offers = emptyList()
                                 steamGame = null
@@ -3027,7 +3029,7 @@ class MainActivity : ComponentActivity() {
                                     if (!catalogueUi.priceBatch.running) {
                                         searchGeneration++
                                         activeCatalogGeneration.set(searchGeneration)
-            priceSearches.cancel("manual")
+                                        priceSearches.cancel("manual")
                                         searching = false
                                     }
                                     steamGame = null

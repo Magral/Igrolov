@@ -11,7 +11,6 @@ import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.json.JSONObject
 import java.io.ByteArrayInputStream
 import java.net.HttpURLConnection
 import java.net.URL
@@ -49,7 +48,7 @@ class ConcurrentPriceSearchUiTest {
                             """{"$id":{"success":true,"data":{"type":"game","name":"$name","dlc":[]}}}"""
                         }
                         url.path.endsWith("search2") -> {
-                            if (query["query"].orEmpty().contains("Stellaris", true)) {
+                            if (query["query"].orEmpty().let { it.contains("Stellaris", true) || it.contains("Стелларис", true) }) {
                                 firstRequests.incrementAndGet()
                                 firstStarted.countDown()
                                 check(release.await(20, TimeUnit.SECONDS))
@@ -71,6 +70,7 @@ class ConcurrentPriceSearchUiTest {
         ), System.currentTimeMillis())
         try {
             ManualSearchSettings.save(context, ManualSearchFilters())
+            context.getSharedPreferences("manual_search_105", 0).edit().putString("games", "[]").commit()
             prefs.edit().putString("wishlist_profiles", SteamWishlist.encodeProfiles(listOf(profile)))
                 .putString("wishlist_selected_profile", profile.steamId64).commit()
             context.startActivity(Intent(context, MainActivity::class.java)
@@ -94,6 +94,10 @@ class ConcurrentPriceSearchUiTest {
             release.countDown()
             click(281990, "Цены")
             compose.waitUntil(5000) { firstRequests.get() >= 2 }
+            compose.waitUntil(10000) {
+                compose.onAllNodes(hasText("Стоп") and hasAnyAncestor(hasTestTag("wishlist-game:281990")))
+                    .fetchSemanticsNodes().isEmpty()
+            }
         } finally {
             release.countDown()
             val edit = prefs.edit()
