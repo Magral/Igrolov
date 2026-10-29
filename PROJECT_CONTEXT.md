@@ -69,14 +69,14 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-29T03:17:43.313Z
+- Обновлено (UTC): 2026-10-29T03:28:53.237Z
 - Ветка: `main`.
-- HEAD: [`ab7d553f7a46`](https://github.com/Magral/Igrolov/commit/ab7d553f7a46bea4d94164a863b92b9c6059ead7).
+- HEAD: [`9d66065601f6`](https://github.com/Magral/Igrolov/commit/9d66065601f64276aedb6f34380a48ee81601d6f).
 - Последний опубликованный стабильный GitHub Release: [v1.6.5](https://github.com/Magral/Igrolov/releases/tag/v1.6.5); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [9d66065](https://github.com/Magral/Igrolov/commit/9d66065601f64276aedb6f34380a48ee81601d6f) — test: exercise independent price checks and retain pending prices
 - [ab7d553](https://github.com/Magral/Igrolov/commit/ab7d553f7a46bea4d94164a863b92b9c6059ead7) — perf: unify scrolling and isolate cancellable price checks
 - [a060d69](https://github.com/Magral/Igrolov/commit/a060d6987f8d15e320c0015129218ee0f2f725d2) — feat: add selected launcher icon
 - [419ceff](https://github.com/Magral/Igrolov/commit/419ceffd4e8d2d4daa613d958751d66ec92045ce) — release: Игролов 1.6.5 device version check
-- [ab74863](https://github.com/Magral/Igrolov/commit/ab7486361516e6eafcb7fbc2511c8b44af3f3dc6) — release: Игролов 1.6.5
 <!-- AUTO_CONTEXT_END -->
