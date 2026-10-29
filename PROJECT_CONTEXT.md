@@ -66,15 +66,15 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-29T13:13:43.036Z
+- Обновлено (UTC): 2026-10-29T13:23:14.111Z
 - Ветка: `main`.
-- HEAD: [`ecdb23562793`](https://github.com/Magral/Igrolov/commit/ecdb2356279373d9e7157b1dee36c40e19716854).
+- HEAD: [`da5ca0e32c6b`](https://github.com/Magral/Igrolov/commit/da5ca0e32c6ba6ff2a667b37b0c47ecccc7e97cf).
 - Последний опубликованный стабильный GitHub Release: [v1.7.2](https://github.com/Magral/Igrolov/releases/tag/v1.7.2); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [da5ca0e](https://github.com/Magral/Igrolov/commit/da5ca0e32c6ba6ff2a667b37b0c47ecccc7e97cf) — ui: make leader card add-to-monitoring action explicit
 - [ecdb235](https://github.com/Magral/Igrolov/commit/ecdb2356279373d9e7157b1dee36c40e19716854) — test: allow full provider verification after parallel monitor assertion
 - [5011c4d](https://github.com/Magral/Igrolov/commit/5011c4d2af815ae68ee3e93334b8e3a65b0b36cf) — perf: check two monitored games concurrently with bounded progress
 - [985ab80](https://github.com/Magral/Igrolov/commit/985ab801f6963102c476c737dc69d48087624500) — release: Игролов 1.7.2 — завершение и ускорение мониторинга
-- [684ec68](https://github.com/Magral/Igrolov/commit/684ec68567f755498f3d0facec72921f388b3a3b) — release: Игролов 1.7.1 — finalize monitoring regression gate
 <!-- AUTO_CONTEXT_END -->
 
