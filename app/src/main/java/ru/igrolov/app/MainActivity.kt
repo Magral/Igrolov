@@ -1025,7 +1025,8 @@ class MainActivity : ComponentActivity() {
         searchEnabled: Boolean,
         onOpenSearch: () -> Unit, onDetails: () -> Unit,
         onSearchPrice: () -> Unit, onMonitor: () -> Unit,
-        cachedPrices: CachedGamePrices?
+        cachedPrices: CachedGamePrices?,
+        isWatched: Boolean
     ) {
         var reviewSummary by remember(game.appId) { mutableStateOf(game.reviewSummary) }
         LaunchedEffect(game.appId, game.reviewSummary) {
@@ -1057,6 +1058,8 @@ class MainActivity : ComponentActivity() {
                         SteamReviewBadge(reviewSummary)
                         SteamGenreLine(game.genres)
                         SteamFeatureBadges(game.features)
+                        if(isWatched)Text("В мониторинге",style=MaterialTheme.typography.labelSmall,
+                            color=Color(0xFF17212D),modifier=Modifier.testTag("leader-watched:${game.appId}"))
                     }
                 }
                 DealPriceStrip(
@@ -1565,10 +1568,19 @@ class MainActivity : ComponentActivity() {
         var leaderSection by remember { mutableStateOf(SteamLeaderSection.TOP_SELLERS) }
         var topBusy by remember { mutableStateOf(false) }
         var topError by remember { mutableStateOf("") }
-        var topAvailabilityFilter by remember { mutableStateOf("Все игры") }
+        val catalogueFilterPrefs=remember {getSharedPreferences("catalogue_filters",MODE_PRIVATE)}
+        val savedLeaderFilters=remember {CatalogFilterSettings.decode(catalogueFilterPrefs.getString("leaders",null))}
+        val savedWishlistFilters=remember {CatalogFilterSettings.decode(catalogueFilterPrefs.getString("wishlist",null))}
+        var topAvailabilityFilter by remember { mutableStateOf(savedLeaderFilters.availability) }
         var leaderVisibleLimit by remember { mutableIntStateOf(20) }
-        var leaderFilterInput by remember { mutableStateOf(SteamLeaderFilterInput()) }
-        var wishlistFilterInput by remember { mutableStateOf(SteamLeaderFilterInput()) }
+        var leaderFilterInput by remember { mutableStateOf(savedLeaderFilters.input) }
+        var wishlistFilterInput by remember { mutableStateOf(savedWishlistFilters.input) }
+        LaunchedEffect(leaderFilterInput,topAvailabilityFilter) {
+            catalogueFilterPrefs.edit().putString("leaders",CatalogFilterSettings.encode(leaderFilterInput,topAvailabilityFilter)).apply()
+        }
+        LaunchedEffect(wishlistFilterInput) {
+            catalogueFilterPrefs.edit().putString("wishlist",CatalogFilterSettings.encode(wishlistFilterInput)).apply()
+        }
         var wishlistGenreBackfillAttempt by remember { mutableStateOf("") }
         var leaderOfferPrices by remember { mutableStateOf<Map<Int, LeaderOfferPrices>>(emptyMap()) }
         fun refreshTop() {
@@ -2945,6 +2957,7 @@ class MainActivity : ComponentActivity() {
                         )
                     },
                     onMonitor = { game -> openGameMonitoring(game.appId, game.title) },
+                    isWatched = {game -> isGameWatched(game.appId,game.title)},
                     cachedPrices = { game -> wishlistCacheKeys[game.appId]?.let { catalogueUi.priceCache[it] } },
                     onDetails = { game ->
                         val initial = SteamTopSeller(
@@ -3100,6 +3113,7 @@ class MainActivity : ComponentActivity() {
                     SteamLeaderCard(index, game, leaderOfferPrices[game.appId]?.takeIf { it.scopeKey == cacheKey },
                         searchEnabled = manualFilters.valid,
                         cachedPrices = catalogueUi.priceCache[cacheKey],
+                        isWatched = isGameWatched(game.appId,game.title),
                         onOpenSearch = {
                                     if (!catalogueUi.priceBatch.running) {
                                         searchGeneration++
@@ -3235,6 +3249,22 @@ class MainActivity : ComponentActivity() {
                         maxLines = 1, style = MaterialTheme.typography.labelSmall)
                 }
             }
+            val filterCount=input.activeFilterCount+if(availabilityFilter!=null && availabilityFilter!="Все игры")1 else 0
+            if(filterCount>0 || input.hasInvalidInput) {
+                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,
+                    horizontalArrangement=Arrangement.SpaceBetween) {
+                    Text(if(filterCount>0) "Выбрано фильтров: $filterCount" else "Проверьте фильтры",
+                        style=MaterialTheme.typography.labelSmall)
+                    TextButton(onClick={
+                        onInput(SteamLeaderFilterInput(expanded=input.expanded))
+                        onReset?.invoke()
+                    },modifier=Modifier.testTag("catalog-filter-reset"),
+                        contentPadding=PaddingValues(horizontal=6.dp,vertical=0.dp)) {Text("Сбросить всё")}
+                }
+                val summary=CatalogFilterSettings.summary(input)
+                if(summary.isNotBlank())Text(summary,style=MaterialTheme.typography.labelSmall,
+                    modifier=Modifier.testTag("catalog-filter-summary"))
+            }
             if (input.expanded) {
                 OutlinedCard(
                     Modifier.fillMaxWidth(),
@@ -3284,13 +3314,6 @@ class MainActivity : ComponentActivity() {
                         if (input.hasInvalidInput) Text(
                             "Цена и число отзывов должны быть больше 0, проценты — от 0 до 100.",
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                            TextButton(onClick = {
-                                onInput(SteamLeaderFilterInput(expanded = true))
-                                onReset?.invoke()
-                            },
-                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)) { Text("Сбросить") }
-                        }
                     }
                 }
             }
@@ -3306,16 +3329,16 @@ class MainActivity : ComponentActivity() {
         var menuExpanded by remember { mutableStateOf(false) }
         val selectedLabel = if (input.selectedGenres.isEmpty()) "Жанры" else "Жанры · ${input.selectedGenres.size}"
         Box {
-            OutlinedButton(onClick = { menuExpanded = true }, enabled = availableGenres.isNotEmpty(),
+            OutlinedButton(onClick = { menuExpanded = true }, enabled = availableGenres.isNotEmpty() || input.selectedGenres.isNotEmpty(),
                 modifier = Modifier.height(32.dp), shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
                 border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
-                Text(if (availableGenres.isEmpty()) "Жанры · …" else selectedLabel,
+                Text(if (availableGenres.isEmpty() && input.selectedGenres.isEmpty()) "Жанры · …" else selectedLabel,
                     maxLines = 1, style = MaterialTheme.typography.labelSmall)
             }
             DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false },
                 modifier = Modifier.heightIn(max = 360.dp)) {
-                availableGenres.forEach { genre ->
+                (availableGenres+input.selectedGenres).distinct().sorted().forEach { genre ->
                     DropdownMenuItem(text = { Text(genre) }, onClick = {
                         val next = input.selectedGenres.toMutableSet().apply { if (!add(genre)) remove(genre) }
                         onInput(input.copy(selectedGenres = next))
@@ -3411,6 +3434,7 @@ class MainActivity : ComponentActivity() {
         onDetails: (WishlistGame) -> Unit,
         onShowMore: () -> Unit,
         onMonitor: (WishlistGame) -> Unit,
+        isWatched: (WishlistGame) -> Boolean,
         cachedPrices: (WishlistGame) -> CachedGamePrices?
     ) {
         val selected = profiles.firstOrNull { it.steamId64 == selectedId }
@@ -3491,6 +3515,8 @@ class MainActivity : ComponentActivity() {
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                 SteamGenreLine(game.genres)
                                 SteamFeatureBadges(game.features)
+                                if(isWatched(game))Text("В мониторинге",style=MaterialTheme.typography.labelSmall,
+                                    color=Color(0xFF17212D),modifier=Modifier.testTag("wishlist-watched:${game.appId}"))
                             }
                         }
                         DealPriceStrip(game.steamPrice, game.discountPercent,
@@ -3505,9 +3531,9 @@ class MainActivity : ComponentActivity() {
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold), color = Color(0xFF17212D), maxLines = 1)
                             }
                             OutlinedButton(onClick = { onMonitor(game) }, enabled = game.appId > 0,
-                                modifier = Modifier.weight(1f).height(36.dp), contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp),
+                                modifier = Modifier.weight(1.45f).height(36.dp), contentPadding = PaddingValues(horizontal = 3.dp, vertical = 0.dp),
                                 shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Color(0xFFD2D9E1))) {
-                                Text("Следить",
+                                Text("В мониторинг",
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                                     color = Color(0xFF17212D), maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
@@ -3610,6 +3636,7 @@ private fun WatchListControls(
         }
     }
 }
+
 
 
 

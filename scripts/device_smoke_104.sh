@@ -93,3 +93,8 @@ adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class ru.igrolov.app.MonitorEditionUiTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/monitor-edition.txt
 grep -F 'OK (1 test)' device-results/monitor-edition.txt
 
+
+adb shell am force-stop ru.igrolov.app
+adb shell am instrument -w -r -e class ru.igrolov.app.CatalogFilterPreferencesTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/catalogue-filter-preferences.txt
+grep -F 'OK (1 test)' device-results/catalogue-filter-preferences.txt
+

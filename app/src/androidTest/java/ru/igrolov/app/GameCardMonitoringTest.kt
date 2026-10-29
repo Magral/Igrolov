@@ -105,6 +105,8 @@ class GameCardMonitoringTest {
         compose.waitForIdle()
         assertFalse(device.hasObject(By.text("Добавить")))
         WorkManager.getInstance(context).cancelAllWork().result.get()
+        UiTestScroll.reveal(compose,"В мониторинге")
+        assertTrue(UiTestScroll.await(compose,5000) { device.hasObject(By.text("В мониторинге")) })
         var saved = WatchStore.read(context)
         assertEquals(1, saved.length())
         assertEquals(281990, saved.getJSONObject(0).getInt("steamAppId"))
@@ -120,7 +122,7 @@ class GameCardMonitoringTest {
         compose.onNodeWithText("Закрыть").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         UiTestScroll.reveal(compose, "Dead by Daylight")
-        compose.onAllNodesWithText("Следить").onLast().performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.onAllNodesWithText("В мониторинг").onLast().performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Желаемая цена, ₽")) })
         assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.clazz("android.widget.EditText")) })
@@ -130,8 +132,8 @@ class GameCardMonitoringTest {
         compose.onNodeWithText("Добавить").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
         assertTrue(UiTestScroll.await(compose, 5000) { !device.hasObject(By.text("Добавить")) })
-        UiTestScroll.reveal(compose, "Следить")
-        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("Следить")) })
+        UiTestScroll.reveal(compose, "В мониторинг")
+        assertTrue(UiTestScroll.await(compose, 5000) { device.hasObject(By.text("В мониторинг")) })
         WorkManager.getInstance(context).cancelAllWork().result.get()
         saved = WatchStore.read(context)
         assertEquals(2, saved.length())
@@ -144,4 +146,5 @@ class GameCardMonitoringTest {
         prefs.edit().remove("wishlist_profiles").remove("wishlist_selected_profile").commit()
     }
 }
+
 
