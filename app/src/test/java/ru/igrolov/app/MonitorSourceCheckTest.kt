@@ -44,7 +44,7 @@ class MonitorSourceCheckTest {
                 "GGSEL" to { _: () -> Boolean -> throw IOException("offline") }
             ),1000)
             fail("Failed source cannot be treated as an empty successful catalog")
-        } catch (_:IOException) { }
+        } catch (error:IOException) { assertEquals("offline",error.message) }
     }
 
     @Test fun cancellationStopsBothSources() {
