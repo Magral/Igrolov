@@ -17,6 +17,8 @@ class PriceFreshnessTest {
     @Test fun unknownAndFailedChecksCannotLookLikeFreshConfirmedPrices() {
         assertEquals("Сохранено · время неизвестно",PriceFreshness.status(0,0,now,true))
         assertEquals("Не обновлено",PriceFreshness.status(0,now,now,false))
+        assertEquals("Не обновлено · время неизвестно",PriceFreshness.status(0,now,now,true))
+        assertEquals("Не обновлено · время неизвестно",PriceFreshness.source(SourcePriceCheck(failedAt=now),100.0,now))
         assertEquals("Не обновлено · 2 ч назад",PriceFreshness.status(now-7_200_000,now-1,now,true))
         assertEquals("Проверено только что",PriceFreshness.status(now,now-10,now,true))
     }

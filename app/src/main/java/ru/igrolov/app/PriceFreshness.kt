@@ -21,8 +21,9 @@ object PriceFreshness {
     }
     fun status(checkedAt:Long,failedAt:Long,now:Long,hasPrice:Boolean):String {
         if(checkedAt<=0L)return when {
-            hasPrice -> "Сохранено · время неизвестно"
+            failedAt>0L && hasPrice -> "Не обновлено · время неизвестно"
             failedAt>0L -> "Не обновлено"
+            hasPrice -> "Сохранено · время неизвестно"
             else -> ""
         }
         val age=age(checkedAt,now)
@@ -34,6 +35,7 @@ object PriceFreshness {
     }
     fun source(check:SourcePriceCheck?,displayedPrice:Double?,now:Long):String {
         val matching=check?.takeIf {it.price==displayedPrice}
-        return status(matching?.checkedAt ?: 0,matching?.failedAt ?: 0,now,displayedPrice!=null)
+        val failedAt=check?.takeIf {it.failedAt>it.checkedAt}?.failedAt ?: 0L
+        return status(matching?.checkedAt ?: 0,failedAt,now,displayedPrice!=null)
     }
 }
