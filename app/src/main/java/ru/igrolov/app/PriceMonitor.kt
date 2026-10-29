@@ -553,6 +553,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
         var failed = false
         setProgressAsync(workDataOf("done" to 0, "total" to watches.length(), "game" to "Подготовка"))
         for (i in 0 until watches.length()) {
+            if (isStopped) return Result.success()
             val watch = watches.optJSONObject(i) ?: continue
             val name = watch.optString("name")
             setProgressAsync(workDataOf("done" to i, "total" to watches.length(), "game" to name))
@@ -573,18 +574,29 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 val reference=editionReference
                 if(reference.appId<=0) error("Steam не подтвердил основную игру; предыдущий результат сохранён")
                 val catalogPages=CatalogPageSettings.pages(applicationContext)
-                val catalog=CatalogCheck.find(name,catalogPages,reference)
                 val rules=GameRuleStore.read(applicationContext,name)
-                val result=VerifiedMonitorCheck.run(catalog,reference,kind,rules,ignored,{!isStopped},selectedEdition=selectedEdition,allEditions=editions.map { it.name })
-                // GGSEL catalog rows already carry a confirmed active one-copy RUB price.
-                // A provider error aborts the complete snapshot, preserving prior minima/history.
-                val ggselOffers=GgselBuyerApi.find(reference,{!isStopped},editionSearchTerms=selectedEdition?.let { listOf(it)+ManualContentRules.localizedEditionAliases(reference.canonical,it) }.orEmpty())
+                data class SourceOffers(val offers:List<Offer>,val total:Int)
+                val sources=MonitorSourceCheck.run({!isStopped},mapOf(
+                    "Plati" to { active: () -> Boolean ->
+                        val catalog=CatalogCheck.find(name,catalogPages,reference)
+                        val checked=VerifiedMonitorCheck.run(catalog,reference,kind,rules,ignored,active,
+                            selectedEdition=selectedEdition,allEditions=editions.map { it.name })
+                        SourceOffers(checked.verified,catalog.offers.size)
+                    },
+                    "GGSEL" to { active: () -> Boolean ->
+                        val offers=GgselBuyerApi.find(reference,active,editionSearchTerms=selectedEdition?.let {
+                            listOf(it)+ManualContentRules.localizedEditionAliases(reference.canonical,it)
+                        }.orEmpty())
+                        SourceOffers(offers,offers.size)
+                    }
+                ))
+                val sourceTotal=sources.values.sumOf {it.total}
                 if(isStopped)return Result.success()
                 WatchStore.updateIfCurrent(applicationContext,watch) {current ->
                 if(current.optLong("checked",0L)>checkStarted)return@updateIfCurrent
                 val latestRules=GameRuleStore.read(applicationContext,name)
                 val latestIgnored=IgnoredStore.ids(applicationContext)
-                val sourceOffers=result.verified+ggselOffers
+                val sourceOffers=sources.values.flatMap {it.offers}
                 val verified=sourceOffers.filter { offer ->
                     MonitorPolicy.eligible(offer,kind,latestRules,latestIgnored) &&
                         (selectedEdition == null || ManualContentRules.matchesSelectedSteamEdition(offer.name,reference.canonical,selectedEdition,editions.map { it.name }))
@@ -602,9 +614,9 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 }
                 current.put("last", cheapest?.price ?: -1.0)
                 current.put("checked", checkedAt)
-                current.put("totalCount", catalog.offers.size+ggselOffers.size)
+                current.put("totalCount", sourceTotal)
                 current.put("eligibleCount", verified.size)
-                current.put("rejectedCount",catalog.offers.size+ggselOffers.size-verified.size)
+                current.put("rejectedCount",sourceTotal-verified.size)
                 current.put("verifiedCount", verified.size)
                 current.put("bestId", cheapest?.id ?: "")
                 current.put("sourceCounts",JSONObject()
@@ -626,7 +638,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                     current.optJSONObject("notifiedPrices") ?: JSONObject(),current.optJSONArray("notified") ?: JSONArray())
                 if(alerts.offers.isNotEmpty()) {
                     alerts.offers.forEach {AlertJournal.record(applicationContext,name,it,current.optDouble("limit"))}
-                    runCatching {sendNotification(alerts.offers.minByOrNull {it.price}!!,name,i)}
+                    runCatching {sendNotification(alerts.offers.minByOrNull {it.price}!!,name,current.optString("watchId").ifBlank { name+"|"+kind+"|"+selectedEdition.orEmpty() })}
                         .onFailure {current.put("notificationError",it.message ?: "Уведомление недоступно; находка сохранена в журнале")}
                 }
                 current.put("notifiedPrices",alerts.prices)
@@ -664,7 +676,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
         }
         return if (failed) {if(runAttemptCount<5) Result.retry() else Result.failure()} else Result.success()
     }
-    private fun sendNotification(offer: Offer, game: String, index: Int) {
+    private fun sendNotification(offer: Offer, game: String, watchKey: String) {
         val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= 26) manager.createNotificationChannel(
             NotificationChannel("price_alerts", "Снижение цен на игры", NotificationManager.IMPORTANCE_DEFAULT))
@@ -680,6 +692,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
             .setStyle(NotificationCompat.BigTextStyle().bigText(
                 "${offer.marketplace} · ${offer.type} · ${offer.name}\nЦена: ${String.format(Locale("ru","RU"), "%.2f ₽", offer.price)}\nНажмите, чтобы открыть предложение."))
             .setContentIntent(pending).setAutoCancel(true).build()
-        manager.notify(offer.id.hashCode(), notification)
+        manager.notify("watch:$watchKey", 0, notification)
     }
 }
+
