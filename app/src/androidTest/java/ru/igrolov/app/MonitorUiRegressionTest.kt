@@ -78,6 +78,8 @@ class MonitorUiRegressionTest {
         assertFalse(device.hasObject(By.text("Источники · Plati: 0 · GGSEL: 1")))
         assertFalse(device.hasObject(By.textStartsWith("Следующая проверка")))
         device.takeScreenshot(File(context.getExternalFilesDir(null),"monitor-compact.png"))
+        UiTestScroll.reveal(compose, "Обновить цену")
+        compose.onNodeWithText("Обновить цену").assertExists()
         UiTestScroll.reveal(compose, "Цены (1)")
         assertTrue(device.hasObject(By.text("Цены (1)")))
         compose.onNodeWithText("Цены (1)").performSemanticsAction(SemanticsActions.OnClick) { it() }
@@ -127,4 +129,5 @@ class MonitorUiRegressionTest {
         context.getSharedPreferences("tracked_products",0).edit().putString("ids","").remove("product_cache_10000").commit()
     }
 }
+
 

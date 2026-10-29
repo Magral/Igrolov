@@ -2452,8 +2452,24 @@ class MainActivity : ComponentActivity() {
                         val bestOffers = w.optJSONArray("topOffers") ?: JSONArray()
                         if (checkedAt > 0L) Text("Проверено ${monitorDate.format(java.util.Date(checkedAt))}",
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { resultsExpanded = !resultsExpanded }, modifier = Modifier.fillMaxWidth().heightIn(min = 40.dp), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
-                            Text(if (resultsExpanded) "Скрыть цены" else "Цены (${bestOffers.length()})", maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+                        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                            OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                                onClick = { resultsExpanded = !resultsExpanded },
+                                modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)) {
+                                Text(if (resultsExpanded) "Скрыть цены" else "Цены (${bestOffers.length()})", maxLines = 1,
+                                    softWrap = false, overflow = TextOverflow.Ellipsis)
+                            }
+                            OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                                onClick = {
+                                    WatchScheduler.checkNow(this@MainActivity,WatchStore.identity(w))
+                                    watchMessage="Проверка выбранной игры запрошена."
+                                }, enabled = !checkingNow && !monitorPending,
+                                modifier = Modifier.weight(1f).heightIn(min = 40.dp)
+                                    .testTag("watch-refresh:${WatchStore.identity(w)}"),
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)) {
+                                Text("Обновить цену",maxLines=1,softWrap=false,overflow=TextOverflow.Ellipsis)
+                            }
                         }
                         if (w.has("error")) {
                             Text(
@@ -2464,7 +2480,7 @@ class MainActivity : ComponentActivity() {
                         }
                         if (resultsExpanded) {
                             if (bestOffers.length() == 0) {
-                                Text("Пока нет результатов. Нажмите «Проверить сейчас».", style = MaterialTheme.typography.bodySmall)
+                                Text("Пока нет результатов. Нажмите «Обновить цену».", style = MaterialTheme.typography.bodySmall)
                             }
                             for (oi in 0 until bestOffers.length()) {
                                 val offerJson = bestOffers.optJSONObject(oi) ?: continue
@@ -3594,6 +3610,7 @@ private fun WatchListControls(
         }
     }
 }
+
 
 
 

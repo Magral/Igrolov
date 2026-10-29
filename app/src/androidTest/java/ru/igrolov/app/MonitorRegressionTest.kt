@@ -128,7 +128,8 @@ class MonitorRegressionTest {
                 }
             }
         }}
-        fun worker()=TestListenableWorkerBuilder<PriceWatchWorker>(context).build()
+        fun worker(watchId:String?=null)=TestListenableWorkerBuilder<PriceWatchWorker>(context)
+            .setInputData(androidx.work.workDataOf("watchId" to watchId.orEmpty())).build()
         androidx.work.WorkManager.getInstance(context).cancelAllWork().result.get()
         IgnoredStore.remove(context,"10005")
         WatchStore.write(context,JSONArray());AlertJournal.clear(context)
@@ -230,9 +231,23 @@ class MonitorRegressionTest {
             releaseSlow.countDown()
             assertEquals(ListenableWorker.Result.success(),result.get(30,TimeUnit.SECONDS))
         } finally {releaseSlow.countDown();executor.shutdownNow()}
+        val previous=WatchStore.read(context)
+        val untouchedAt=previous.getJSONObject(0).getLong("checked")
+        val selected=previous.getJSONObject(1)
+        val selectedAt=selected.getLong("checked")
+        Thread.sleep(5)
+        assertEquals(ListenableWorker.Result.success(),worker(WatchStore.identity(selected)).doWork())
+        val refreshed=WatchStore.read(context)
+        assertEquals("Refreshing one watch must not update another watch",untouchedAt,refreshed.getJSONObject(0).getLong("checked"))
+        assertTrue(refreshed.getJSONObject(1).getLong("checked")>selectedAt)
+        val refreshedAt=refreshed.getJSONObject(1).getLong("checked")
+        assertEquals(ListenableWorker.Result.success(),worker("deleted-watch").doWork())
+        assertEquals(untouchedAt,WatchStore.read(context).getJSONObject(0).getLong("checked"))
+        assertEquals(refreshedAt,WatchStore.read(context).getJSONObject(1).getLong("checked"))
         WatchStore.write(context,JSONArray())
         manager.cancelAll()
     }
 }
+
 
 

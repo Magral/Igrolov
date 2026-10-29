@@ -547,8 +547,9 @@ object WatchScheduler {
     }
 
     private val connected=androidx.work.Constraints.Builder().setRequiredNetworkType(androidx.work.NetworkType.CONNECTED).build()
-    fun checkNow(context: Context) {
+    fun checkNow(context: Context, watchId: String? = null) {
         val request = OneTimeWorkRequestBuilder<PriceWatchWorker>().setConstraints(connected)
+            .setInputData(workDataOf("watchId" to watchId.orEmpty()))
             .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL,30,TimeUnit.SECONDS).build()
         enqueueManualCheck(context, request)
     }
@@ -573,7 +574,9 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
         val generation = WatchScheduler.generation()
         val watches = WatchStore.read(applicationContext)
         val ignored = IgnoredStore.ids(applicationContext)
+        val selectedWatch=inputData.getString("watchId")?.takeIf {it.isNotBlank()}
         val items=(0 until watches.length()).mapNotNull {watches.optJSONObject(it)}
+            .filter {selectedWatch==null || WatchStore.identity(it)==selectedWatch}
         setProgressAsync(workDataOf("done" to 0, "total" to items.size, "game" to "Подготовка", "complete" to false))
         val failed=MonitorCheckBatch.run(items,{!isStopped && WatchScheduler.generation()==generation},
             {done,total,watch->setProgressAsync(workDataOf("done" to done,"total" to total,"game" to watch?.optString("name").orEmpty()))}
@@ -726,6 +729,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
         manager.notify("watch:$watchKey", 0, notification)
     }
 }
+
 
 
 
