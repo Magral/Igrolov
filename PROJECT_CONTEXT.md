@@ -66,15 +66,15 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-29T13:42:30.591Z
+- Обновлено (UTC): 2026-10-29T14:30:46.867Z
 - Ветка: `main`.
-- HEAD: [`c2ed81d8e60a`](https://github.com/Magral/Igrolov/commit/c2ed81d8e60aeb3c4b4454f12e3d21e0e5047211).
+- HEAD: [`ad95ef3314bd`](https://github.com/Magral/Igrolov/commit/ad95ef3314bd38fd2eb7a2cc4a48d9c3656d96e8).
 - Последний опубликованный стабильный GitHub Release: [v1.7.2](https://github.com/Magral/Igrolov/releases/tag/v1.7.2); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [ad95ef3](https://github.com/Magral/Igrolov/commit/ad95ef3314bd38fd2eb7a2cc4a48d9c3656d96e8) — feat: persist catalogue filters and mark monitored game cards
 - [c2ed81d](https://github.com/Magral/Igrolov/commit/c2ed81d8e60aeb3c4b4454f12e3d21e0e5047211) — feat: refresh one monitored game from its card
 - [da5ca0e](https://github.com/Magral/Igrolov/commit/da5ca0e32c6ba6ff2a667b37b0c47ecccc7e97cf) — ui: make leader card add-to-monitoring action explicit
 - [ecdb235](https://github.com/Magral/Igrolov/commit/ecdb2356279373d9e7157b1dee36c40e19716854) — test: allow full provider verification after parallel monitor assertion
-- [5011c4d](https://github.com/Magral/Igrolov/commit/5011c4d2af815ae68ee3e93334b8e3a65b0b36cf) — perf: check two monitored games concurrently with bounded progress
 <!-- AUTO_CONTEXT_END -->
 
