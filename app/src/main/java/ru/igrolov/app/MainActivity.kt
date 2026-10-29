@@ -412,7 +412,7 @@ class MainActivity : ComponentActivity() {
             val failed = result.failedSources + result.values.filterValues { it.failed }.keys
             val aliases = if (result.finished && !result.cancelled && failed.isEmpty() && found.isEmpty()) result.values.values.flatMap { it.aliases }.distinct() else emptyList()
             runOnUiThread {
-                if (externalActive() && priceRequestVersions[requestKey] == requestVersion) callback(found,
+                if (!isDestroyed && externalActive() && priceRequestVersions[requestKey] == requestVersion) callback(found,
                     if (failed.isNotEmpty()) "Не удалось обновить часть цен" else "",
                     aliases, failed, result.values.keys + result.failedSources, result.finished, result.cancelled)
             }
@@ -1365,7 +1365,7 @@ class MainActivity : ComponentActivity() {
         }
         var items by remember { mutableStateOf(loadIds().map { cachedTrackedFromPreferences(it) }) }
         var trackedVisibleLimit by remember { mutableIntStateOf(30) }
-        var message by remember { mutableStateOf("Вставьте ссылку на товар Plati или его ID") }
+        var message by remember { mutableStateOf("Вставьте ссылку на товар Plati") }
         var busy by remember { mutableStateOf(false) }
         var watchGame by remember { mutableStateOf("") }
         var watchSelection by remember {mutableStateOf<GameSearchResolver.Candidate?>(null)}
@@ -1706,7 +1706,7 @@ class MainActivity : ComponentActivity() {
                         catalogueUi.wishlistImportedAt = timestamp
                         catalogueUi.wishlistBusy = false
                         catalogueUi.wishlistMessage = if (games.isEmpty()) "В открытом списке пока нет игр."
-                            else "Сохранён профиль «${snapshot.displayName}». Игр: ${games.size}. Цены Steam RU обновлены. Нажмите на название игры для общего поиска или «Искать» для проверки цены в этом списке."
+                            else "Сохранён профиль «${snapshot.displayName}». Игр: ${games.size}. Цены Steam RU обновлены. Нажмите на название игры для общего поиска или «Цены» для проверки цены в этом списке."
                     }
                 } catch (e: Exception) {
                     runOnUiThread {
@@ -1897,8 +1897,8 @@ class MainActivity : ComponentActivity() {
                     val updatedProfiles = catalogueUi.wishlistProfiles.map { profile ->
                         if (profile.steamId64 != wishlistProfileId) profile else profile.copy(games = profile.games.map { game ->
                             if (game.appId == identity.appId) game.copy(
-                                lowestPlatiPrice = cached.plati.price ?: game.lowestPlatiPrice.takeIf { "Plati" in failedSources },
-                                lowestGgselPrice = cached.ggsel.price ?: game.lowestGgselPrice.takeIf { "GGSEL" in failedSources }
+                                lowestPlatiPrice = cached.plati.price ?: game.lowestPlatiPrice.takeIf { "Plati" in failedSources || "Plati" !in completedSources },
+                                lowestGgselPrice = cached.ggsel.price ?: game.lowestGgselPrice.takeIf { "GGSEL" in failedSources || "GGSEL" !in completedSources }
                             ) else game
                         })
                     }
@@ -1922,7 +1922,7 @@ class MainActivity : ComponentActivity() {
                         !finished -> "Обновляем предложения…"
                         cancelled -> "Поиск остановлен. Найденные предложения сохранены."
                         failedSources.isNotEmpty() && ready == 0 -> "Не удалось обновить цены. Попробуйте ещё раз."
-                        ready > 0 -> "Найдено предложений: $ready."
+                        ready > 0 -> "Найдено предложений: $ready." + if (failedSources.isNotEmpty()) " Часть цен не обновилась." else ""
                         else -> "Подходящих предложений не найдено. Попробуйте изменить название или фильтры."
                     } + if (wishlistSearch) {
                         if (hasWishlistMinimum) " Минимальные цены: " +
@@ -2026,8 +2026,8 @@ class MainActivity : ComponentActivity() {
             }, modifier = Modifier.fillMaxSize().testTag("page-list"),
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            ScreenSection {
             if (activeTab == 0 && !settingsOpen) {
+            ScreenSection {
             Text("Цены на игры Steam · ₽", style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (searchMessage.startsWith("Автопоиск цен")) {
@@ -2177,8 +2177,8 @@ class MainActivity : ComponentActivity() {
             Spacer(Modifier.height(4.dp))
             } // конец настроек поиска
             }
-            ScreenSection {
             if (activeTab == 1 && !settingsOpen) {
+            ScreenSection {
             OutlinedTextField(entry, { entry = it }, label = { Text("Ссылка на товар Plati") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = {
@@ -2191,7 +2191,7 @@ class MainActivity : ComponentActivity() {
                                 ?: Regex("([0-9]{4,})(?:/?(?:\\?.*)?)?$").find(raw)?.groupValues?.get(1) ?: ""
                         } else ""
                     }
-                    if (id.length !in 4..12) message = "Не удалось определить ID. Введите числовой ID товара."
+                    if (id.length !in 4..12) message = "Не удалось открыть товар. Проверьте ссылку."
                     else if (items.any { it.storageKey == TrackedPriceCache.storageKey("Plati",id) }) message = "Товар уже добавлен"
                     else {
                         val tracked=Tracked(id,"Товар $id",null,"Загрузка...","https://plati.market/itm/$id")
@@ -2261,8 +2261,8 @@ class MainActivity : ComponentActivity() {
             }
             } // конец вкладки товаров
             }
-            ScreenSection {
             if (activeTab == 2 && !settingsOpen) {
+            ScreenSection {
             Text("Мониторинг цен", style = MaterialTheme.typography.titleLarge)
             Text("Plati + GGSEL · только подтверждённые предложения РФ.",
                 style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -2513,7 +2513,7 @@ class MainActivity : ComponentActivity() {
                             Text(alert.optString("game"), style = MaterialTheme.typography.titleMedium)
                             Text(alert.optString("name"), style = MaterialTheme.typography.bodySmall)
                             Text("$marketplace · ${alert.optString("type")} · ${String.format(Locale("ru", "RU"), "%.2f ₽", alert.optDouble("price"))} · цель до ${alert.optDouble("limit").toInt()} ₽")
-                            Text("Найдено: $stamp · ID $id", style = MaterialTheme.typography.bodySmall)
+                            Text("Найдено: $stamp", style = MaterialTheme.typography.bodySmall)
                             TextButton(onClick = {
                                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(alertUrl)))
                             }) { Text("Открыть на $marketplace") }
@@ -2529,8 +2529,8 @@ class MainActivity : ComponentActivity() {
             HorizontalDivider()
             } // конец вкладки автоотслеживания
             }
-            ScreenSection {
             if (activeTab == 0 && !settingsOpen) {
+            ScreenSection {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Игнорируемые товары: ${ignoredIds.size}", style = MaterialTheme.typography.titleMedium)
                 TextButton(onClick = { showIgnored = !showIgnored }) { Text(if (showIgnored) "Скрыть" else "Показать") }
@@ -2584,10 +2584,6 @@ class MainActivity : ComponentActivity() {
                                     }
                                     Text(offer.name, style = MaterialTheme.typography.bodyMedium, maxLines = 2,
                                         overflow = TextOverflow.Ellipsis)
-                                    val compactDetails = listOf(offer.categoryLabel, offer.purchaseNote)
-                                        .filter { it.isNotBlank() }.joinToString(" · ")
-                                    if (compactDetails.isNotBlank()) Text(compactDetails,
-                                        style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text("${offer.type} · ${offer.rfStatus} · " +
                                         (if (offer.variablePrice) "Цена варианта не подтверждена" else offer.edition),
                                         style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -2648,8 +2644,8 @@ class MainActivity : ComponentActivity() {
                     }
             } // конец вкладки поиска
             }
-            ScreenSection {
             if (settingsOpen && !showDirectory) {
+            ScreenSection {
                 Text("Настройки", style = MaterialTheme.typography.titleLarge)
                 val versionName = remember { packageManager.getPackageInfo(packageName, 0).versionName ?: "—" }
                 Text("Версия $versionName", style = MaterialTheme.typography.bodySmall)
@@ -2662,8 +2658,8 @@ class MainActivity : ComponentActivity() {
                 Text("Сохранённые правила справочника продолжают работать в поиске и мониторинге.", style = MaterialTheme.typography.bodySmall)
             }
             }
-            ScreenSection {
             if (settingsOpen && showDirectory) {
+            ScreenSection {
                 TextButton(onClick = { showDirectory = false }) { Text("← Назад к настройкам") }
                 Text("Справочник игр", style = MaterialTheme.typography.titleLarge)
                 Text("Ручные правила применяются к поиску и мониторингу. Обновление Steam их не удаляет.", style = MaterialTheme.typography.bodySmall)
@@ -2969,7 +2965,7 @@ class MainActivity : ComponentActivity() {
                 LazyColumn(
                     state = leaderListState,
                     modifier = Modifier.fillMaxSize().testTag("leaders-list"),
-                    contentPadding = PaddingValues(vertical = 2.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     item(key = "leader-header", contentType = "header") {
@@ -3348,7 +3344,7 @@ class MainActivity : ComponentActivity() {
             SteamLeaderFilter.applyWishlist(games, filterInput.toFilters())
         }
         LazyColumn(state = listState, modifier = Modifier.fillMaxSize().testTag("wishlist-list"),
-            contentPadding = PaddingValues(vertical = 2.dp),
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)) {
             item(key = "wishlist-header", contentType = "header") {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -3401,7 +3397,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         items(visibleGames.take(visibleLimit), key = { it.appId }, contentType = { "game" }) { game ->
-            OutlinedCard(Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+            OutlinedCard(Modifier.fillMaxWidth().testTag("wishlist-game:${game.appId}"), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, Color(0xFFDCE2E8)), colors = CardDefaults.outlinedCardColors(containerColor = Color.White)) {
                     Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         TextButton(onClick = { onOpenSearch(game) }, enabled = game.title.isNotBlank() && searchEnabled,
