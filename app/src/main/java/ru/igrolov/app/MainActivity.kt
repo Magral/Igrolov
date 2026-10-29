@@ -1466,8 +1466,13 @@ class MainActivity : ComponentActivity() {
                 }
                 if (infos.isNotEmpty() && !running && !periodicRunning) {
                     reloadWatches()
-                    watchMessage = if (infos.any { it.state == WorkInfo.State.SUCCEEDED })
-                        "Проверка завершена. Минимальные цены обновлены." else "Проверка не завершилась. Посмотрите ошибку в карточке."
+                    if (watchMessage !in setOf("Останавливаем проверку…", "Проверка остановлена. Сохранённые цены не изменены.")) {
+                        watchMessage = when {
+                            infos.any { it.state == WorkInfo.State.SUCCEEDED } -> "Проверка завершена. Минимальные цены обновлены."
+                            infos.all { it.state == WorkInfo.State.CANCELLED } -> "Проверка остановлена. Сохранённые цены не изменены."
+                            else -> "Не удалось обновить цены. Попробуйте позже."
+                        }
+                    }
                 }
             }
             val periodic=WorkManager.getInstance(this@MainActivity).getWorkInfosForUniqueWorkLiveData("plati_game_price_watch")
@@ -1482,7 +1487,9 @@ class MainActivity : ComponentActivity() {
                     watchMessage="Автоматическая проверка цен…"
                 } else {
                     reloadWatches()
-                    if(!manualRunning && infos.isNotEmpty())watchMessage="Результаты и ошибки проверки — в карточках отслеживания."
+                    if(!manualRunning && infos.isNotEmpty() && watchMessage !in setOf(
+                            "Останавливаем проверку…", "Проверка остановлена. Сохранённые цены не изменены."))
+                        watchMessage="Проверка завершена. Сохранённые цены — в карточках игр."
                 }
             }
             live.observe(this@MainActivity, observer)
@@ -3590,5 +3597,6 @@ private fun WatchListControls(
         }
     }
 }
+
 
 

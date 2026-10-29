@@ -85,6 +85,11 @@ class MonitorEditionUiTest {
             compose.waitUntil(10000) {
                 compose.onAllNodesWithText("Проверка остановлена. Сохранённые цены не изменены.").fetchSemanticsNodes().isNotEmpty()
             }
+            val manager = androidx.work.WorkManager.getInstance(context)
+            assertTrue(manager.getWorkInfosForUniqueWork("plati_manual_price_check").get()
+                .all { it.state.isFinished })
+            assertFalse(manager.getWorkInfosForUniqueWork("plati_game_price_watch").get()
+                .any { it.state == androidx.work.WorkInfo.State.RUNNING })
             assertEquals(-1.0, WatchStore.read(context).getJSONObject(0).getDouble("last"), 0.0)
         } finally {
             release.countDown()
