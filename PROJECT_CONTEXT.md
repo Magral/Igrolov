@@ -66,15 +66,15 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-29T11:29:41.020Z
+- Обновлено (UTC): 2026-10-29T11:38:12.255Z
 - Ветка: `main`.
-- HEAD: [`a912c5ef3a5c`](https://github.com/Magral/Igrolov/commit/a912c5ef3a5c6dc2c328a18ec4a449040f27b72b).
+- HEAD: [`97b174ab69b2`](https://github.com/Magral/Igrolov/commit/97b174ab69b23b3cb54bb46fd43df53f3b108137).
 - Последний опубликованный стабильный GitHub Release: [v1.7.0](https://github.com/Magral/Igrolov/releases/tag/v1.7.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [97b174a](https://github.com/Magral/Igrolov/commit/97b174ab69b23b3cb54bb46fd43df53f3b108137) — release: Игролов 1.7.1 — preserve stopped monitoring status
 - [a912c5e](https://github.com/Magral/Igrolov/commit/a912c5ef3a5c6dc2c328a18ec4a449040f27b72b) — release: Игролов 1.7.1 — verify exact edition selection before publishing
 - [cd1eea7](https://github.com/Magral/Igrolov/commit/cd1eea7501afc6f3c976e9a41ae9d601d8446fcb) — release: Игролов 1.7.1 — издания и остановка мониторинга
 - [ebadbdb](https://github.com/Magral/Igrolov/commit/ebadbdb344eda8ad8f7209091ea73bb233e93831) — ci: expect all three monitoring regression tests
-- [1fd3391](https://github.com/Magral/Igrolov/commit/1fd33916e617ee84c4c5ed6f288f1b1b7d1af442) — ui: remove duplicate search shortcut from header
 <!-- AUTO_CONTEXT_END -->
 
