@@ -101,6 +101,17 @@ class MonitorUiRegressionTest {
 
         UiTestScroll.reveal(compose, "Обновить цену")
         compose.onNodeWithText("Обновить цену").assertExists()
+        UiTestScroll.reveal(compose,"Пауза")
+        compose.onNodeWithText("Пауза").performClick()
+        compose.waitUntil(5000) {WatchStore.read(context).getJSONObject(0).optBoolean("paused")}
+        compose.waitUntil(5000) {compose.onAllNodesWithText("Возобновить").fetchSemanticsNodes().isNotEmpty()}
+        compose.onNodeWithText("На паузе · цены сохранены").assertExists()
+        compose.onNodeWithText("Обновить цену").assertIsNotEnabled()
+        assertEquals(afterEdit.getJSONArray("history").toString(),WatchStore.read(context).getJSONObject(0).getJSONArray("history").toString())
+        compose.onNodeWithText("Возобновить").performClick()
+        compose.waitUntil(5000) {!WatchStore.read(context).getJSONObject(0).optBoolean("paused")}
+        compose.waitUntil(5000) {compose.onAllNodesWithText("Пауза").fetchSemanticsNodes().isNotEmpty()}
+        compose.onNodeWithText("Обновить цену").assertIsEnabled()
         UiTestScroll.reveal(compose, "Цены (1)")
         assertTrue(device.hasObject(By.text("Цены (1)")))
         compose.onNodeWithText("Цены (1)").performSemanticsAction(SemanticsActions.OnClick) { it() }
@@ -150,6 +161,7 @@ class MonitorUiRegressionTest {
         context.getSharedPreferences("tracked_products",0).edit().putString("ids","").remove("product_cache_10000").commit()
     }
 }
+
 
 
 

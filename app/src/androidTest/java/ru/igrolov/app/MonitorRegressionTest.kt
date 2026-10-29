@@ -67,6 +67,21 @@ class MonitorRegressionTest {
         assertTrue(runCatching {WatchStore.updateTarget(context,WatchStore.identity(seeded),Double.NaN)}.isFailure)
         assertEquals(1500.50,WatchStore.read(context).getJSONObject(0).getDouble("limit"),0.0)
         assertTrue(WatchScheduler.active(removed, generation))
+        val beforePause=WatchStore.read(context).getJSONObject(0)
+        val watchId=WatchStore.identity(beforePause)
+        assertTrue(WatchStore.setPaused(context,watchId,true))
+        val paused=WatchStore.read(context).getJSONObject(0)
+        assertTrue(paused.getBoolean("paused"))
+        assertEquals(beforePause.getJSONArray("history").toString(),paused.getJSONArray("history").toString())
+        assertEquals(beforePause.getDouble("last"),paused.getDouble("last"),0.0)
+        assertFalse(WatchScheduler.active(beforePause,generation))
+        assertFalse(WatchScheduler.active(paused,generation))
+        assertFalse(WatchStore.updateIfCurrent(context,beforePause) {it.put("last",1)})
+        assertTrue(WatchStore.setPaused(context,watchId,false))
+        val resumed=WatchStore.read(context).getJSONObject(0)
+        assertTrue(WatchScheduler.active(resumed,generation))
+        assertFalse("Resume must not revive a pre-pause request",WatchScheduler.active(beforePause,generation))
+        assertFalse(WatchStore.updateIfCurrent(context,beforePause) {it.put("last",1)})
         WatchStore.remove(context, 0)
         assertFalse(WatchStore.updateTarget(context,WatchStore.identity(removed),1600.0))
         assertEquals(0,WatchStore.read(context).length())
@@ -260,6 +275,12 @@ class MonitorRegressionTest {
         assertEquals("Refreshing one watch must not update another watch",untouchedAt,refreshed.getJSONObject(0).getLong("checked"))
         assertTrue(refreshed.getJSONObject(1).getLong("checked")>selectedAt)
         val refreshedAt=refreshed.getJSONObject(1).getLong("checked")
+        assertTrue(WatchStore.setPaused(context,WatchStore.identity(selected),true))
+        val pausedCalls=catalogCalls.get()
+        assertEquals(ListenableWorker.Result.success(),worker(WatchStore.identity(selected)).doWork())
+        assertEquals("Paused watch must not issue catalog requests",pausedCalls,catalogCalls.get())
+        assertEquals(refreshedAt,WatchStore.read(context).getJSONObject(1).getLong("checked"))
+        assertTrue(WatchStore.setPaused(context,WatchStore.identity(selected),false))
         assertEquals(ListenableWorker.Result.success(),worker("deleted-watch").doWork())
         assertEquals(untouchedAt,WatchStore.read(context).getJSONObject(0).getLong("checked"))
         assertEquals(refreshedAt,WatchStore.read(context).getJSONObject(1).getLong("checked"))
@@ -267,6 +288,7 @@ class MonitorRegressionTest {
         manager.cancelAll()
     }
 }
+
 
 
 

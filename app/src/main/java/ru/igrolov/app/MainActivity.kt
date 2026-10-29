@@ -2494,6 +2494,7 @@ class MainActivity : ComponentActivity() {
                 items(visibleWatchEntries, key = { "watch:${it.originalIndex}" }, contentType = { "watch" }) { watchEntry ->
                 val wi = watchEntry.originalIndex
                 val w = watchEntry.game
+                val paused=w.optBoolean("paused")
                 OutlinedCard(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
                     Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         val watchAppId = w.optInt("steamAppId", w.optInt("appId", 0))
@@ -2552,11 +2553,28 @@ class MainActivity : ComponentActivity() {
                                 onClick = {
                                     WatchScheduler.checkNow(this@MainActivity,WatchStore.identity(w))
                                     watchMessage="Проверка выбранной игры запрошена."
-                                }, enabled = !checkingNow && !monitorPending,
+                                }, enabled = !paused && !checkingNow && !monitorPending,
                                 modifier = Modifier.weight(1f).heightIn(min = 40.dp)
                                     .testTag("watch-refresh:${WatchStore.identity(w)}"),
                                 contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)) {
                                 Text("Обновить цену",maxLines=1,softWrap=false,overflow=TextOverflow.Ellipsis)
+                            }
+                        }
+                        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp),verticalAlignment=Alignment.CenterVertically) {
+                            Text(if(paused) "На паузе · цены сохранены" else "Автопроверка включена",
+                                modifier=Modifier.weight(1f),style=MaterialTheme.typography.labelSmall)
+                            OutlinedButton(onClick={
+                                ioExecutor.execute {
+                                    val changed=runCatching {WatchStore.setPaused(this@MainActivity,WatchStore.identity(w),!paused)}.getOrDefault(false)
+                                    runOnUiThread {
+                                        reloadWatches()
+                                        if(!changed)watchMessage="Не удалось изменить проверку. Попробуйте ещё раз."
+                                    }
+                                }
+                            },modifier=Modifier.heightIn(min=40.dp).testTag("watch-pause:${WatchStore.identity(w)}"),
+                                shape=androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                                contentPadding=PaddingValues(horizontal=10.dp,vertical=0.dp)) {
+                                Text(if(paused) "Возобновить" else "Пауза")
                             }
                         }
                         if (w.has("error")) {
@@ -3735,6 +3753,7 @@ private fun WatchListControls(
         }
     }
 }
+
 
 
 

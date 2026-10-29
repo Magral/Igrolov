@@ -279,7 +279,18 @@ object WatchStore {
         write(context,watches)
         true
     }
-    private fun config(w:JSONObject)=listOf(w.optString("name"),w.optString("kind"),w.optDouble("limit"),w.optBoolean("rf",true),w.optInt("steamAppId"),w.optString("steamEditionName"),w.optInt("steamPackageId"))
+    fun setPaused(context:Context,watchId:String,paused:Boolean):Boolean = synchronized(lock) {
+        val watches=read(context)
+        val current=(0 until watches.length()).mapNotNull {watches.optJSONObject(it)}
+            .firstOrNull {identity(it)==watchId} ?: return false
+        if(current.optBoolean("paused")==paused)return true
+        val revision=java.util.UUID.randomUUID().toString()
+        current.put("paused",paused).put("checkRevision",revision)
+        WatchScheduler.invalidateChecks(watchId,revision)
+        write(context,watches)
+        true
+    }
+    private fun config(w:JSONObject)=listOf(w.optString("name"),w.optString("kind"),w.optDouble("limit"),w.optBoolean("rf",true),w.optInt("steamAppId"),w.optString("steamEditionName"),w.optInt("steamPackageId"),w.optBoolean("paused"),w.optString("checkRevision"))
     /** Only the short local merge is locked. Deleted/edited watches cannot be resurrected by a slow request. */
     fun updateIfCurrent(context:Context,snapshot:JSONObject,update:(JSONObject)->Unit):Boolean = synchronized(lock) {
         val watches=read(context)
@@ -541,12 +552,15 @@ object CatalogCheck {
 }
 
 object WatchScheduler {
+    private val checkRevisions = java.util.concurrent.ConcurrentHashMap<String,String>()
+    internal fun invalidateChecks(id:String,revision:String) {checkRevisions[id]=revision}
     private val cancelledWatches = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
     private val stopGeneration = java.util.concurrent.atomic.AtomicLong()
     internal fun cancelWatch(id: String) { cancelledWatches.add(id) }
     internal fun generation() = stopGeneration.get()
     internal fun active(watch: JSONObject, generation: Long) =
-        stopGeneration.get() == generation && WatchStore.identity(watch) !in cancelledWatches
+        stopGeneration.get() == generation && WatchStore.identity(watch) !in cancelledWatches &&
+            !watch.optBoolean("paused") && checkRevisions[WatchStore.identity(watch)].let {it==null || it==watch.optString("checkRevision")}
     /** Called off the main thread. Stop persisted queued/running work as well as live requests. */
     fun stop(context: Context) {
         stopGeneration.incrementAndGet()
@@ -586,6 +600,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
         val ignored = IgnoredStore.ids(applicationContext)
         val selectedWatch=inputData.getString("watchId")?.takeIf {it.isNotBlank()}
         val items=(0 until watches.length()).mapNotNull {watches.optJSONObject(it)}
+            .filterNot {it.optBoolean("paused")}
             .filter {selectedWatch==null || WatchStore.identity(it)==selectedWatch}
         setProgressAsync(workDataOf("done" to 0, "total" to items.size, "game" to "Подготовка", "complete" to false))
         val failed=MonitorCheckBatch.run(items,{!isStopped && WatchScheduler.generation()==generation},
@@ -741,6 +756,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
         manager.notify("watch:$watchKey", 0, notification)
     }
 }
+
 
 
 
