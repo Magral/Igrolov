@@ -82,16 +82,16 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-10-30T05:06:55.098Z
+- Обновлено (UTC): 2026-10-30T06:18:14.630Z
 - Ветка: `main`.
-- HEAD: [`7504238cc6e4`](https://github.com/Magral/Igrolov/commit/7504238cc6e4ab7c41283a90de8e13c5b904284a).
+- HEAD: [`027daf174cb5`](https://github.com/Magral/Igrolov/commit/027daf174cb51ea447b133340d18dac41190f774).
 - Последний опубликованный стабильный GitHub Release: [v1.9.0](https://github.com/Magral/Igrolov/releases/tag/v1.9.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [027daf1](https://github.com/Magral/Igrolov/commit/027daf174cb51ea447b133340d18dac41190f774) — release: Igrolov 1.10.0 edition comparison and faster price checks
 - [7504238](https://github.com/Magral/Igrolov/commit/7504238cc6e4ab7c41283a90de8e13c5b904284a) — feat: check filtered wishlist and leader prices in bounded two-game batches
 - [ae57eae](https://github.com/Magral/Igrolov/commit/ae57eaeac60437b7b8bdb0e629ee9e0a25a6e06b) — feat: show verified Plati offers progressively without marking partial checks complete
 - [9d50199](https://github.com/Magral/Igrolov/commit/9d501993f8c6871e50e69e90c01883ebe6068da4) — feat: compare edition contents and prices with fewer duplicate catalogue requests
-- [0f5e360](https://github.com/Magral/Igrolov/commit/0f5e360106f7345e4dec8e1cead924c2760d2b63) — release: Igrolov 1.9.0 product links, price freshness and monitor controls
 <!-- AUTO_CONTEXT_END -->
 
 
