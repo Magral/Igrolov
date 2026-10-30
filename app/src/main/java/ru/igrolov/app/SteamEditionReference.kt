@@ -9,6 +9,7 @@ import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.CompletableFuture
 
 /** Purchase options exposed for a Steam game, verified to include that game's app ID. */
 object SteamEditionReference {
@@ -20,7 +21,8 @@ object SteamEditionReference {
         val isBase: Boolean,
         /** null means Steam RU could not be checked; false means this package has no RU store offer. */
         val steamRuAvailable: Boolean? = null,
-        val steamRuPrice: String? = null
+        val steamRuPrice: String? = null,
+        val contents: List<String> = emptyList()
     )
 
     // Large publishers sometimes expose many bundles for one game. Keep a finite cap while
@@ -35,14 +37,28 @@ object SteamEditionReference {
         Thread(task, "steam-edition-lookup").apply { isDaemon = true }
     }
     private val cache = ConcurrentHashMap<Int, CachedEditions>()
+    private val inFlight = ConcurrentHashMap<Int, CompletableFuture<List<Edition>>>()
 
-    fun discover(appId: Int): List<Edition> {
+    fun discover(appId: Int): List<Edition> = discoverCached(appId, ::getJson)
+
+    internal fun discoverCached(appId: Int, fetchJson: (String) -> JSONObject): List<Edition> {
         require(appId > 0)
         val now = System.currentTimeMillis()
         cache[appId]?.takeIf { now - it.savedAt < CACHE_TTL_MILLIS }?.let { return it.editions }
-        val editions = discover(appId, ::getJson)
-        if (editions.isNotEmpty()) cache[appId] = CachedEditions(now, editions)
-        return editions
+        val pending=CompletableFuture<List<Edition>>()
+        val existing=inFlight.putIfAbsent(appId,pending)
+        if(existing!=null)return existing.get()
+        try {
+            // Another caller may have completed between the first cache read and ownership.
+            val editions=cache[appId]?.takeIf {System.currentTimeMillis()-it.savedAt<CACHE_TTL_MILLIS}?.editions
+                ?: discover(appId,fetchJson)
+            if(editions.isNotEmpty())cache[appId]=CachedEditions(System.currentTimeMillis(),editions)
+            pending.complete(editions)
+            return editions
+        } catch(e:Exception) {
+            pending.completeExceptionally(e)
+            throw e
+        } finally {inFlight.remove(appId,pending)}
     }
 
     /** Injectable, uncached path keeps package lookup behavior deterministic in tests. */
@@ -79,7 +95,8 @@ object SteamEditionReference {
                 val ruOffer = ruOffers?.get(packageId)
                 Edition(appId, packageId, name, name, normalize(name) == normalize(canonical),
                     steamRuAvailable = ruOffers?.containsKey(packageId),
-                    steamRuPrice = ruOffer)
+                    steamRuPrice = ruOffer,
+                    contents = (0 until apps.length()).mapNotNull {apps.optJSONObject(it)?.optString("name")?.trim()?.takeIf(String::isNotBlank)}.distinct())
             }.getOrNull()
         } }
         val futures = try {
@@ -164,3 +181,4 @@ object SteamEditionReference {
         } finally { connection.disconnect() }
     }
 }
+

@@ -347,8 +347,7 @@ class MainActivity : ComponentActivity() {
                 if (active()) runOnUiThread {
                     if (active()) progress(queryIndex * pageCount + page, progressPages, found.size)
                 }
-                val totalPages = root.optJSONObject("result")?.optInt("total_pages", pageCount) ?: pageCount
-                if (page >= totalPages) break
+                if (!CatalogPagination.hasNext(root,page)) break
                 }
             } catch (e: Exception) {
                 sourceFailed = true
@@ -525,6 +524,33 @@ class MainActivity : ComponentActivity() {
         true -> edition.steamRuPrice?.let { "Steam RU · $it" } ?: "Steam RU · цена не указана"
         false -> "Нет предложения в Steam RU"
         null -> "Статус Steam RU не проверен"
+    }
+
+    @Composable
+    private fun EditionComparisonDialog(editions:List<SteamEditionReference.Edition>,
+        cached:(SteamEditionReference.Edition)->CachedGamePrices?,busy:Boolean,
+        onSearch:(SteamEditionReference.Edition)->Unit,onDismiss:()->Unit) {
+        AlertDialog(onDismissRequest=onDismiss,title={Text("Сравнение изданий")},text={
+            LazyColumn(Modifier.fillMaxWidth().heightIn(max=480.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                item {Text("Цены площадок относятся к конкретному изданию и текущим фильтрам. Нажмите «Найти цены», если проверка ещё не выполнялась.",style=MaterialTheme.typography.bodySmall)}
+                items(editions,key={it.packageId}) {edition->
+                    OutlinedCard(Modifier.fillMaxWidth().testTag("edition-compare:${edition.packageId}"),border=BorderStroke(1.dp,MaterialTheme.colorScheme.outline)) {
+                        Column(Modifier.padding(10.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                            Text(edition.name,style=MaterialTheme.typography.titleSmall)
+                            Text(if(edition.contents.isEmpty()) "Состав не указан Steam" else "В составе: ${edition.contents.joinToString(", ")}",
+                                style=MaterialTheme.typography.bodySmall)
+                            Text(steamRuEditionLabel(edition),style=MaterialTheme.typography.bodySmall)
+                            val prices=cached(edition)
+                            DealPriceStrip(edition.steamRuPrice.orEmpty(),0,prices?.plati?.price,prices?.ggsel?.price,
+                                steamAvailable=edition.steamRuAvailable,
+                                platiUrl=prices?.plati?.productUrl.orEmpty(),ggselUrl=prices?.ggsel?.productUrl.orEmpty(),checks=prices)
+                            OutlinedButton(onClick={onSearch(edition)},enabled=!busy,
+                                modifier=Modifier.fillMaxWidth().testTag("edition-search:${edition.packageId}")) {Text("Найти цены")}
+                        }
+                    }
+                }
+            }
+        },confirmButton={TextButton(onClick=onDismiss) {Text("Закрыть")}})
     }
 
     private fun enrichSteamGames(games: List<SteamTopSeller>): List<SteamTopSeller> {
@@ -1344,10 +1370,23 @@ class MainActivity : ComponentActivity() {
         val savedFilters = remember {ManualSearchSettings.read(this@MainActivity)}
         var gameSuggestions by remember {mutableStateOf<List<GameSearchResolver.Candidate>>(emptyList())}
         var selectedGame by remember {mutableStateOf<GameSearchResolver.Candidate?>(null)}
+        var editionComparisonOpen by remember(selectedGame?.appId) {mutableStateOf(false)}
         var steamEditions by remember { mutableStateOf<List<SteamEditionReference.Edition>>(emptyList()) }
         var selectedSteamEdition by remember { mutableStateOf<SteamEditionReference.Edition?>(null) }
         var editionLoading by remember { mutableStateOf(false) }
         var editionMenuExpanded by remember { mutableStateOf(false) }
+        LaunchedEffect(selectedGame?.appId) {
+            val appId=selectedGame?.appId
+            steamEditions=emptyList()
+            selectedSteamEdition=null
+            editionLoading=appId!=null
+            if(appId!=null) {
+                steamEditions=withContext(Dispatchers.IO) {
+                    runCatching {SteamEditionReference.discover(appId)}.getOrDefault(emptyList())
+                }
+                editionLoading=false
+            }
+        }
         var suggestionBusy by remember {mutableStateOf(false)}
         var maxPrice by remember {mutableStateOf(savedFilters.maxPrice)}
         var confirmedRf by remember {mutableStateOf(savedFilters.confirmedRf)}
@@ -2029,6 +2068,20 @@ class MainActivity : ComponentActivity() {
                 if (finished) onFinished?.invoke()
             }
         }
+        if(editionComparisonOpen && activeTab==0 && !settingsOpen) {
+            selectedGame?.let {game->
+                val editionRules=GameRuleStore.read(this@MainActivity,game.name)
+                val editionAliases=comparisonAliases(game.appId,game.aliases)
+                EditionComparisonDialog(steamEditions,cached={edition->
+                    catalogueUi.priceCache[OfferPriceCache.key(game.appId,manualFilters,editionRules,ignoredIds,searchTotalPages,
+                        editionAliases+"steam-edition:${edition.name}")]
+                },busy=searching,onSearch={edition->
+                    selectedSteamEdition=edition
+                    editionComparisonOpen=false
+                    startCatalogSearch()
+                },onDismiss={editionComparisonOpen=false})
+            }
+        }
         LaunchedEffect(catalogueUi.priceBatch.current, catalogueUi.priceBatch.completed) {
             val target = catalogueUi.priceBatch.current
             if (catalogueUi.priceBatch.running && target != null) {
@@ -2173,6 +2226,8 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 selectedSteamEdition?.let { Text(steamRuEditionLabel(it), style = MaterialTheme.typography.bodySmall) }
+                if(steamEditions.isNotEmpty())OutlinedButton(onClick={editionComparisonOpen=true},
+                    modifier=Modifier.fillMaxWidth().testTag("compare-editions")) {Text("Сравнить издания (${steamEditions.size})")}
             }
             if(suggestionBusy) Text("Подбираем названия Steam…",style=MaterialTheme.typography.bodySmall)
             if(gameSuggestions.isNotEmpty() && selectedGame==null) {
@@ -2181,17 +2236,6 @@ class MainActivity : ComponentActivity() {
                     TextButton(onClick={
                         selectedGame=candidate
                         selectedSteamEdition=null
-                        steamEditions=emptyList()
-                        editionLoading=true
-                        editionExecutor.execute {
-                            val editions=runCatching { SteamEditionReference.discover(candidate.appId) }.getOrDefault(emptyList())
-                            runOnUiThread {
-                                if (selectedGame?.appId == candidate.appId) {
-                                    steamEditions=editions
-                                    editionLoading=false
-                                }
-                            }
-                        }
                         suggestionGeneration.incrementAndGet()
                         suggestionBusy=false
                         gameSuggestions=emptyList()
@@ -3753,6 +3797,7 @@ private fun WatchListControls(
         }
     }
 }
+
 
 
 

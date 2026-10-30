@@ -6,6 +6,37 @@ import org.json.JSONObject
 import java.util.concurrent.atomic.AtomicInteger
 
 class SteamEditionReferenceTest {
+    @Test fun concurrentDiscoverySharesRequestsAndKeepsPackageContents() {
+        val appId=987654
+        val entered=java.util.concurrent.CountDownLatch(1)
+        val release=java.util.concurrent.CountDownLatch(1)
+        val calling=java.util.concurrent.CountDownLatch(2)
+        val requests=AtomicInteger()
+        val executor=java.util.concurrent.Executors.newFixedThreadPool(2)
+        val fetch:(String)->JSONObject={url->
+            requests.incrementAndGet()
+            if("cc=us" in url && "appdetails" in url) {
+                entered.countDown()
+                check(release.await(3,java.util.concurrent.TimeUnit.SECONDS))
+            }
+            if("packagedetails" in url) JSONObject("""{"876543":{"success":true,"data":{"name":"Example Game Deluxe","apps":[{"id":987654,"name":"Example Game"},{"id":987655,"name":"Expansion"}]}}}""")
+            else JSONObject("""{"987654":{"success":true,"data":{"type":"game","name":"Example Game","package_groups":[{"subs":[{"packageid":876543}]}]}}}""")
+        }
+        try {
+            val futures=(1..2).map {executor.submit<List<SteamEditionReference.Edition>> {
+                calling.countDown()
+                SteamEditionReference.discoverCached(appId,fetch)
+            }}
+            assertTrue(calling.await(3,java.util.concurrent.TimeUnit.SECONDS))
+            assertTrue(entered.await(3,java.util.concurrent.TimeUnit.SECONDS))
+            release.countDown()
+            val first=futures[0].get(3,java.util.concurrent.TimeUnit.SECONDS)
+            assertEquals(first,futures[1].get(3,java.util.concurrent.TimeUnit.SECONDS))
+            assertEquals(3,requests.get())
+            assertEquals(listOf("Example Game","Expansion"),first.single().contents)
+            assertEquals(first,SteamEditionReference.discoverCached(appId) {error("Cache must avoid network")})
+        } finally {release.countDown();executor.shutdownNow()}
+    }
     @Test fun discoversOnlyPurchasePackagesContainingSelectedGame() {
         val appId = 1771300
         val json = """{"1771300":{"success":true,"data":{"type":"game","name":"Kingdom Come: Deliverance II","package_groups":[{"subs":[{"packageid":635513,"option_text":"Kingdom Come: Deliverance II - $59.99"},{"packageid":1109733,"option_text":"Kingdom Come: Deliverance II Royal Edition - $79.99"},{"packageid":1200000,"option_text":"DLC only - $9.99"}]}]}}}"""
@@ -122,3 +153,4 @@ class SteamEditionReferenceTest {
         assertNotEquals("Игра", ManualContentRules.classify("Example Game Юбилейное издание Steam Key РФ", "", ManualGameReference.Game(base, 123)))
     }
 }
+

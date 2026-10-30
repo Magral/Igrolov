@@ -98,3 +98,8 @@ adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class ru.igrolov.app.CatalogFilterPreferencesTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/catalogue-filter-preferences.txt
 grep -F 'OK (1 test)' device-results/catalogue-filter-preferences.txt
 
+
+adb shell am force-stop ru.igrolov.app
+adb shell am instrument -w -r -e class ru.igrolov.app.EditionComparisonUiTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/edition-comparison.txt
+grep -F 'OK (1 test)' device-results/edition-comparison.txt
+
