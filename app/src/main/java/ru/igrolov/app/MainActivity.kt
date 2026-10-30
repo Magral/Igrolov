@@ -996,11 +996,11 @@ class MainActivity : ComponentActivity() {
         if (batch.total == 0) return
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(when {
-                batch.running -> "Проверено ${batch.completed} / ${batch.total} · ${batch.current?.title}"
+                batch.running -> "Проверено ${batch.completed} / ${batch.total} · в работе: ${batch.active.size}"
                 batch.cancelled -> "Остановлено: ${batch.completed} / ${batch.total}"
                 else -> "Готово ${batch.completed} / ${batch.total}"
-            }, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-            if (batch.running) TextButton(onClick = onStop) { Text("Остановить") }
+            }, modifier = Modifier.weight(1f).testTag("price-batch-status"), style = MaterialTheme.typography.bodySmall)
+            if (batch.running) TextButton(onClick = onStop,modifier=Modifier.testTag("price-batch-stop")) { Text("Остановить") }
         }
         if (batch.running) LinearProgressIndicator(progress = { batch.completed.toFloat() / batch.total },
             modifier = Modifier.fillMaxWidth())
@@ -1856,9 +1856,9 @@ class MainActivity : ComponentActivity() {
         }
         fun stopPriceBatch() {
             if (!catalogueUi.priceBatch.running) return
-            val current = catalogueUi.priceBatch.current
+            val active = catalogueUi.priceBatch.active
             catalogueUi.priceBatch = catalogueUi.priceBatch.cancel()
-            current?.let { priceSearches.cancel(if (it.profileId != null) "wishlist:${it.profileId}:${it.appId}" else "leader:${it.appId}") }
+            active.forEach {priceSearches.cancel(if (it.profileId != null) "wishlist:${it.profileId}:${it.appId}" else "leader:${it.appId}")}
         }
         fun startCatalogSearch(
             candidateOverride: GameSearchResolver.Candidate? = null,
@@ -2088,14 +2088,16 @@ class MainActivity : ComponentActivity() {
                 },onDismiss={editionComparisonOpen=false})
             }
         }
-        LaunchedEffect(catalogueUi.priceBatch.current, catalogueUi.priceBatch.completed) {
-            val target = catalogueUi.priceBatch.current
-            if (catalogueUi.priceBatch.running && target != null) {
+        LaunchedEffect(catalogueUi.priceBatch.runId,catalogueUi.priceBatch.ready) {
+            val batch=catalogueUi.priceBatch
+            val ready=batch.ready
+            if(ready.isNotEmpty())catalogueUi.priceBatch=batch.claim()
+            ready.forEach {target->
                 startCatalogSearch(GameSearchResolver.Candidate(target.appId, target.title),
                     wishlistProfileId = target.profileId, hiddenWishlistSearch = target.profileId != null,
                     leaderboardAppId = target.appId.takeIf { target.profileId == null },
-                    onFinished = { catalogueUi.priceBatch = catalogueUi.priceBatch.advance(target) },
-                    filtersOverride = catalogueUi.priceBatch.filters, pagesOverride = catalogueUi.priceBatch.pages)
+                    onFinished = {if(catalogueUi.priceBatch.runId==batch.runId)catalogueUi.priceBatch=catalogueUi.priceBatch.advance(target)},
+                    filtersOverride = batch.filters, pagesOverride = batch.pages)
             }
         }
         fun dismissAliasPrompt() {
@@ -3067,6 +3069,12 @@ class MainActivity : ComponentActivity() {
                     genresLoading = catalogueUi.wishlistGenresLoading,
                     searchingKeys = catalogueUi.wishlistSearchingKeys, searchStatuses = catalogueUi.wishlistSearchStatuses,
                     searchEnabled = manualFilters.valid,
+                    batchRunning=catalogueUi.priceBatch.running,
+                    onCheckPrices={games->
+                        catalogueUi.selectedWishlistId?.let {profileId->
+                            catalogueUi.priceBatch=PriceCheckBatch.start(games.map {PriceCheckTarget(it.appId,it.title,profileId)},manualFilters,searchTotalPages)
+                        }
+                    },
                     onInput = { catalogueUi.wishlistProfile = it }, onImport = { importWishlist() },
                     onSelect = { profile ->
                         catalogueUi.selectedWishlistId = profile.steamId64
@@ -3245,6 +3253,12 @@ class MainActivity : ComponentActivity() {
                     onReset = { topAvailabilityFilter = "Все игры" }
                 )
                 Text("Показано: ${visibleTopGames.size}", style = MaterialTheme.typography.labelMedium)
+                if(displayedTopGames.isNotEmpty())OutlinedButton(onClick={
+                    catalogueUi.priceBatch=PriceCheckBatch.start(displayedTopGames.map {PriceCheckTarget(it.appId,it.title)},manualFilters,searchTotalPages)
+                },enabled=manualFilters.valid && !catalogueUi.priceBatch.running,
+                    modifier=Modifier.fillMaxWidth().testTag("leaders-check-prices")) {
+                    Text("Проверить цены · ${minOf(10,displayedTopGames.size)}")
+                }
                 if (leaderInitialLoaded) {
                     SteamLeaderFilter.paginationStatus(
                         leaderSection,
@@ -3590,6 +3604,8 @@ class MainActivity : ComponentActivity() {
         searchingKeys: Set<String>,
         searchStatuses: Map<String, String>,
         searchEnabled: Boolean,
+        batchRunning:Boolean,
+        onCheckPrices:(List<WishlistGame>)->Unit,
         onInput: (String) -> Unit,
         onImport: () -> Unit,
         onSelect: (WishlistProfile) -> Unit,
@@ -3655,6 +3671,11 @@ class MainActivity : ComponentActivity() {
         SteamLeaderFiltersPanel(filterInput, onFilterInput, includeReviewFilters = false,
             availableGenres = availableGenres)
         Text("Показано: ${visibleGames.size} из ${games.size}", style = MaterialTheme.typography.labelMedium)
+        if(visibleGames.isNotEmpty())OutlinedButton(onClick={onCheckPrices(visibleGames.take(visibleLimit))},
+            enabled=searchEnabled && !batchRunning && selectedId!=null,
+            modifier=Modifier.fillMaxWidth().testTag("wishlist-check-prices")) {
+            Text("Проверить цены · ${minOf(10,visibleLimit,visibleGames.size)}")
+        }
         if (games.isEmpty() && importedAt == 0L) {
             Text("Вставьте открытый профиль Steam и загрузите его, чтобы закрепить в списке профилей.", style = MaterialTheme.typography.bodyMedium)
         } else if (games.isNotEmpty() && visibleGames.isEmpty()) {
@@ -3803,6 +3824,7 @@ private fun WatchListControls(
         }
     }
 }
+
 
 
 
