@@ -103,3 +103,8 @@ adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class ru.igrolov.app.EditionComparisonUiTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/edition-comparison.txt
 grep -F 'OK (1 test)' device-results/edition-comparison.txt
 
+
+adb shell am force-stop ru.igrolov.app
+adb shell am instrument -w -r -e class ru.igrolov.app.PartialPriceSearchUiTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/partial-prices.txt
+grep -F 'OK (1 test)' device-results/partial-prices.txt
+

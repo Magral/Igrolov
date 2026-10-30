@@ -8,6 +8,65 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.Collections
 
 class PriceSearchCoordinatorTest {
+    @Test fun streamedPricesAppearBeforeSourceCompletesAndLateUpdatesCannotReachRetry() {
+        val coordinator=PriceSearchCoordinator<Int>(5000)
+        val partial=CountDownLatch(1)
+        val release=CountDownLatch(1)
+        val oldDone=CountDownLatch(1)
+        val retried=CountDownLatch(1)
+        val events=Collections.synchronizedList(mutableListOf<PriceSearchResult<Int>>())
+        try {
+            coordinator.startStreaming("game",sources=mapOf("Plati" to {_:()->Boolean,publish:(Int)->Unit->
+                publish(500)
+                try {release.await()} catch(_:InterruptedException) {release.await()}
+                publish(1)
+                oldDone.countDown()
+                1
+            })) {
+                events.add(it)
+                if(!it.finished && it.values["Plati"]==500)partial.countDown()
+            }
+            partial.ready()
+            assertTrue(events.first().completedSources.isEmpty())
+            coordinator.cancel("game")
+            val cancelled=events.last()
+            assertTrue(cancelled.cancelled)
+            assertEquals(500,cancelled.values["Plati"])
+            assertEquals(setOf("Plati"),cancelled.failedSources)
+            coordinator.start("game",sources=mapOf("Plati" to {_:()->Boolean->700})) {
+                events.add(it)
+                if(it.finished && it.values["Plati"]==700)retried.countDown()
+            }
+            retried.ready()
+            release.countDown()
+            oldDone.ready()
+            assertFalse(events.any {it.values["Plati"]==1})
+        } finally {release.countDown();coordinator.close()}
+    }
+
+    @Test fun partialSourceIsNotCompletedWhenOtherMarketplaceFinishes() {
+        val coordinator=PriceSearchCoordinator<Int>(5000)
+        val published=CountDownLatch(1)
+        val partial=CountDownLatch(1)
+        val release=CountDownLatch(1)
+        val finished=CountDownLatch(1)
+        try {
+            coordinator.startStreaming("game",sources=mapOf(
+                "Plati" to {_:()->Boolean,publish:(Int)->Unit->publish(500);published.countDown();release.await();400},
+                "GGSEL" to {_:()->Boolean,_:(Int)->Unit->published.await();600}
+            )) {
+                if(!it.finished && it.values.size==2) {
+                    assertEquals(setOf("GGSEL"),it.completedSources)
+                    partial.countDown()
+                }
+                if(it.finished) {assertEquals(400,it.values["Plati"]);assertEquals(setOf("Plati","GGSEL"),it.completedSources);finished.countDown()}
+            }
+            partial.ready()
+            assertEquals(1L,release.count)
+            release.countDown()
+            finished.ready()
+        } finally {release.countDown();coordinator.close()}
+    }
     private fun CountDownLatch.ready() = assertTrue("Timed out waiting for search event", await(3, TimeUnit.SECONDS))
 
     @Test fun slowMarketplaceDoesNotBlockPartialPricesOrAnotherGame() {
@@ -111,3 +170,4 @@ class PriceSearchCoordinatorTest {
         } finally { release.countDown(); coordinator.close() }
     }
 }
+

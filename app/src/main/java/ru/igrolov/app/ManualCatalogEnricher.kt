@@ -12,12 +12,15 @@ import java.util.concurrent.atomic.AtomicInteger
 class ManualCatalogEnricher(private val request: (String) -> JSONObject? = { CatalogApi.get(it) }) {
     fun enrich(offers: List<Offer>, sellerIds: Map<String, String>, active: () -> Boolean,
                reference: ManualGameReference.Game? = null,
-               progress: (Int, Int) -> Unit = { _, _ -> }): List<Offer> {
+               progress: (Int, Int) -> Unit = { _, _ -> },
+               onOffers:((List<Offer>)->Unit)?=null): List<Offer> {
         if (offers.isEmpty() || !active()) return emptyList()
         val sellers = ConcurrentHashMap<String, Map<String, String>>()
         val next = AtomicInteger(0)
         val done = AtomicInteger(0)
         val results = arrayOfNulls<Offer>(offers.size)
+        val resultLock=Any()
+        var lastPublished=0L
         val workers = Executors.newFixedThreadPool(minOf(4, offers.size))
         try {
             val futures = workers.invokeAll((0 until minOf(4, offers.size)).map {
@@ -51,9 +54,18 @@ class ManualCatalogEnricher(private val request: (String) -> JSONObject? = { Cat
                                     listOf(product?.optString("info"), product?.optString("add_info")).joinToString("\n"), it) } ?: refined.edition
                                 if(content == "Не подтверждено" && proof.price != null && proof.gameSelected) content="Игра"
                                 val rfStatus = if (proof.russiaSelected && refined.rfStatus != "РФ исключена") "РФ выбрана в параметрах" else refined.rfStatus
-                                results[index] = refined.copy(price = proof.price ?: refined.price,
+                                val checkedOffer = refined.copy(price = proof.price ?: refined.price,
                                     available = proof.available, priceVerified = proof.price != null,
                                     variablePrice = proof.price == null, purchaseNote = proof.label, edition = content, rfStatus = rfStatus, canonical=reference?.canonical.orEmpty(), steamAppId=reference?.appId ?: 0)
+                                synchronized(resultLock) {
+                                    results[index]=checkedOffer
+                                    val now=System.nanoTime()
+                                    if(onOffers!=null && active() && checkedOffer.available==true && checkedOffer.priceVerified &&
+                                        (lastPublished==0L || now-lastPublished>=150_000_000L)) {
+                                        lastPublished=now
+                                        onOffers(results.filterNotNull().filter {it.available==true && it.priceVerified}.sortedBy {it.price})
+                                    }
+                                }
                             }
                             progress(done.incrementAndGet(), offers.size)
                         }
@@ -65,3 +77,4 @@ class ManualCatalogEnricher(private val request: (String) -> JSONObject? = { Cat
         return if (active()) results.filterNotNull().sortedBy { it.price } else emptyList()
     }
 }
+

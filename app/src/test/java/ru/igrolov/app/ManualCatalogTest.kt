@@ -7,6 +7,30 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 class ManualCatalogTest {
+    @Test fun onlyVerifiedAvailableOffersArePublishedBeforeSlowCardsFinish() {
+        val slowStarted=java.util.concurrent.CountDownLatch(1)
+        val release=java.util.concurrent.CountDownLatch(1)
+        val partial=java.util.concurrent.CountDownLatch(1)
+        val executor=java.util.concurrent.Executors.newSingleThreadExecutor()
+        val snapshots=java.util.Collections.synchronizedList(mutableListOf<List<Offer>>())
+        val client=ManualCatalogEnricher {path->
+            val id=path.substringAfter("/products/").substringBefore("/").toInt()
+            if(id==10000) {slowStarted.countDown();check(release.await(3,java.util.concurrent.TimeUnit.SECONDS))}
+            JSONObject("""{"retval":0,"product":{"id":$id,"name":"Cyberpunk 2077 Steam Key РФ","is_available":${if(id==10002)0 else 1},"prices":{"default":{"RUB":${id-9900}}}}}""")
+        }
+        try {
+            val result=executor.submit<List<Offer>> {
+                client.enrich((10000..10002).map {offer(it.toString(),"Key")},emptyMap(),{true},
+                    onOffers={snapshots.add(it);partial.countDown()})
+            }
+            assertTrue(slowStarted.await(3,java.util.concurrent.TimeUnit.SECONDS))
+            assertTrue(partial.await(3,java.util.concurrent.TimeUnit.SECONDS))
+            assertFalse(result.isDone)
+            assertTrue(snapshots.flatten().all {it.id=="10001" && it.priceVerified && it.available==true})
+            release.countDown()
+            assertEquals(3,result.get(3,java.util.concurrent.TimeUnit.SECONDS).size)
+        } finally {release.countDown();executor.shutdownNow()}
+    }
     private fun offer(id: String = "123456", type: String = "Не указан") = Offer(id, "Cyberpunk 2077 Steam", 900.0, type, "Регион РФ не подтвержден", "Игра")
     @Test fun descriptionDistinguishesGiftFromAccessToAccount() {
         assertEquals("Gift", ManualOfferClassifier.refine(offer(), JSONObject().put("info", "Метод доставки: Steam Gift — подарком на ваш аккаунт"), null)?.type)
@@ -112,3 +136,4 @@ class ManualCatalogTest {
         ))
     }
 }
+

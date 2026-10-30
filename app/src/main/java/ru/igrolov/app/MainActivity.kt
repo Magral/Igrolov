@@ -266,7 +266,7 @@ class MainActivity : ComponentActivity() {
     private fun searchCatalog(query: String, pageCount: Int, generation: Int, selectedAppId: Int?,
         additionalAliases: List<String>, selectedEdition: SteamEditionReference.Edition? = null,
         availableEditions: List<SteamEditionReference.Edition> = emptyList(), requestKey: String,
-        background: Boolean, externalActive: () -> Boolean,
+        background: Boolean, streamOffers:Boolean, externalActive: () -> Boolean,
         progress: (Int, Int, Int) -> Unit,
         callback: (List<Offer>, String, List<String>, Set<String>, Set<String>, Boolean, Boolean) -> Unit) {
         val editionAliases = selectedEdition?.let { listOf(it.searchTitle) + additionalAliases } ?: additionalAliases
@@ -285,8 +285,8 @@ class MainActivity : ComponentActivity() {
         }
         val requestVersion = priceRequestSequence.incrementAndGet()
         priceRequestVersions[requestKey] = requestVersion
-        priceSearches.start(requestKey, background, linkedMapOf(
-            "Plati" to { running: () -> Boolean ->
+        priceSearches.startStreaming(requestKey, background, linkedMapOf(
+            "Plati" to { running: () -> Boolean, publish:(CatalogSourceResult)->Unit ->
                 val active = { running() && externalActive() }
                 check(active())
                 val found = mutableListOf<Offer>()
@@ -370,7 +370,9 @@ class MainActivity : ComponentActivity() {
                     if (active()) runOnUiThread {
                         if (active()) progress(progressPages, progressPages, checked)
                     }
-                }) }.getOrElse {
+                },onOffers=if(streamOffers) {rows->
+                    if(active())publish(CatalogSourceResult(selected(rows)))
+                } else null) }.getOrElse {
                     detailFailures.incrementAndGet()
                     emptyList()
                 }
@@ -399,7 +401,7 @@ class MainActivity : ComponentActivity() {
 
                 CatalogSourceResult(selected(enriched), aliasSuggestions, sourceFailed)
             },
-            "GGSEL" to { running: () -> Boolean ->
+            "GGSEL" to { running: () -> Boolean, _: (CatalogSourceResult)->Unit ->
                 val active = { running() && externalActive() }
                 check(active())
                 val rows = GgselBuyerApi.find(reference, active = active,
@@ -415,7 +417,7 @@ class MainActivity : ComponentActivity() {
             runOnUiThread {
                 if (!isDestroyed && externalActive() && priceRequestVersions[requestKey] == requestVersion) callback(found,
                     if (failed.isNotEmpty()) "Не удалось обновить часть цен" else "",
-                    aliases, failed, result.values.keys + result.failedSources, result.finished, result.cancelled)
+                    aliases, failed, result.completedSources, result.finished, result.cancelled)
             }
         }
     }
@@ -1946,8 +1948,9 @@ class MainActivity : ComponentActivity() {
                 hiddenWishlistSearch && wishlistKey != null -> "wishlist:$wishlistKey"
                 else -> "manual"
             }
+            var recordedSources=emptySet<String>()
             searchCatalog(requestedGame, requestedPages, generation, identity?.appId, identity?.aliases.orEmpty(), requestedEdition, steamEditions,
-                requestKey, background = onFinished != null, externalActive = { backgroundSearch || generation == activeCatalogGeneration.get() }, { page, _, count ->
+                requestKey, background = onFinished != null,streamOffers=!backgroundSearch, externalActive = { backgroundSearch || generation == activeCatalogGeneration.get() }, { page, _, count ->
                 if (!backgroundSearch && generation == searchGeneration) {
                     searchPage = page
                     searchFound = count
@@ -2008,12 +2011,15 @@ class MainActivity : ComponentActivity() {
                 val ggselMinimum = minimaByMarketplace["GGSEL"]
                 val hasWishlistMinimum = platiMinimum != null || ggselMinimum != null
                 val finishedAt = System.currentTimeMillis()
+                val newlyCompleted=completedSources-recordedSources
+                recordedSources=completedSources
                 val cached = primaryCacheKey?.let {
-                    recordComparison(it, minimaByMarketplace, failedSources, requestedAt, finishedAt, failure, completedSources, productUrls)
+                    if(newlyCompleted.isEmpty())catalogueUi.priceCache[it]
+                    else recordComparison(it, minimaByMarketplace, failedSources, requestedAt, finishedAt, failure, newlyCompleted, productUrls)
                 }
-                if (leaderCacheKey != null && leaderCacheKey != primaryCacheKey) {
+                if (leaderCacheKey != null && leaderCacheKey != primaryCacheKey && newlyCompleted.isNotEmpty()) {
                     val leaderBest = OfferPriceCache.bestOffers(results, OfferPriceCache.leaderFilters(requestedFilters), requestRules, requestIgnored)
-                    recordComparison(leaderCacheKey, leaderBest.mapValues {it.value.price}, failedSources, requestedAt, finishedAt, failure, completedSources,
+                    recordComparison(leaderCacheKey, leaderBest.mapValues {it.value.price}, failedSources, requestedAt, finishedAt, failure, newlyCompleted,
                         leaderBest.mapValues {OfferProductLink.forOffer(it.value)})
                 }
                 if (leaderboardAppId != null) {
@@ -3797,6 +3803,7 @@ private fun WatchListControls(
         }
     }
 }
+
 
 
 

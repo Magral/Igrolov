@@ -12,7 +12,8 @@ import java.util.concurrent.atomic.AtomicLong
 
 data class PriceSearchResult<T>(
     val values: Map<String, T>, val failedSources: Set<String>,
-    val finished: Boolean, val cancelled: Boolean = false, val timedOut: Boolean = false
+    val finished: Boolean, val cancelled: Boolean = false, val timedOut: Boolean = false,
+    val completedSources:Set<String> = values.keys + failedSources
 )
 
 /** Independent source checks; a request can never keep its card busy indefinitely. */
@@ -37,12 +38,18 @@ class PriceSearchCoordinator<T>(private val timeoutMillis: Long = 45_000L, paral
         var deadline: ScheduledFuture<*>? = null
         @Volatile var finished = false
 
+        @Synchronized fun partial(source:String,value:T) {
+            if(finished || closed || source in completed)return
+            values[source]=value
+            update(PriceSearchResult(values.toMap(),failed.toSet(),false,completedSources=completed.toSet()))
+        }
+
         @Synchronized fun publish(source: String, value: T?, success: Boolean) {
             if (finished || closed) return
             if (success) { @Suppress("UNCHECKED_CAST") values[source] = value as T } else failed.add(source)
             completed.add(source)
             val done = completed.containsAll(sources)
-            if (done) finish(false, false) else update(PriceSearchResult(values.toMap(), failed.toSet(), false))
+            if (done) finish(false, false) else update(PriceSearchResult(values.toMap(), failed.toSet(), false,completedSources=completed.toSet()))
         }
 
         @Synchronized fun finish(cancelled: Boolean, timedOut: Boolean, notify: Boolean = true) {
@@ -53,12 +60,19 @@ class PriceSearchCoordinator<T>(private val timeoutMillis: Long = 45_000L, paral
             workers.purge()
             requests.remove(key, this)
             if (notify && !closed) update(PriceSearchResult(values.toMap(),
-                failed + (sources - completed), true, cancelled, timedOut))
+                failed + (sources - completed), true, cancelled, timedOut,completed.toSet() + (sources - completed)))
         }
     }
 
     fun start(key: String, background: Boolean = false,
               sources: Map<String, (active: () -> Boolean) -> T>, update: (PriceSearchResult<T>) -> Unit) {
+        startStreaming(key,background,sources.mapValues {(_,load)->
+            {active:()->Boolean,_:(T)->Unit->load(active)}
+        },update)
+    }
+
+    fun startStreaming(key:String,background:Boolean=false,
+        sources:Map<String,(active:()->Boolean,publish:(T)->Unit)->T>,update:(PriceSearchResult<T>)->Unit) {
         check(!closed)
         require(sources.isNotEmpty())
         cancel(key)
@@ -69,7 +83,9 @@ class PriceSearchCoordinator<T>(private val timeoutMillis: Long = 45_000L, paral
             sources.forEach { (name, load) ->
                 val task = Task(if (background) 1 else 0, sequence.incrementAndGet()) {
                     if (!request.finished && !closed) {
-                        val result = runCatching { load { !request.finished && !closed && !Thread.currentThread().isInterrupted } }
+                        val result = runCatching { load(
+                            { !request.finished && !closed && !Thread.currentThread().isInterrupted },
+                            {value->request.partial(name,value)}) }
                         request.publish(name, result.getOrNull(), result.isSuccess)
                     }
                 }
@@ -87,3 +103,4 @@ class PriceSearchCoordinator<T>(private val timeoutMillis: Long = 45_000L, paral
         workers.shutdownNow()
     }
 }
+
