@@ -586,7 +586,8 @@ object WatchScheduler {
         val request = PeriodicWorkRequestBuilder<PriceWatchWorker>(MonitorSchedule.CHECK_INTERVAL_MILLIS, TimeUnit.MILLISECONDS).setConstraints(connected)
             .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL,5,TimeUnit.MINUTES)
             .setInitialDelay(if (delayed) MonitorSchedule.CHECK_INTERVAL_MILLIS else 0L, TimeUnit.MILLISECONDS).build()
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork("plati_game_price_watch", ExistingPeriodicWorkPolicy.KEEP, request)
+        // UPDATE retains enqueue time and the active run, while applying backoff changes to existing installs.
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork("plati_game_price_watch", ExistingPeriodicWorkPolicy.UPDATE, request)
     }
 }
 
@@ -746,41 +747,41 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
 
     private fun processAlerts(current:JSONObject,offers:List<Offer>,name:String,previousMinimum:Double) {
         val cheapest=offers.minByOrNull {it.price}
-                val previousNotified=if(current.has("notificationTracking"))current.optDouble("notificationPrice",Double.NaN)
-                    else current.optJSONObject("notifiedPrices")?.let {prices->prices.keys().asSequence().map {prices.optDouble(it,Double.NaN)}.filter {it.isFinite() && it>0}.minOrNull()} ?: Double.NaN
-                val anchor=current.optDouble("dropAnchor",previousMinimum)
-                val decision=MonitorAlertDecision.evaluate(cheapest?.price,current.optDouble("limit"),current.optInt("dropPercent"),anchor,previousNotified)
-                if(!current.has("notificationTracking") && previousNotified.isFinite())current.put("notificationPrice",previousNotified)
-                val alerts=MonitorPolicy.alerts(offers,current.optDouble("limit",0.0),
-                    current.optJSONObject("notifiedPrices") ?: JSONObject(),current.optJSONArray("notified") ?: JSONArray())
-                if(alerts.offers.isNotEmpty()) {
-                    alerts.offers.forEach {AlertJournal.record(applicationContext,name,it,current.optDouble("limit"))}
+        val previousNotified=if(current.has("notificationTracking"))current.optDouble("notificationPrice",Double.NaN)
+            else current.optJSONObject("notifiedPrices")?.let {prices->prices.keys().asSequence().map {prices.optDouble(it,Double.NaN)}.filter {it.isFinite() && it>0}.minOrNull()} ?: Double.NaN
+        val anchor=current.optDouble("dropAnchor",previousMinimum)
+        val decision=MonitorAlertDecision.evaluate(cheapest?.price,current.optDouble("limit"),current.optInt("dropPercent"),anchor,previousNotified)
+        if(!current.has("notificationTracking") && previousNotified.isFinite())current.put("notificationPrice",previousNotified)
+        val alerts=MonitorPolicy.alerts(offers,current.optDouble("limit",0.0),
+            current.optJSONObject("notifiedPrices") ?: JSONObject(),current.optJSONArray("notified") ?: JSONArray())
+        if(alerts.offers.isNotEmpty()) {
+            alerts.offers.forEach {AlertJournal.record(applicationContext,name,it,current.optDouble("limit"))}
+        }
+        current.put("notificationTracking",1)
+        if(cheapest!=null) {
+            if(!anchor.isFinite() || anchor<=0)current.put("dropAnchor",cheapest.price)
+            if(decision!=null) {
+                if(alerts.offers.none {it.id==cheapest.id} && decision=="drop" &&
+                    cheapest.price<current.optDouble("dropJournalPrice",Double.POSITIVE_INFINITY)-0.005) {
+                    AlertJournal.record(applicationContext,name,cheapest,current.optDouble("limit"))
+                    current.put("dropJournalPrice",cheapest.price)
                 }
-                current.put("notificationTracking",1)
-                if(cheapest!=null) {
-                    if(!anchor.isFinite() || anchor<=0)current.put("dropAnchor",cheapest.price)
-                    if(decision!=null) {
-                        if(alerts.offers.none {it.id==cheapest.id} && decision=="drop" &&
-                            cheapest.price<current.optDouble("dropJournalPrice",Double.POSITIVE_INFINITY)-0.005) {
-                            AlertJournal.record(applicationContext,name,cheapest,current.optDouble("limit"))
-                            current.put("dropJournalPrice",cheapest.price)
-                        }
-                        val sent=runCatching {sendNotification(cheapest,name,WatchStore.identity(current),decision,current.optInt("dropPercent"))}.getOrDefault(false)
-                        if(sent) {
-                            current.put("notificationPrice",cheapest.price).put("dropAnchor",cheapest.price)
-                            current.remove("notificationError")
-                        }
-                    }
+                val sent=runCatching {sendNotification(cheapest,name,WatchStore.identity(current),decision,current.optInt("dropPercent"))}.getOrDefault(false)
+                if(sent) {
+                    current.put("notificationPrice",cheapest.price).put("dropAnchor",cheapest.price)
+                    current.remove("notificationError")
                 }
-                current.put("notifiedPrices",alerts.prices)
-                // Migration completed once observed legacy IDs have a price baseline.
-                val legacy=current.optJSONArray("notified") ?: JSONArray()
-                val remaining=JSONArray()
-                for(n in 0 until minOf(legacy.length(),500)) {
-                    val id=legacy.optString(n)
-                    if(!alerts.prices.has(id))remaining.put(id)
-                }
-                current.put("notified",remaining)
+            }
+        }
+        current.put("notifiedPrices",alerts.prices)
+        // Migration completed once observed legacy IDs have a price baseline.
+        val legacy=current.optJSONArray("notified") ?: JSONArray()
+        val remaining=JSONArray()
+        for(n in 0 until minOf(legacy.length(),500)) {
+            val id=legacy.optString(n)
+            if(!alerts.prices.has(id))remaining.put(id)
+        }
+        current.put("notified",remaining)
     }
     private fun sendNotification(offer: Offer, game: String, watchKey: String,reason:String,dropPercent:Int):Boolean {
         val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
