@@ -9,6 +9,15 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 class MonitorSourceCheckTest {
+    @Test fun snapshotPreservesSuccessfulMarketplaceWhenOtherOneFails() {
+        val result=MonitorSourceCheck.snapshot({true},mapOf(
+            "Plati" to {_:()->Boolean->100},
+            "GGSEL" to {_:()->Boolean->throw IOException("GGSEL offline")}
+        ),1000)
+        assertEquals(mapOf("Plati" to 100),result.values)
+        assertEquals(setOf("GGSEL"),result.failed)
+        assertEquals("GGSEL offline",result.error)
+    }
     @Test fun startsBothSourcesBeforeEitherFinishes() {
         val started=CountDownLatch(2)
         val sources=listOf("Plati","GGSEL").associateWith { name ->
@@ -69,3 +78,4 @@ class MonitorSourceCheckTest {
         assertTrue(stopped.await(2,TimeUnit.SECONDS))
     }
 }
+

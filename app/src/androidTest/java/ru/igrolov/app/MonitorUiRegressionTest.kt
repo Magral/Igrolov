@@ -85,6 +85,7 @@ class MonitorUiRegressionTest {
         compose.onNodeWithText("Сохранить").performClick()
         compose.onNodeWithText("Введите положительную цену").assertExists()
         compose.onNodeWithTag("watch-target-input").performTextReplacement("1250,50")
+        compose.onNodeWithTag("watch-alert-drop:10").performClick()
         compose.onNodeWithText("Сохранить").performClick()
         compose.waitUntil(5000) {WatchStore.read(context).getJSONObject(0).optDouble("limit")==1250.50}
         compose.waitUntil(5000) {compose.onAllNodesWithTag("watch-target-input").fetchSemanticsNodes().isEmpty()}
@@ -94,6 +95,7 @@ class MonitorUiRegressionTest {
         assertEquals(800.0,afterEdit.getDouble("last"),0.0)
         assertEquals("Gift",afterEdit.getString("kind"))
         assertEquals(281990,afterEdit.getInt("steamAppId"))
+        assertEquals(10,afterEdit.getInt("dropPercent"))
         compose.onNodeWithText("Изменить цель").performSemanticsAction(SemanticsActions.OnClick) {it()}
         compose.onNodeWithTag("watch-target-input").performTextReplacement("2000")
         compose.onNodeWithText("Отмена").performClick()
@@ -161,6 +163,7 @@ class MonitorUiRegressionTest {
         context.getSharedPreferences("tracked_products",0).edit().putString("ids","").remove("product_cache_10000").commit()
     }
 }
+
 
 
 

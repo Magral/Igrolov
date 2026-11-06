@@ -189,7 +189,9 @@ class MonitorRegressionTest {
         val oldHistory=WatchStore.read(context).getJSONObject(0).getJSONArray("history").length()
         for(failure in listOf(1,2)) {
             mode.set(failure)
-            assertEquals(ListenableWorker.Result.failure(),worker().doWork())
+            assertEquals(ListenableWorker.Result.retry(),worker().doWork())
+            if(failure==1)assertEquals("Automatic retries must be bounded",ListenableWorker.Result.failure(),
+                TestListenableWorkerBuilder<PriceWatchWorker>(context).setRunAttemptCount(3).build().doWork())
             watch=WatchStore.read(context).getJSONObject(0)
             assertEquals(oldHistory,watch.getJSONArray("history").length())
             assertEquals(105.0,watch.getDouble("last"),0.001);assertTrue(watch.has("error"))
@@ -243,11 +245,16 @@ class MonitorRegressionTest {
         // An unavailable provider cannot turn its previous confirmed price into zero or a history gap.
         val savedHistory=watch.getJSONArray("history").length()
         ggselOffline.set(true)
-        assertEquals(ListenableWorker.Result.failure(),worker().doWork())
+        assertEquals(ListenableWorker.Result.retry(),worker().doWork())
         watch=WatchStore.read(context).getJSONObject(0)
         assertEquals(50.0,watch.getDouble("last"),0.001)
         assertEquals(savedHistory,watch.getJSONArray("history").length())
         assertTrue(watch.getString("error").contains("GGSEL HTTP 503"))
+        val partialChecks=MonitorSourcePrices.read(watch)
+        assertEquals(105.0,partialChecks.plati.price!!,0.001)
+        assertEquals(50.0,partialChecks.ggsel.price!!,0.001)
+        assertTrue(partialChecks.ggsel.failedAt>partialChecks.ggsel.checkedAt)
+        assertTrue(partialChecks.plati.checkedAt>0)
         ggselOffline.set(false)
         val beforeSlow=watch.getLong("checked")
         WatchStore.add(context,"Stellaris","Все",1000.0,appId=281990)
@@ -256,6 +263,7 @@ class MonitorRegressionTest {
         try {
             val result=executor.submit<ListenableWorker.Result> {runBlocking {worker().doWork()}}
             assertTrue(firstSlow.await(3,TimeUnit.SECONDS))
+            assertEquals("A coincident manual request must be retried, not skipped",ListenableWorker.Result.retry(),worker().doWork())
             val until=System.currentTimeMillis()+5000
             while(WatchStore.read(context).getJSONObject(1).optLong("checked")==0L && System.currentTimeMillis()<until)
                 Thread.sleep(20)
@@ -288,6 +296,7 @@ class MonitorRegressionTest {
         manager.cancelAll()
     }
 }
+
 
 
 

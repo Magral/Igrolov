@@ -945,12 +945,12 @@ class MainActivity : ComponentActivity() {
         ggselPrice: Double?,
         steamAvailable: Boolean? = null,
         platiUrl:String = "",ggselUrl:String = "",
-        checks:CachedGamePrices?=null,now:Long=System.currentTimeMillis()
+        checks:CachedGamePrices?=null,now:Long=System.currentTimeMillis(),showSteam:Boolean=true
     ) {
         val cheapest = listOfNotNull(platiPrice?.let { "Plati" to it }, ggselPrice?.let { "GGSEL" to it })
             .filter { it.second.isFinite() && it.second > 0.0 }.minByOrNull { it.second }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Top) {
-            DealPriceCell("Steam RU", if (steamAvailable == false) "Нет в РФ" else steamPrice.replace(" руб.", " ₽").replace(" руб", " ₽").ifBlank { "—" },
+            if(showSteam)DealPriceCell("Steam RU", if (steamAvailable == false) "Нет в РФ" else steamPrice.replace(" руб.", " ₽").replace(" руб", " ₽").ifBlank { "—" },
                 Modifier.weight(1f), false, if (discountPercent > 0) "−$discountPercent%" else null)
             DealPriceCell("Plati", platiPrice?.let { String.format(Locale("ru", "RU"), "%.2f ₽", it) } ?: "—",
                 Modifier.weight(1f), cheapest?.first == "Plati", if (cheapest?.first == "Plati") "Лучшая цена" else null,
@@ -1139,10 +1139,49 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun openAppSettings() {
+        runCatching {startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:$packageName")))}
+    }
+    private fun allowMonitorNotifications() {
+        if(Build.VERSION.SDK_INT>=33 && androidx.core.content.ContextCompat.checkSelfPermission(this,Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED &&
+            (!getSharedPreferences("monitor_notifications",MODE_PRIVATE).getBoolean("asked",false) || shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS))) {
+            getSharedPreferences("monitor_notifications",MODE_PRIVATE).edit().putBoolean("asked",true).apply()
+            askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else runCatching {
+            startActivity(Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE,packageName))
+        }
+    }
+
+    @Composable
+    private fun MonitorSystemStatus(onAllowNotifications:()->Unit) {
+        val owner=LocalLifecycleOwner.current
+        var restricted by remember {mutableStateOf(false)}
+        var notifications by remember {mutableStateOf(true)}
+        DisposableEffect(owner) {
+            fun refresh() {
+                restricted=Build.VERSION.SDK_INT>=28 && (getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager).isBackgroundRestricted
+                val manager=getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager
+                notifications=manager.areNotificationsEnabled() && manager.getNotificationChannel("price_alerts")?.importance!=android.app.NotificationManager.IMPORTANCE_NONE
+            }
+            refresh()
+            val observer=LifecycleEventObserver {_,event->if(event==Lifecycle.Event.ON_RESUME)refresh()}
+            owner.lifecycle.addObserver(observer)
+            onDispose {owner.lifecycle.removeObserver(observer)}
+        }
+        Text(if(restricted) "Android ограничивает работу в фоне." else "Фоновая проверка: примерно раз в час.",
+            style=MaterialTheme.typography.bodySmall)
+        TextButton(onClick={openAppSettings()},modifier=Modifier.testTag("monitor-background-settings")) {Text("Настройки работы в фоне")}
+        if(!notifications) {
+            Text("Уведомления выключены. Цены продолжают проверяться.",style=MaterialTheme.typography.bodySmall)
+            TextButton(onClick=onAllowNotifications,modifier=Modifier.testTag("monitor-enable-notifications")) {Text("Разрешить уведомления")}
+        }
+    }
+
     @Composable
     private fun WatchTargetDialog(watch:JSONObject,onDismiss:()->Unit,onSaved:(String)->Unit) {
         val watchId=WatchStore.identity(watch)
         var price by remember(watchId) {mutableStateOf(String.format(Locale("ru","RU"),"%.2f",watch.optDouble("limit")))}
+        var dropPercent by remember(watchId) {mutableIntStateOf(watch.optInt("dropPercent"))}
         var saving by remember(watchId) {mutableStateOf(false)}
         var error by remember(watchId) {mutableStateOf("")}
         AlertDialog(onDismissRequest={if(!saving)onDismiss()},title={Text("Изменить цель")},text={
@@ -1154,6 +1193,13 @@ class MainActivity : ComponentActivity() {
                 OutlinedTextField(price,{price=it;error=""},label={Text("Желаемая цена, ₽")},singleLine=true,
                     enabled=!saving,keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),
                     modifier=Modifier.fillMaxWidth().testTag("watch-target-input"))
+                Text("Уведомлять при достижении цели и дополнительно о снижении:",style=MaterialTheme.typography.bodySmall)
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                    listOf(0,5,10,20).forEach {percent->
+                        FilterChip(selected=dropPercent==percent,onClick={dropPercent=percent},enabled=!saving,
+                            modifier=Modifier.testTag("watch-alert-drop:$percent"),label={Text(if(percent==0) "Только цель" else "$percent%")})
+                    }
+                }
                 if(error.isNotBlank())Text(error,color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodySmall)
             }
         },confirmButton={
@@ -1164,7 +1210,7 @@ class MainActivity : ComponentActivity() {
                     saving=true
                     ioExecutor.execute {
                         val result=runCatching {
-                            if(WatchStore.updateTarget(this@MainActivity,watchId,amount))
+                            if(WatchStore.updateTarget(this@MainActivity,watchId,amount,dropPercent))
                                 WatchStore.read(this@MainActivity).toString() else null
                         }
                         runOnUiThread {
@@ -2528,6 +2574,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (watchEntries.isNotEmpty()) {
+                MonitorSystemStatus(onAllowNotifications={allowMonitorNotifications()})
                 WatchListControls(
                     filter = watchListFilter,
                     sort = watchListSort,
@@ -2587,10 +2634,17 @@ class MainActivity : ComponentActivity() {
                                 })
                         }
                         val checkedAt = w.optLong("checked", 0L)
+                        Text(if(w.optInt("dropPercent")>0) "Уведомления: цель или снижение на ${w.optInt("dropPercent")}%"
+                            else "Уведомления: достижение цели",style=MaterialTheme.typography.labelSmall)
                         val monitorDate = java.text.SimpleDateFormat("dd.MM HH:mm", Locale("ru", "RU"))
                         var resultsExpanded by rememberSaveable(w.optString("name")) { mutableStateOf(false) }
                         val bestOffers = w.optJSONArray("topOffers") ?: JSONArray()
                         val checkCaption=PriceFreshness.status(checkedAt,w.optLong("failedAt"),priceNow,w.optDouble("last",-1.0)>0)
+                        if(w.has("sourceChecks")) {
+                            val checks=MonitorSourcePrices.read(w)
+                            DealPriceStrip("",0,checks.plati.price,checks.ggsel.price,
+                                platiUrl=checks.plati.productUrl,ggselUrl=checks.ggsel.productUrl,checks=checks,now=priceNow,showSteam=false)
+                        }
                         if(checkCaption.isNotBlank())Text(checkCaption,modifier=Modifier.testTag("watch-price-freshness:${WatchStore.identity(w)}"),
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
@@ -3824,6 +3878,7 @@ private fun WatchListControls(
         }
     }
 }
+
 
 
 
