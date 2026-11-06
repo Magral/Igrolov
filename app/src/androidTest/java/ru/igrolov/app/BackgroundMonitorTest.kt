@@ -46,6 +46,7 @@ class BackgroundMonitorTest {
         val manager=WorkManager.getInstance(context)
         manager.cancelAllWork().result.get()
         WatchStore.write(context,JSONArray())
+        MonitorBackgroundStore.preferences(context).edit().clear().commit()
         WatchScheduler.start(context)
         await("Periodic work was not registered") {manager.getWorkInfosForUniqueWork("plati_game_price_watch").get().any {!it.state.isFinished}}
         val first=manager.getWorkInfosForUniqueWork("plati_game_price_watch").get().single {!it.state.isFinished}.id
@@ -53,18 +54,20 @@ class BackgroundMonitorTest {
         Thread.sleep(200)
         val active=manager.getWorkInfosForUniqueWork("plati_game_price_watch").get().filterNot {it.state.isFinished}
         assertEquals(listOf(first),active.map {it.id})
+        assertEquals("Registering a schedule is not a background check",BackgroundMonitorReport(),MonitorBackgroundStore.read(context))
         manager.cancelAllWork().result.get()
     }
 
     @Test fun periodicWorkerUpdatesWithoutActivityAndPercentageAlertDoesNotRepeat()=runBlocking {
         val amount=AtomicInteger(1000)
         val requests=AtomicInteger()
+        val offline=java.util.concurrent.atomic.AtomicBoolean(false)
         URL.setURLStreamHandlerFactory {protocol->if(protocol!="https")null else object:URLStreamHandler() {
             override fun openConnection(url:URL):URLConnection=object:HttpURLConnection(url) {
                 override fun connect(){}
                 override fun disconnect(){}
                 override fun usingProxy()=false
-                override fun getResponseCode()=200
+                override fun getResponseCode()=if(offline.get() && url.host.contains("ggsel"))503 else 200
                 override fun getOutputStream()=ByteArrayOutputStream()
                 override fun getInputStream():ByteArrayInputStream {
                     val json=when {
@@ -82,6 +85,7 @@ class BackgroundMonitorTest {
         val notifications=context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.cancelAllWork().result.get()
         notifications.cancelAll()
+        MonitorBackgroundStore.preferences(context).edit().clear().commit()
         WatchStore.write(context,JSONArray())
         WatchStore.add(context,"Stellaris","Key",100.0,appId=281990)
         val watchId=WatchStore.identity(WatchStore.read(context).getJSONObject(0))
@@ -95,6 +99,9 @@ class BackgroundMonitorTest {
                 manager.getWorkInfosForUniqueWork("plati_game_price_watch").get().none {it.state==WorkInfo.State.RUNNING}
             }
             assertTrue(requests.get()>0)
+            val background=MonitorBackgroundStore.read(context)
+            assertEquals("success",background.status)
+            assertTrue(background.lastSuccessAt>0)
             assertTrue(notifications.activeNotifications.isEmpty())
             amount.set(900)
             val requestId=UUID.randomUUID()
@@ -109,6 +116,13 @@ class BackgroundMonitorTest {
             assertEquals("Retry must not recheck an already completed watch",beforeRetry,requests.get())
             assertEquals(ListenableWorker.Result.success(),TestListenableWorkerBuilder<PriceWatchWorker>(context).build().doWork())
             assertEquals(postedAt,notifications.activeNotifications.single().postTime)
+            assertEquals("Manual checks must not change the actual background report",background,MonitorBackgroundStore.read(context))
+            offline.set(true)
+            manager.cancelUniqueWork("plati_game_price_watch").result.get()
+            WatchScheduler.start(context,delayed=false)
+            await("A failed background source must be recorded as partial") {MonitorBackgroundStore.read(context).status=="partial"}
+            assertEquals(background.lastSuccessAt,MonitorBackgroundStore.read(context).lastSuccessAt)
         } finally {WatchStore.write(context,JSONArray());manager.cancelAllWork().result.get();notifications.cancelAll()}
     }
 }
+

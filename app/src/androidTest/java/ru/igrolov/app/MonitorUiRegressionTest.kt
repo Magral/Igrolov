@@ -46,6 +46,8 @@ class MonitorUiRegressionTest {
         }}
         val context=ApplicationProvider.getApplicationContext<Context>()
         val now=System.currentTimeMillis()
+        MonitorBackgroundStore.preferences(context).edit().putString("state",MonitorBackgroundReport.encode(
+            BackgroundMonitorReport("fixture",now-2*3600000L,now-2*3600000L,now-3*3600000L,"partial"))).commit()
         val history=JSONArray().put(JSONObject().put("at",now-10800000).put("price",1000))
             .put(JSONObject().put("at",now-7200000)).put(JSONObject().put("at",now-3600000).put("price",800))
         val ggselOffer=JSONObject().put("id","ggsel:90001").put("name","Stellaris Steam Key РФ")
@@ -60,6 +62,9 @@ class MonitorUiRegressionTest {
         assertTrue(device.wait(Until.hasObject(By.text("Игролов")),15000))
         compose.onNodeWithText("Мониторинг").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitForIdle()
+        UiTestScroll.reveal(compose,"Фон: часть цен не обновлена",contains=true)
+        compose.onNodeWithTag("monitor-background-status").assertTextContains("часть цен не обновлена",substring=true)
+        compose.onNodeWithText("Последнее полное обновление в фоне:",substring=true).assertExists()
         val scroll=UiScrollable(UiSelector().className("android.widget.ScrollView").scrollable(true)).setMaxSearchSwipes(30)
         compose.waitUntil(15000) {
             compose.onAllNodesWithText("Показано 1 из 1").fetchSemanticsNodes().isNotEmpty()
@@ -160,9 +165,11 @@ class MonitorUiRegressionTest {
         }
         device.takeScreenshot(File(context.getExternalFilesDir(null),"monitor-selection.png"))
         WatchStore.write(context,JSONArray())
+        MonitorBackgroundStore.preferences(context).edit().clear().commit()
         context.getSharedPreferences("tracked_products",0).edit().putString("ids","").remove("product_cache_10000").commit()
     }
 }
+
 
 
 

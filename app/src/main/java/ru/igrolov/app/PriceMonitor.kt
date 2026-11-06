@@ -584,6 +584,7 @@ object WatchScheduler {
         WorkManager.getInstance(context).enqueueUniqueWork("plati_manual_price_check", ExistingWorkPolicy.KEEP, request)
     fun start(context: Context, delayed: Boolean = true) {
         val request = PeriodicWorkRequestBuilder<PriceWatchWorker>(MonitorSchedule.CHECK_INTERVAL_MILLIS, TimeUnit.MILLISECONDS).setConstraints(connected)
+            .setInputData(workDataOf("background" to true))
             .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL,5,TimeUnit.MINUTES)
             .setInitialDelay(if (delayed) MonitorSchedule.CHECK_INTERVAL_MILLIS else 0L, TimeUnit.MILLISECONDS).build()
         // UPDATE retains enqueue time and the active run, while applying backoff changes to existing installs.
@@ -608,13 +609,24 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
             .filterNot {it.optBoolean("paused")}
             .filter {selectedWatch==null || WatchStore.identity(it)==selectedWatch}
             .filterNot {runAttemptCount>0 && it.optString("completedWorkId")==token}
-        setProgressAsync(workDataOf("done" to 0, "total" to items.size, "game" to "Подготовка", "complete" to false))
-        val failed=MonitorCheckBatch.run(items,{!isStopped && WatchScheduler.generation()==generation},
-            {done,total,watch->setProgressAsync(workDataOf("done" to done,"total" to total,"game" to watch?.optString("name").orEmpty()))}
-        ) {watch,alive->checkWatch(watch,ignored,generation,token,alive)}
-        if(isStopped || WatchScheduler.generation()!=generation)return Result.success()
-        setProgressAsync(workDataOf("done" to items.size, "total" to items.size, "complete" to true)).get()
-        return if (!failed) Result.success() else if(runAttemptCount<3) Result.retry() else Result.failure()
+        val backgroundToken=if(inputData.getBoolean("background",false) && items.isNotEmpty())java.util.UUID.randomUUID().toString() else null
+        backgroundToken?.let {MonitorBackgroundStore.begin(applicationContext,it,System.currentTimeMillis())}
+        try {
+            setProgressAsync(workDataOf("done" to 0, "total" to items.size, "game" to "Подготовка", "complete" to false))
+            val failed=MonitorCheckBatch.run(items,{!isStopped && WatchScheduler.generation()==generation},
+                {done,total,watch->setProgressAsync(workDataOf("done" to done,"total" to total,"game" to watch?.optString("name").orEmpty()))}
+            ) {watch,alive->checkWatch(watch,ignored,generation,token,alive)}
+            if(isStopped || WatchScheduler.generation()!=generation) {
+                backgroundToken?.let {MonitorBackgroundStore.finish(applicationContext,it,System.currentTimeMillis(),failed=true,interrupted=true)}
+                return Result.success()
+            }
+            setProgressAsync(workDataOf("done" to items.size, "total" to items.size, "complete" to true)).get()
+            backgroundToken?.let {MonitorBackgroundStore.finish(applicationContext,it,System.currentTimeMillis(),failed)}
+            return if (!failed) Result.success() else if(runAttemptCount<3) Result.retry() else Result.failure()
+        } catch(error:Exception) {
+            backgroundToken?.let {MonitorBackgroundStore.finish(applicationContext,it,System.currentTimeMillis(),failed=true,interrupted=true)}
+            throw error
+        }
     }
     private fun checkWatch(watch:JSONObject,ignored:Set<String>,generation:Long,token:String,alive:()->Boolean):Boolean {
         val active = { alive() && WatchScheduler.active(watch, generation) }
@@ -804,6 +816,8 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
         return true
     }
 }
+
+
 
 
 

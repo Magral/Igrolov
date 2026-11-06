@@ -1153,21 +1153,33 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun MonitorSystemStatus(onAllowNotifications:()->Unit) {
+    private fun MonitorSystemStatus(onAllowNotifications:()->Unit,now:Long) {
         val owner=LocalLifecycleOwner.current
         var restricted by remember {mutableStateOf(false)}
         var notifications by remember {mutableStateOf(true)}
+        var backgroundReport by remember {mutableStateOf(MonitorBackgroundStore.read(this@MainActivity))}
         DisposableEffect(owner) {
             fun refresh() {
+                backgroundReport=MonitorBackgroundStore.read(this@MainActivity)
                 restricted=Build.VERSION.SDK_INT>=28 && (getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager).isBackgroundRestricted
                 val manager=getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager
                 notifications=manager.areNotificationsEnabled() && manager.getNotificationChannel("price_alerts")?.importance!=android.app.NotificationManager.IMPORTANCE_NONE
             }
-            refresh()
             val observer=LifecycleEventObserver {_,event->if(event==Lifecycle.Event.ON_RESUME)refresh()}
+            val reportPrefs=MonitorBackgroundStore.preferences(this@MainActivity)
+            val listener=android.content.SharedPreferences.OnSharedPreferenceChangeListener {_,key->
+                if(key=="state")runOnUiThread {backgroundReport=MonitorBackgroundStore.read(this@MainActivity)}
+            }
+            reportPrefs.registerOnSharedPreferenceChangeListener(listener)
             owner.lifecycle.addObserver(observer)
-            onDispose {owner.lifecycle.removeObserver(observer)}
+            refresh()
+            onDispose {owner.lifecycle.removeObserver(observer);reportPrefs.unregisterOnSharedPreferenceChangeListener(listener)}
         }
+        Text(MonitorBackgroundReport.caption(backgroundReport,now),modifier=Modifier.testTag("monitor-background-status"),
+            style=MaterialTheme.typography.bodySmall)
+        if(backgroundReport.status!="success" && backgroundReport.lastSuccessAt>0)
+            Text("Последнее полное обновление в фоне: ${PriceFreshness.age(backgroundReport.lastSuccessAt,now)}",
+                style=MaterialTheme.typography.labelSmall)
         Text(if(restricted) "Android ограничивает работу в фоне." else "Фоновая проверка: примерно раз в час.",
             style=MaterialTheme.typography.bodySmall)
         TextButton(onClick={openAppSettings()},modifier=Modifier.testTag("monitor-background-settings")) {Text("Настройки работы в фоне")}
@@ -2574,7 +2586,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (watchEntries.isNotEmpty()) {
-                MonitorSystemStatus(onAllowNotifications={allowMonitorNotifications()})
+                MonitorSystemStatus(onAllowNotifications={allowMonitorNotifications()},now=priceNow)
                 WatchListControls(
                     filter = watchListFilter,
                     sort = watchListSort,
@@ -3878,6 +3890,7 @@ private fun WatchListControls(
         }
     }
 }
+
 
 
 
