@@ -91,16 +91,16 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-11-06T21:39:10.328Z
+- Обновлено (UTC): 2026-11-06T22:06:45.222Z
 - Ветка: `main`.
-- HEAD: [`b8b99889fb0f`](https://github.com/Magral/Igrolov/commit/b8b99889fb0fbb72f6b403ce35eb530d12bf54a5).
-- Последний опубликованный стабильный GitHub Release: [v1.10.0](https://github.com/Magral/Igrolov/releases/tag/v1.10.0); APK-файлы: есть вложение APK.
+- HEAD: [`6ee33d386d29`](https://github.com/Magral/Igrolov/commit/6ee33d386d2903347e3cb7d5354050202d16fc30).
+- Последний опубликованный стабильный GitHub Release: [v1.11.0](https://github.com/Magral/Igrolov/releases/tag/v1.11.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [6ee33d3](https://github.com/Magral/Igrolov/commit/6ee33d386d2903347e3cb7d5354050202d16fc30) — feat: show actual background monitoring outcomes separately from manual checks
 - [b8b9988](https://github.com/Magral/Igrolov/commit/b8b99889fb0fbb72f6b403ce35eb530d12bf54a5) — release: Igrolov 1.11.0 reliable background monitoring and drop notifications
 - [80329ff](https://github.com/Magral/Igrolov/commit/80329ffeb0fb42e0d1fabb536e60b8a5fbb6bd2a) — fix: apply monitor retry policy to existing periodic schedules without resetting their timing
 - [1467eb4](https://github.com/Magral/Igrolov/commit/1467eb4636f7992473317b4524995a6661ebe91b) — fix: reliable background price retries and per-store updates with configurable drop alerts
-- [027daf1](https://github.com/Magral/Igrolov/commit/027daf174cb51ea447b133340d18dac41190f774) — release: Igrolov 1.10.0 edition comparison and faster price checks
 <!-- AUTO_CONTEXT_END -->
 
 
