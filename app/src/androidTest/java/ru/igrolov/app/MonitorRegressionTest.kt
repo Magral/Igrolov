@@ -217,7 +217,7 @@ class MonitorRegressionTest {
         val history=watch.getJSONArray("history")
         assertFalse(history.getJSONObject(history.length()-1).has("price"));assertFalse(watch.has("error"))
         mode.set(8);changed.set(false)
-        assertEquals(ListenableWorker.Result.success(),worker().doWork())
+        assertEquals("A watch edited mid-check must be retried with its new configuration",ListenableWorker.Result.retry(),worker().doWork())
         watch=WatchStore.read(context).getJSONObject(0)
         assertEquals(1.0,watch.getDouble("limit"),0.0);assertEquals(-1.0,watch.getDouble("last"),0.0)
         mode.set(7);changed.set(false)

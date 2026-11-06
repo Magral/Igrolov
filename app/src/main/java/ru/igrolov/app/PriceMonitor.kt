@@ -613,12 +613,19 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
         backgroundToken?.let {MonitorBackgroundStore.begin(applicationContext,it,System.currentTimeMillis())}
         try {
             setProgressAsync(workDataOf("done" to 0, "total" to items.size, "game" to "Подготовка", "complete" to false))
-            val failed=MonitorCheckBatch.run(items,{!isStopped && WatchScheduler.generation()==generation},
+            val sourceFailed=MonitorCheckBatch.run(items,{!isStopped && WatchScheduler.generation()==generation},
                 {done,total,watch->setProgressAsync(workDataOf("done" to done,"total" to total,"game" to watch?.optString("name").orEmpty()))}
             ) {watch,alive->checkWatch(watch,ignored,generation,token,alive)}
             if(isStopped || WatchScheduler.generation()!=generation) {
                 backgroundToken?.let {MonitorBackgroundStore.finish(applicationContext,it,System.currentTimeMillis(),failed=true,interrupted=true)}
                 return Result.success()
+            }
+            val currentWatches=WatchStore.read(applicationContext).let {rows->
+                (0 until rows.length()).mapNotNull {rows.optJSONObject(it)}.associateBy {WatchStore.identity(it)}
+            }
+            // A watch edited during transport was intentionally not saved. Retry its new configuration.
+            val failed=sourceFailed || items.any {snapshot->
+                currentWatches[WatchStore.identity(snapshot)]?.let {!it.optBoolean("paused") && it.optString("completedWorkId")!=token}==true
             }
             setProgressAsync(workDataOf("done" to items.size, "total" to items.size, "complete" to true)).get()
             backgroundToken?.let {MonitorBackgroundStore.finish(applicationContext,it,System.currentTimeMillis(),failed)}
