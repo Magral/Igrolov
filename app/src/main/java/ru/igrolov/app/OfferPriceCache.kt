@@ -7,7 +7,7 @@ import org.json.JSONObject
 data class SourcePriceCheck(
     val price: Double? = null, val checkedAt: Long = 0L,
     val failedAt: Long = 0L, val error: String = "", val requestStartedAt: Long = 0L,
-    val productUrl:String = ""
+    val productUrl:String = "",val scope:String="",val deliveryType:String=""
 ) {
     val hasData: Boolean get() = price != null || checkedAt > 0 || failedAt > 0
 }
@@ -51,14 +51,16 @@ object OfferPriceCache {
     /** A failed source keeps its old price AND its old successful-check time. */
     fun merge(previous: CachedGamePrices?, minima: Map<String, Double>, failed: Set<String>,
               startedAt: Long, finishedAt: Long, reason: String, sources: Set<String> = setOf("Plati", "GGSEL"),
-              productUrls:Map<String,String> = emptyMap()): CachedGamePrices {
+              productUrls:Map<String,String> = emptyMap(),proofs:Map<String,OfferComparisonProof> = emptyMap()): CachedGamePrices {
         val old = previous ?: CachedGamePrices()
         fun source(name: String, before: SourcePriceCheck): SourcePriceCheck {
             if (name !in sources || startedAt < before.requestStartedAt) return before
             if (name in failed) return before.copy(failedAt = finishedAt, error = reason.take(240), requestStartedAt = startedAt)
             val price=minima[name]?.takeIf { it.isFinite() && it > 0 }
             return SourcePriceCheck(price, finishedAt, requestStartedAt = startedAt,
-                productUrl=if(price!=null)OfferProductLink.validated(name,productUrls[name].orEmpty()) else "")
+                productUrl=if(price!=null)OfferProductLink.validated(name,productUrls[name].orEmpty()) else "",
+                scope=if(price!=null)proofs[name]?.scope.orEmpty() else "",
+                deliveryType=if(price!=null)proofs[name]?.deliveryType.orEmpty() else "")
         }
         return CachedGamePrices(source("Plati", old.plati), source("GGSEL", old.ggsel))
     }
@@ -66,6 +68,7 @@ object OfferPriceCache {
     fun encode(value: CachedGamePrices): String {
         fun source(s: SourcePriceCheck) = JSONObject().put("price", s.price ?: JSONObject.NULL)
             .put("checked", s.checkedAt).put("failed", s.failedAt).put("error", s.error).put("started", s.requestStartedAt).put("url",s.productUrl)
+            .put("scope",s.scope).put("delivery",s.deliveryType)
         return JSONObject().put("schema", 1).put("Plati", source(value.plati)).put("GGSEL", source(value.ggsel)).toString()
     }
     fun decode(raw: String?): CachedGamePrices? = runCatching {
@@ -76,10 +79,13 @@ object OfferPriceCache {
             val price = s.optDouble("price", Double.NaN).takeIf { it.isFinite() && it > 0 }
             return SourcePriceCheck(price, s.optLong("checked").coerceAtLeast(0), s.optLong("failed").coerceAtLeast(0),
                 s.optString("error").take(240), s.optLong("started").coerceAtLeast(0),
-                if(price!=null)OfferProductLink.validated(name,s.optString("url")) else "")
+                if(price!=null)OfferProductLink.validated(name,s.optString("url")) else "",
+                if(price!=null)s.optString("scope").take(180) else "",
+                if(price!=null)s.optString("delivery").takeIf {it in setOf("Gift","Key")}.orEmpty() else "")
         }
         CachedGamePrices(source("Plati"), source("GGSEL")).takeIf { it.plati.hasData || it.ggsel.hasData }
     }.getOrNull()
 }
+
 
 

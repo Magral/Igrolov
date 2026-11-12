@@ -945,24 +945,72 @@ class MainActivity : ComponentActivity() {
         ggselPrice: Double?,
         steamAvailable: Boolean? = null,
         platiUrl:String = "",ggselUrl:String = "",
-        checks:CachedGamePrices?=null,now:Long=System.currentTimeMillis(),showSteam:Boolean=true
+        checks:CachedGamePrices?=null,now:Long=System.currentTimeMillis(),showSteam:Boolean=true,steamQuote:SteamRuQuote?=null
     ) {
         val cheapest = listOfNotNull(platiPrice?.let { "Plati" to it }, ggselPrice?.let { "GGSEL" to it })
             .filter { it.second.isFinite() && it.second > 0.0 }.minByOrNull { it.second }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Top) {
             if(showSteam)DealPriceCell("Steam RU", if (steamAvailable == false) "Нет в РФ" else steamPrice.replace(" руб.", " ₽").replace(" руб", " ₽").ifBlank { "—" },
-                Modifier.weight(1f), false, if (discountPercent > 0) "−$discountPercent%" else null)
+                Modifier.weight(1f), false, if (discountPercent > 0) "−$discountPercent%" else null,
+                checkCaption=steamQuote?.let {PriceFreshness.status(it.checkedAt,it.failedAt,now,it.price!=null)}.orEmpty())
             DealPriceCell("Plati", platiPrice?.let { String.format(Locale("ru", "RU"), "%.2f ₽", it) } ?: "—",
                 Modifier.weight(1f), cheapest?.first == "Plati", if (cheapest?.first == "Plati") "Лучшая цена" else null,
-                if(platiPrice!=null)platiUrl else "",PriceFreshness.source(checks?.plati,platiPrice,now))
+                if(platiPrice!=null)platiUrl else "",PriceFreshness.source(checks?.plati,platiPrice,now),
+                checks?.plati?.takeIf {it.price==platiPrice}?.deliveryType.orEmpty())
             DealPriceCell("GGSEL", ggselPrice?.let { String.format(Locale("ru", "RU"), "%.2f ₽", it) } ?: "—",
                 Modifier.weight(1f), cheapest?.first == "GGSEL", if (cheapest?.first == "GGSEL") "Лучшая цена" else null,
-                if(ggselPrice!=null)ggselUrl else "",PriceFreshness.source(checks?.ggsel,ggselPrice,now))
+                if(ggselPrice!=null)ggselUrl else "",PriceFreshness.source(checks?.ggsel,ggselPrice,now),
+                checks?.ggsel?.takeIf {it.price==ggselPrice}?.deliveryType.orEmpty())
         }
     }
 
     @Composable
-    private fun DealPriceCell(label: String, price: String, modifier: Modifier, highlighted: Boolean, note: String? = null, productUrl:String = "", checkCaption:String="") {
+    private fun DealSavingsLine(quote:SteamRuQuote?,checks:CachedGamePrices?,now:Long) {
+        GameDeals.saving(quote,checks,now)?.let {saving->
+            Text("${saving.marketplace}: дешевле Steam RU на ${String.format(Locale("ru","RU"),"%.2f ₽",saving.rubles)}"+
+                if(saving.percent>0) " · ${saving.percent}%" else "",
+                modifier=Modifier.testTag("deal-saving"),style=MaterialTheme.typography.labelLarge,
+                color=Color(0xFF14633D))
+        }
+    }
+
+    @Composable
+    private fun DealSortControl(sort:DealSort,onSort:(DealSort)->Unit,tag:String) {
+        var expanded by remember {mutableStateOf(false)}
+        Box {
+            OutlinedButton(onClick={expanded=true},modifier=Modifier.fillMaxWidth().testTag(tag)) {Text("Сортировка: ${sort.label}")}
+            DropdownMenu(expanded=expanded,onDismissRequest={expanded=false}) {
+                DealSort.values().forEach {value->DropdownMenuItem(text={Text(value.label)},onClick={onSort(value);expanded=false})}
+            }
+        }
+        if(sort==DealSort.SAVING)Text("Выгода считается по проверенным ценам одинакового издания. Остальные игры — в конце.",style=MaterialTheme.typography.labelSmall)
+    }
+
+    @Composable
+    private fun MonitorPriceStrip(watch:JSONObject,now:Long) {
+        val appId=watch.optInt("steamAppId",watch.optInt("appId"))
+        val packageId=watch.optInt("steamPackageId")
+        val edition=watch.optString("steamEditionName").takeIf {it.isNotBlank()}
+        val raw=watch.optString("steamRuQuote")
+        val knownBase=edition==null || GameSearchResolver.normalized(edition)==GameSearchResolver.normalized(watch.optString("name"))
+        var quote by remember(appId,packageId,raw) {mutableStateOf(SteamRuQuotes.decode(raw) ?:
+            if(packageId>0 || knownBase)SteamRuQuoteStore.read(this@MainActivity,SteamRuQuotes.key(appId,packageId)) else null)}
+        LaunchedEffect(appId,packageId,edition) {
+            if(appId>0)quote=withContext(Dispatchers.IO) {
+                runCatching {SteamRuQuoteStore.lookup(this@MainActivity,appId,watch.optString("name"),packageId,edition)}.getOrNull()
+            }
+        }
+        val checks=MonitorSourcePrices.read(watch)
+        Column(Modifier.testTag("monitor-steam-price:${WatchStore.identity(watch)}")) {
+            DealPriceStrip(quote?.label.orEmpty(),0,checks.plati.price,checks.ggsel.price,
+                steamAvailable=quote?.available,platiUrl=checks.plati.productUrl,ggselUrl=checks.ggsel.productUrl,
+                checks=checks,now=now,steamQuote=quote)
+            DealSavingsLine(quote,checks,now)
+        }
+    }
+
+    @Composable
+    private fun DealPriceCell(label: String, price: String, modifier: Modifier, highlighted: Boolean, note: String? = null, productUrl:String = "", checkCaption:String="",deliveryType:String="") {
         val link=OfferProductLink.validated(label,productUrl)
         val clickable=if(link.isNotBlank())Modifier.clickable(role=Role.Button,
             onClickLabel="Открыть предложение $label в браузере") {openOfferPage(link)}.testTag("offer-price:$label") else Modifier
@@ -977,6 +1025,9 @@ class MainActivity : ComponentActivity() {
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold), color = Color.White, maxLines = 1)
                 }
                 Text(label, style = MaterialTheme.typography.labelSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), maxLines = 1, color = Color(0xFF17212D))
+                if(deliveryType in setOf("Gift","Key"))Surface(shape=MaterialTheme.shapes.small,border=BorderStroke(1.dp,Color(0xFF8995A3)),color=Color.Transparent) {
+                    Text(deliveryType,Modifier.padding(horizontal=5.dp,vertical=1.dp).testTag("delivery:$label"),style=MaterialTheme.typography.labelSmall,color=Color(0xFF17212D))
+                }
                 Text(price, style = MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                     textDecoration=if(link.isNotBlank())TextDecoration.Underline else TextDecoration.None),
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -1058,6 +1109,7 @@ class MainActivity : ComponentActivity() {
         onOpenSearch: () -> Unit, onDetails: () -> Unit,
         onSearchPrice: () -> Unit, onMonitor: () -> Unit,
         cachedPrices: CachedGamePrices?,
+        steamQuote:SteamRuQuote?,
         isWatched: Boolean,
         priceNow:Long
     ) {
@@ -1096,17 +1148,19 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 DealPriceStrip(
-                    steamPrice = game.steamPrice.ifBlank { "—" }, discountPercent = game.discountPercent,
+                    steamPrice = steamQuote?.label?.takeIf {it.isNotBlank()} ?: game.steamPrice.ifBlank { "—" }, discountPercent = game.discountPercent,
                     platiUrl = cachedPrices?.plati?.takeIf {it.price==platiPrice}?.productUrl.orEmpty(),
                     ggselUrl = cachedPrices?.ggsel?.takeIf {it.price==ggselPrice}?.productUrl.orEmpty(),
                     checks=cachedPrices,now=priceNow,
                     platiPrice = platiPrice, ggselPrice = ggselPrice,
-                    steamAvailable = when (game.availability) {
+                    steamQuote=steamQuote,
+                    steamAvailable = steamQuote?.available ?: when (game.availability) {
                         SteamRuAvailability.AVAILABLE -> true
                         SteamRuAvailability.UNAVAILABLE -> false
                         SteamRuAvailability.UNKNOWN -> null
                     }
                 )
+                DealSavingsLine(steamQuote,cachedPrices,priceNow)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     OutlinedButton(onClick = onSearchPrice, enabled = searchEnabled || marketplacePrices?.checking == true,
                         modifier = Modifier.weight(1f).height(36.dp), contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
@@ -1372,6 +1426,7 @@ class MainActivity : ComponentActivity() {
         var wishlistSearchingKeys by mutableStateOf<Set<String>>(emptySet())
         var wishlistSearchStatuses by mutableStateOf<Map<String, String>>(emptyMap())
         var priceCache by mutableStateOf(OfferPriceCacheStore.readAll(context))
+        var steamQuotes by mutableStateOf(SteamRuQuoteStore.readAll(context))
         var priceBatch by mutableStateOf(PriceCheckBatch())
     }
 
@@ -1581,7 +1636,8 @@ class MainActivity : ComponentActivity() {
             ioExecutor.execute {
                 val latestWatches=WatchStore.read(this@MainActivity).toString()
                 val latestAlerts=AlertJournal.read(this@MainActivity).toString()
-                runOnUiThread { watches=latestWatches; alertLog=latestAlerts; catalogueUi.priceCache=OfferPriceCacheStore.readAll(this@MainActivity) }
+                val quotes=SteamRuQuoteStore.readAll(this@MainActivity)
+                runOnUiThread { watches=latestWatches; alertLog=latestAlerts; catalogueUi.priceCache=OfferPriceCacheStore.readAll(this@MainActivity);catalogueUi.steamQuotes=quotes }
             }
         }
         LaunchedEffect(Unit) {
@@ -1731,11 +1787,13 @@ class MainActivity : ComponentActivity() {
         var leaderVisibleLimit by remember { mutableIntStateOf(20) }
         var leaderFilterInput by remember { mutableStateOf(savedLeaderFilters.input) }
         var wishlistFilterInput by remember { mutableStateOf(savedWishlistFilters.input) }
-        LaunchedEffect(leaderFilterInput,topAvailabilityFilter) {
-            catalogueFilterPrefs.edit().putString("leaders",CatalogFilterSettings.encode(leaderFilterInput,topAvailabilityFilter)).apply()
+        var leaderDealSort by remember {mutableStateOf(savedLeaderFilters.sort)}
+        var wishlistDealSort by remember {mutableStateOf(savedWishlistFilters.sort)}
+        LaunchedEffect(leaderFilterInput,topAvailabilityFilter,leaderDealSort) {
+            catalogueFilterPrefs.edit().putString("leaders",CatalogFilterSettings.encode(leaderFilterInput,topAvailabilityFilter,leaderDealSort)).apply()
         }
-        LaunchedEffect(wishlistFilterInput) {
-            catalogueFilterPrefs.edit().putString("wishlist",CatalogFilterSettings.encode(wishlistFilterInput)).apply()
+        LaunchedEffect(wishlistFilterInput,wishlistDealSort) {
+            catalogueFilterPrefs.edit().putString("wishlist",CatalogFilterSettings.encode(wishlistFilterInput,sort=wishlistDealSort)).apply()
         }
         var wishlistGenreBackfillAttempt by remember { mutableStateOf("") }
         var leaderOfferPrices by remember { mutableStateOf<Map<Int, LeaderOfferPrices>>(emptyMap()) }
@@ -1906,11 +1964,19 @@ class MainActivity : ComponentActivity() {
             GameRuleStore.read(this@MainActivity, title), ignoredIds, searchTotalPages, comparisonSavedAliases[appId].orEmpty())
         fun recordComparison(key: String, minima: Map<String, Double>, failed: Set<String>,
                              started: Long, finished: Long, reason: String, sources: Set<String> = setOf("Plati", "GGSEL"),
-                             productUrls:Map<String,String> = emptyMap()): CachedGamePrices {
-            val saved = runCatching { OfferPriceCacheStore.update(this@MainActivity, key, minima, failed, started, finished, reason, sources, productUrls) }
-                .getOrElse { OfferPriceCache.merge(catalogueUi.priceCache[key], minima, failed, started, finished, reason, sources, productUrls) }
+                             productUrls:Map<String,String> = emptyMap(),proofs:Map<String,OfferComparisonProof> = emptyMap()): CachedGamePrices {
+            val saved = runCatching { OfferPriceCacheStore.update(this@MainActivity, key, minima, failed, started, finished, reason, sources, productUrls,proofs) }
+                .getOrElse { OfferPriceCache.merge(catalogueUi.priceCache[key], minima, failed, started, finished, reason, sources, productUrls,proofs) }
             catalogueUi.priceCache = catalogueUi.priceCache + (key to saved)
             return saved
+        }
+        fun loadDealQuote(appId:Int,title:String,edition:SteamEditionReference.Edition?) {
+            detailExecutor.execute {
+                val quote=runCatching {SteamRuQuoteStore.lookup(this@MainActivity,appId,title,edition?.packageId ?: 0,edition?.name)}.getOrNull()
+                if(quote!=null)runOnUiThread {
+                    catalogueUi.steamQuotes=catalogueUi.steamQuotes+(SteamRuQuotes.key(appId,edition?.packageId ?: 0) to quote)
+                }
+            }
         }
         fun stopPriceBatch() {
             if (!catalogueUi.priceBatch.running) return
@@ -2007,6 +2073,7 @@ class MainActivity : ComponentActivity() {
                 else -> "manual"
             }
             var recordedSources=emptySet<String>()
+            var requestedQuote=false
             searchCatalog(requestedGame, requestedPages, generation, identity?.appId, identity?.aliases.orEmpty(), requestedEdition, steamEditions,
                 requestKey, background = onFinished != null,streamOffers=!backgroundSearch, externalActive = { backgroundSearch || generation == activeCatalogGeneration.get() }, { page, _, count ->
                 if (!backgroundSearch && generation == searchGeneration) {
@@ -2065,20 +2132,26 @@ class MainActivity : ComponentActivity() {
                 val bestByMarketplace = OfferPriceCache.bestOffers(results, requestFilters, requestRules, requestIgnored)
                 val minimaByMarketplace = bestByMarketplace.mapValues {it.value.price}
                 val productUrls = bestByMarketplace.mapValues {OfferProductLink.forOffer(it.value)}
+                val proofs=bestByMarketplace.mapValues {(_,offer)->OfferComparison.proof(offer,identity?.appId ?: 0,
+                    offer.canonical.ifBlank {requestedGame},requestedEdition?.name)}
                 val platiMinimum = minimaByMarketplace["Plati"]
                 val ggselMinimum = minimaByMarketplace["GGSEL"]
                 val hasWishlistMinimum = platiMinimum != null || ggselMinimum != null
                 val finishedAt = System.currentTimeMillis()
                 val newlyCompleted=completedSources-recordedSources
                 recordedSources=completedSources
+                if(!requestedQuote && identity!=null && bestByMarketplace.isNotEmpty() && newlyCompleted.isNotEmpty()) {
+                    requestedQuote=true
+                    loadDealQuote(identity.appId,bestByMarketplace.values.first().canonical.ifBlank {requestedGame},requestedEdition)
+                }
                 val cached = primaryCacheKey?.let {
                     if(newlyCompleted.isEmpty())catalogueUi.priceCache[it]
-                    else recordComparison(it, minimaByMarketplace, failedSources, requestedAt, finishedAt, failure, newlyCompleted, productUrls)
+                    else recordComparison(it, minimaByMarketplace, failedSources, requestedAt, finishedAt, failure, newlyCompleted, productUrls,proofs)
                 }
                 if (leaderCacheKey != null && leaderCacheKey != primaryCacheKey && newlyCompleted.isNotEmpty()) {
                     val leaderBest = OfferPriceCache.bestOffers(results, OfferPriceCache.leaderFilters(requestedFilters), requestRules, requestIgnored)
                     recordComparison(leaderCacheKey, leaderBest.mapValues {it.value.price}, failedSources, requestedAt, finishedAt, failure, newlyCompleted,
-                        leaderBest.mapValues {OfferProductLink.forOffer(it.value)})
+                        leaderBest.mapValues {OfferProductLink.forOffer(it.value)},leaderBest.mapValues {(_,offer)->OfferComparison.proof(offer,identity?.appId ?: 0,offer.canonical.ifBlank {requestedGame})})
                 }
                 if (leaderboardAppId != null) {
                     leaderOfferPrices = leaderOfferPrices + (leaderboardAppId to LeaderOfferPrices(
@@ -2652,11 +2725,7 @@ class MainActivity : ComponentActivity() {
                         var resultsExpanded by rememberSaveable(w.optString("name")) { mutableStateOf(false) }
                         val bestOffers = w.optJSONArray("topOffers") ?: JSONArray()
                         val checkCaption=PriceFreshness.status(checkedAt,w.optLong("failedAt"),priceNow,w.optDouble("last",-1.0)>0)
-                        if(w.has("sourceChecks")) {
-                            val checks=MonitorSourcePrices.read(w)
-                            DealPriceStrip("",0,checks.plati.price,checks.ggsel.price,
-                                platiUrl=checks.plati.productUrl,ggselUrl=checks.ggsel.productUrl,checks=checks,now=priceNow,showSteam=false)
-                        }
+                        MonitorPriceStrip(w,priceNow)
                         if(checkCaption.isNotBlank())Text(checkCaption,modifier=Modifier.testTag("watch-price-freshness:${WatchStore.identity(w)}"),
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
@@ -3135,6 +3204,8 @@ class MainActivity : ComponentActivity() {
                     genresLoading = catalogueUi.wishlistGenresLoading,
                     searchingKeys = catalogueUi.wishlistSearchingKeys, searchStatuses = catalogueUi.wishlistSearchStatuses,
                     searchEnabled = manualFilters.valid,
+                    dealSort=wishlistDealSort,onDealSort={wishlistDealSort=it},
+                    steamQuote={game->catalogueUi.steamQuotes[SteamRuQuotes.key(game.appId)]},
                     batchRunning=catalogueUi.priceBatch.running,
                     onCheckPrices={games->
                         catalogueUi.selectedWishlistId?.let {profileId->
@@ -3256,8 +3327,16 @@ class MainActivity : ComponentActivity() {
                 val visibleTopGames = remember(availabilityFilteredGames, leaderFilterInput) {
                     SteamLeaderFilter.apply(availabilityFilteredGames, leaderFilterInput.toFilters())
                 }
-                val displayedTopGames = remember(visibleTopGames, leaderVisibleLimit) {
-                    visibleTopGames.take(leaderVisibleLimit)
+                val dealKeys=remember(visibleTopGames,manualFilters,rulesRevision,ignoredIds,searchTotalPages,comparisonSavedAliases) {
+                    visibleTopGames.associate {it.appId to comparisonKey(it.appId,it.title,true)}
+                }
+                val orderedTopGames=remember(visibleTopGames,leaderDealSort,catalogueUi.priceCache,catalogueUi.steamQuotes,dealKeys,priceNow) {
+                    GameDeals.sort(visibleTopGames,leaderDealSort,
+                        price={game->GameDeals.minimum(catalogueUi.priceCache[dealKeys[game.appId].orEmpty()])},
+                        saving={game->GameDeals.saving(catalogueUi.steamQuotes[SteamRuQuotes.key(game.appId)],catalogueUi.priceCache[dealKeys[game.appId].orEmpty()],priceNow)})
+                }
+                val displayedTopGames = remember(orderedTopGames, leaderVisibleLimit) {
+                    orderedTopGames.take(leaderVisibleLimit)
                 }
                 val leaderHasMore = when (leaderSection) {
                     SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseHasMore
@@ -3319,6 +3398,7 @@ class MainActivity : ComponentActivity() {
                     onReset = { topAvailabilityFilter = "Все игры" }
                 )
                 Text("Показано: ${visibleTopGames.size}", style = MaterialTheme.typography.labelMedium)
+                DealSortControl(leaderDealSort,{leaderDealSort=it},"leaders-deal-sort")
                 if(displayedTopGames.isNotEmpty())OutlinedButton(onClick={
                     catalogueUi.priceBatch=PriceCheckBatch.start(displayedTopGames.map {PriceCheckTarget(it.appId,it.title)},manualFilters,searchTotalPages)
                 },enabled=manualFilters.valid && !catalogueUi.priceBatch.running,
@@ -3357,6 +3437,7 @@ class MainActivity : ComponentActivity() {
                     SteamLeaderCard(index, game, leaderOfferPrices[game.appId]?.takeIf { it.scopeKey == cacheKey },
                         searchEnabled = manualFilters.valid,
                         cachedPrices = catalogueUi.priceCache[cacheKey],
+                        steamQuote=catalogueUi.steamQuotes[SteamRuQuotes.key(game.appId)],
                         isWatched = isGameWatched(game.appId,game.title),
                         priceNow=priceNow,
                         onOpenSearch = {
@@ -3671,6 +3752,8 @@ class MainActivity : ComponentActivity() {
         searchStatuses: Map<String, String>,
         searchEnabled: Boolean,
         batchRunning:Boolean,
+        dealSort:DealSort,onDealSort:(DealSort)->Unit,
+        steamQuote:(WishlistGame)->SteamRuQuote?,
         onCheckPrices:(List<WishlistGame>)->Unit,
         onInput: (String) -> Unit,
         onImport: () -> Unit,
@@ -3689,9 +3772,12 @@ class MainActivity : ComponentActivity() {
         val availableGenres = remember(games) {
             games.asSequence().flatMap { it.genres.asSequence() }.distinct().sorted().toList()
         }
-        val visibleGames = remember(games, filterInput) {
+        val filteredGames = remember(games, filterInput) {
             SteamLeaderFilter.applyWishlist(games, filterInput.toFilters())
         }
+        val visibleGames=GameDeals.sort(filteredGames,dealSort,
+            price={game->GameDeals.minimum(cachedPrices(game),game.lowestPlatiPrice,game.lowestGgselPrice)},
+            saving={game->GameDeals.saving(steamQuote(game),cachedPrices(game),priceNow)})
         LazyColumn(state = listState, modifier = Modifier.fillMaxSize().testTag("wishlist-list"),
             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -3737,6 +3823,7 @@ class MainActivity : ComponentActivity() {
         SteamLeaderFiltersPanel(filterInput, onFilterInput, includeReviewFilters = false,
             availableGenres = availableGenres)
         Text("Показано: ${visibleGames.size} из ${games.size}", style = MaterialTheme.typography.labelMedium)
+        DealSortControl(dealSort,onDealSort,"wishlist-deal-sort")
         if(visibleGames.isNotEmpty())OutlinedButton(onClick={onCheckPrices(visibleGames.take(visibleLimit))},
             enabled=searchEnabled && !batchRunning && selectedId!=null,
             modifier=Modifier.fillMaxWidth().testTag("wishlist-check-prices")) {
@@ -3772,11 +3859,14 @@ class MainActivity : ComponentActivity() {
                                     color=Color(0xFF17212D),modifier=Modifier.testTag("wishlist-watched:${game.appId}"))
                             }
                         }
-                        DealPriceStrip(game.steamPrice, game.discountPercent,
-                            prices?.plati?.price ?: game.lowestPlatiPrice,
-                            prices?.ggsel?.price ?: game.lowestGgselPrice,
+                        val quote=steamQuote(game)
+                        DealPriceStrip(quote?.label?.takeIf {it.isNotBlank()} ?: game.steamPrice, game.discountPercent,
+                            GameDeals.price(prices?.plati,game.lowestPlatiPrice),
+                            GameDeals.price(prices?.ggsel,game.lowestGgselPrice),
+                            steamAvailable=quote?.available,steamQuote=quote,
                             platiUrl=prices?.plati?.productUrl.orEmpty(),ggselUrl=prices?.ggsel?.productUrl.orEmpty(),
                             checks=prices,now=priceNow)
+                        DealSavingsLine(quote,prices,priceNow)
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             OutlinedButton(onClick = { onSearchPrice(game) },
                                 enabled = selectedId != null && (searchEnabled || "$selectedId:${game.appId}" in searchingKeys),
@@ -3890,6 +3980,7 @@ private fun WatchListControls(
         }
     }
 }
+
 
 
 

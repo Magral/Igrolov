@@ -5,14 +5,14 @@ import org.json.JSONObject
 
 /** Separate persistent snapshots for Leaders and Wishlist; panel expansion stays temporary. */
 object CatalogFilterSettings {
-    data class Snapshot(val input:SteamLeaderFilterInput=SteamLeaderFilterInput(),val availability:String="Все игры")
-    fun encode(input:SteamLeaderFilterInput,availability:String="Все игры"):String = JSONObject()
+    data class Snapshot(val input:SteamLeaderFilterInput=SteamLeaderFilterInput(),val availability:String="Все игры",val sort:DealSort=DealSort.DEFAULT)
+    fun encode(input:SteamLeaderFilterInput,availability:String="Все игры",sort:DealSort=DealSort.DEFAULT):String = JSONObject()
         .put("title",input.titleQuery).put("price",input.maxPriceText)
         .put("discount",input.minimumDiscountText).put("rating",input.minimumReviewText)
         .put("reviews",input.minimumReviewCountText)
         .put("russian",input.russianLocalization?.name.orEmpty())
         .put("controller",input.controllerSupport?.name.orEmpty())
-        .put("genres",JSONArray(input.selectedGenres.sorted())).put("availability",availability).toString()
+        .put("genres",JSONArray(input.selectedGenres.sorted())).put("availability",availability).put("sort",sort.name).toString()
 
     fun decode(saved:String?):Snapshot = runCatching {
         val root=JSONObject(saved ?: "{}")
@@ -24,7 +24,8 @@ object CatalogFilterSettings {
             russianLocalization=SteamRussianLocalization.values().firstOrNull {it.name==root.optString("russian")},
             controllerSupport=SteamControllerSupport.values().firstOrNull {it.name==root.optString("controller")},
             selectedGenres=(0 until genres.length()).map {genres.optString(it)}.filter {it.isNotBlank()}.toSet()
-        ),root.optString("availability").takeIf {it in setOf("Все игры","Доступны в Steam RU","Недоступны в Steam RU")} ?: "Все игры")
+        ),root.optString("availability").takeIf {it in setOf("Все игры","Доступны в Steam RU","Недоступны в Steam RU")} ?: "Все игры",
+            DealSort.values().firstOrNull {it.name==root.optString("sort")} ?: DealSort.DEFAULT)
     }.getOrDefault(Snapshot())
 
     fun summary(input:SteamLeaderFilterInput):String = buildList {
@@ -35,3 +36,4 @@ object CatalogFilterSettings {
         if(input.minimumReviewCountText.isNotBlank())add("Отзывов от ${input.minimumReviewCountText}")
     }.joinToString(" · ")
 }
+

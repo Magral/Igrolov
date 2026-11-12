@@ -659,8 +659,8 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 if(reference.appId<=0) error("Steam не подтвердил основную игру; предыдущий результат сохранён")
                 val catalogPages=CatalogPageSettings.pages(applicationContext)
                 val rules=GameRuleStore.read(applicationContext,name)
-                data class SourceOffers(val offers:List<Offer>,val total:Int)
-                val outcome=MonitorSourceCheck.snapshot(active,mapOf(
+                data class SourceOffers(val offers:List<Offer>,val total:Int,val quote:SteamRuQuote?=null)
+                val rawOutcome=MonitorSourceCheck.snapshot(active,mapOf(
                     "Plati" to { active: () -> Boolean ->
                         val catalog=CatalogCheck.find(name,catalogPages,reference,active)
                         val checked=VerifiedMonitorCheck.run(catalog,reference,kind,rules,ignored,active,
@@ -672,8 +672,14 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                             listOf(it)+ManualContentRules.localizedEditionAliases(reference.canonical,it)
                         }.orEmpty())
                         SourceOffers(offers,offers.size)
+                    },
+                    "SteamRU" to {active:()->Boolean->
+                        check(active())
+                        SourceOffers(emptyList(),0,SteamRuQuoteStore.lookup(applicationContext,reference.appId,reference.canonical,
+                            watch.optInt("steamPackageId"),selectedEdition))
                     }
                 ))
+                val outcome=rawOutcome.copy(failed=rawOutcome.failed.intersect(setOf("Plati","GGSEL")))
                 val sources=outcome.values
                 val sourceTotal=sources.values.sumOf {it.total}
                 if (!active()) return false
@@ -689,14 +695,16 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 }.distinctBy {"${it.marketplace}:${it.id}"}.sortedBy {it.price}
                 val reliableOffers=verified.take(3)
                 current.put("steamAppId",reference.appId)
+                sources["SteamRU"]?.quote?.let {current.put("steamRuQuote",SteamRuQuotes.encode(it))}
                 val cheapest = reliableOffers.minByOrNull { it.price }
                 val previousMinimum=current.optDouble("last",Double.NaN)
                 val checkedAt = System.currentTimeMillis()
                 val best=verified.groupBy {it.marketplace}.mapValues {(_,offers)->offers.minBy {it.price}}
                 val minima=best.mapValues {it.value.price}
                 val urls=best.mapValues {OfferProductLink.forOffer(it.value)}
+                val proofs=best.mapValues {OfferComparison.proof(it.value,reference.appId,reference.canonical,selectedEdition)}
                 val sourceChecks=OfferPriceCache.merge(MonitorSourcePrices.read(current),minima,outcome.failed,
-                    checkStarted,checkedAt,outcome.error,productUrls=urls)
+                    checkStarted,checkedAt,outcome.error,productUrls=urls,proofs=proofs)
                 current.put("sourceChecks",OfferPriceCache.encode(sourceChecks))
                 current.put("sourceMinimums",JSONObject().apply {
                     sourceChecks.plati.price?.let {put("Plati",it)}
@@ -707,7 +715,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
                     val cacheAliases=if(selectedEdition==null) savedAliases else reference.aliases
                     val cacheKey=OfferPriceCache.key(reference.appId,cacheFilters,rules,ignored,catalogPages,cacheAliases)
                     runCatching { OfferPriceCacheStore.update(applicationContext,cacheKey,minima,outcome.failed,checkStarted,checkedAt,
-                        if(outcome.failed.isEmpty()) "" else outcome.error,productUrls=urls) }
+                        if(outcome.failed.isEmpty()) "" else outcome.error,productUrls=urls,proofs=proofs) }
                 }
                 if(outcome.failed.isNotEmpty()) {
                     current.put("failedAt",checkedAt).put("error",outcome.error)
@@ -823,6 +831,7 @@ class PriceWatchWorker(context: Context, params: WorkerParameters) : CoroutineWo
         return true
     }
 }
+
 
 
 

@@ -118,3 +118,7 @@ adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class ru.igrolov.app.BackgroundMonitorTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/background-monitor.txt
 grep -F 'OK (3 tests)' device-results/background-monitor.txt
 
+
+adb shell am force-stop ru.igrolov.app
+adb shell am instrument -w -r -e class ru.igrolov.app.GameDealsUiTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/game-deals.txt
+grep -F 'OK (1 test)' device-results/game-deals.txt

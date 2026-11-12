@@ -41,7 +41,7 @@ class MonitorEditionUiTest {
                 override fun getInputStream(): ByteArrayInputStream {
                     val json = when {
                         url.path.contains("storesearch") -> """{"items":[{"id":1771300,"name":"$title"}]}"""
-                        url.path.contains("appdetails") -> """{"1771300":{"success":true,"data":{"type":"game","name":"$title","dlc":[],"package_groups":[{"subs":[{"packageid":990001},{"packageid":990002}]}]}}}"""
+                        url.path.contains("appdetails") -> """{"1771300":{"success":true,"data":{"type":"game","name":"$title","dlc":[],"price_overview":{"currency":"RUB","final":150000},"package_groups":[{"subs":[{"packageid":990001,"price_in_cents_with_discount":150000},{"packageid":990002,"price_in_cents_with_discount":220000}]}]}}}"""
                         url.path.contains("packagedetails") -> {
                             packageRequests.incrementAndGet()
                             val id = if (url.query.contains("990002")) 990002 else 990001
@@ -108,6 +108,10 @@ class MonitorEditionUiTest {
             assertTrue(manager.getWorkInfosForUniqueWork("plati_manual_price_check").get()
                 .any {it.state==androidx.work.WorkInfo.State.SUCCEEDED})
             compose.onNodeWithTag("monitor-progress").assertDoesNotExist()
+            val quote=SteamRuQuotes.decode(WatchStore.read(context).getJSONObject(0).optString("steamRuQuote"))
+            assertEquals("Monitor must use Royal price, not the base game's price",2200.0,quote!!.price!!,0.0)
+            UiTestScroll.reveal(compose,"2200,00 ₽")
+            compose.onNodeWithText("2200,00 ₽").assertIsDisplayed()
             assertEquals("Monitoring must reuse the saved edition without package lookups",packagesBeforeCheck,packageRequests.get())
         } finally {
             release.countDown()
@@ -117,3 +121,4 @@ class MonitorEditionUiTest {
         }
     }
 }
+
