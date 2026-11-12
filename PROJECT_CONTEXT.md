@@ -93,16 +93,16 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-11-06T22:11:22.443Z
+- Обновлено (UTC): 2026-11-12T11:57:48.699Z
 - Ветка: `main`.
-- HEAD: [`a3b0755b9e9a`](https://github.com/Magral/Igrolov/commit/a3b0755b9e9a9393cc9bd5ad87f6dba5121334ac).
+- HEAD: [`63da2d59735c`](https://github.com/Magral/Igrolov/commit/63da2d59735c031462475d092ba8fb073eed13d8).
 - Последний опубликованный стабильный GitHub Release: [v1.11.0](https://github.com/Magral/Igrolov/releases/tag/v1.11.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [63da2d5](https://github.com/Magral/Igrolov/commit/63da2d59735c031462475d092ba8fb073eed13d8) — feat: compare verified game deals and show Steam RU prices in monitoring
 - [a3b0755](https://github.com/Magral/Igrolov/commit/a3b0755b9e9a9393cc9bd5ad87f6dba5121334ac) — fix: retry changed monitoring records before reporting a full background success
 - [6ee33d3](https://github.com/Magral/Igrolov/commit/6ee33d386d2903347e3cb7d5354050202d16fc30) — feat: show actual background monitoring outcomes separately from manual checks
 - [b8b9988](https://github.com/Magral/Igrolov/commit/b8b99889fb0fbb72f6b403ce35eb530d12bf54a5) — release: Igrolov 1.11.0 reliable background monitoring and drop notifications
-- [80329ff](https://github.com/Magral/Igrolov/commit/80329ffeb0fb42e0d1fabb536e60b8a5fbb6bd2a) — fix: apply monitor retry policy to existing periodic schedules without resetting their timing
 <!-- AUTO_CONTEXT_END -->
 
 
