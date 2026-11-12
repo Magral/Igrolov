@@ -1438,6 +1438,25 @@ class MainActivity : ComponentActivity() {
         var steamQuotes by mutableStateOf(SteamRuQuoteStore.readAll(context))
         var leaderDealSort by mutableStateOf(CatalogFilterSettings.decode(context.getSharedPreferences("catalogue_filters",0).getString("leaders",null)).sort)
         var wishlistDealSort by mutableStateOf(CatalogFilterSettings.decode(context.getSharedPreferences("catalogue_filters",0).getString("wishlist",null)).sort)
+        var topGames by mutableStateOf<List<SteamTopSeller>>(emptyList())
+        var newReleaseGames by mutableStateOf<List<SteamTopSeller>>(emptyList())
+        var discountedExtraGames by mutableStateOf<List<SteamTopSeller>>(emptyList())
+        var themedSaleGames by mutableStateOf<List<SteamTopSeller>>(emptyList())
+        var themedSalesInitialLoaded by mutableStateOf(false)
+        var newReleaseNextStart by mutableStateOf(0)
+        var newReleaseHasMore by mutableStateOf(true)
+        var newReleaseInitialLoaded by mutableStateOf(false)
+        var discountedNextStart by mutableStateOf(100)
+        var discountedHasMore by mutableStateOf(true)
+        var discountedInitialLoaded by mutableStateOf(false)
+        var loadMoreBusy by mutableStateOf(false)
+        var leaderDetailsGame by mutableStateOf<SteamTopSeller?>(null)
+        var leaderDetailsLoading by mutableStateOf(false)
+        var leaderSection by mutableStateOf(SteamLeaderSection.TOP_SELLERS)
+        var topBusy by mutableStateOf(false)
+        var topError by mutableStateOf("")
+        var leaderOfferPrices by mutableStateOf<Map<Int, LeaderOfferPrices>>(emptyMap())
+        var leaderVisibleLimit by mutableIntStateOf(20)
         var priceBatch by mutableStateOf(PriceCheckBatch())
     }
 
@@ -1756,20 +1775,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        var topGames by remember { mutableStateOf<List<SteamTopSeller>>(emptyList()) }
-        var newReleaseGames by remember { mutableStateOf<List<SteamTopSeller>>(emptyList()) }
-        var discountedExtraGames by remember { mutableStateOf<List<SteamTopSeller>>(emptyList()) }
-        var themedSaleGames by remember { mutableStateOf<List<SteamTopSeller>>(emptyList()) }
-        var themedSalesInitialLoaded by remember { mutableStateOf(false) }
-        var newReleaseNextStart by remember { mutableStateOf(0) }
-        var newReleaseHasMore by remember { mutableStateOf(true) }
-        var newReleaseInitialLoaded by remember { mutableStateOf(false) }
-        var discountedNextStart by remember { mutableStateOf(100) }
-        var discountedHasMore by remember { mutableStateOf(true) }
-        var discountedInitialLoaded by remember { mutableStateOf(false) }
-        var loadMoreBusy by remember { mutableStateOf(false) }
-        var leaderDetailsGame by remember { mutableStateOf<SteamTopSeller?>(null) }
-        var leaderDetailsLoading by remember { mutableStateOf(false) }
         var pendingWatchGame by remember { mutableStateOf<GameSearchResolver.Candidate?>(null) }
         var targetWatchToEdit by remember {mutableStateOf<JSONObject?>(null)}
         val watchEntries = remember(watches) {
@@ -1788,14 +1793,10 @@ class MainActivity : ComponentActivity() {
             if (appId <= 0 || name.isBlank()) return
             pendingWatchGame = GameSearchResolver.Candidate(appId, name)
         }
-        var leaderSection by remember { mutableStateOf(SteamLeaderSection.TOP_SELLERS) }
-        var topBusy by remember { mutableStateOf(false) }
-        var topError by remember { mutableStateOf("") }
         val catalogueFilterPrefs=remember {getSharedPreferences("catalogue_filters",MODE_PRIVATE)}
         val savedLeaderFilters=remember {CatalogFilterSettings.decode(catalogueFilterPrefs.getString("leaders",null))}
         val savedWishlistFilters=remember {CatalogFilterSettings.decode(catalogueFilterPrefs.getString("wishlist",null))}
         var topAvailabilityFilter by remember { mutableStateOf(savedLeaderFilters.availability) }
-        var leaderVisibleLimit by remember { mutableIntStateOf(20) }
         var leaderFilterInput by remember { mutableStateOf(savedLeaderFilters.input) }
         var wishlistFilterInput by remember { mutableStateOf(savedWishlistFilters.input) }
         LaunchedEffect(leaderFilterInput,topAvailabilityFilter,catalogueUi.leaderDealSort) {
@@ -1805,87 +1806,86 @@ class MainActivity : ComponentActivity() {
             catalogueFilterPrefs.edit().putString("wishlist",CatalogFilterSettings.encode(wishlistFilterInput,sort=catalogueUi.wishlistDealSort)).apply()
         }
         var wishlistGenreBackfillAttempt by remember { mutableStateOf("") }
-        var leaderOfferPrices by remember { mutableStateOf<Map<Int, LeaderOfferPrices>>(emptyMap()) }
         fun refreshTop() {
-            if (topBusy || loadMoreBusy) return
-            topBusy = true
-            topError = ""
-            when (leaderSection) {
+            if (catalogueUi.topBusy || catalogueUi.loadMoreBusy) return
+            catalogueUi.topBusy = true
+            catalogueUi.topError = ""
+            when (catalogueUi.leaderSection) {
                 SteamLeaderSection.POPULAR_NEW_RELEASES -> {
-                    newReleaseGames = emptyList()
-                    newReleaseNextStart = 0
-                    newReleaseHasMore = true
-                    newReleaseInitialLoaded = false
+                    catalogueUi.newReleaseGames = emptyList()
+                    catalogueUi.newReleaseNextStart = 0
+                    catalogueUi.newReleaseHasMore = true
+                    catalogueUi.newReleaseInitialLoaded = false
                     loadPopularNewReleasePage(0, 30) { page, error, isFinal ->
-                        newReleaseGames = page.games
-                        newReleaseNextStart = page.nextStart
-                        newReleaseHasMore = page.hasMore && page.nextStart > 0
-                        topError = error
-                        topBusy = !isFinal
-                        if (isFinal) newReleaseInitialLoaded = true
+                        catalogueUi.newReleaseGames = page.games
+                        catalogueUi.newReleaseNextStart = page.nextStart
+                        catalogueUi.newReleaseHasMore = page.hasMore && page.nextStart > 0
+                        catalogueUi.topError = error
+                        catalogueUi.topBusy = !isFinal
+                        if (isFinal) catalogueUi.newReleaseInitialLoaded = true
                     }
                 }
                 SteamLeaderSection.THEMED_SALES -> {
-                    themedSaleGames = emptyList()
-                    themedSalesInitialLoaded = false
+                    catalogueUi.themedSaleGames = emptyList()
+                    catalogueUi.themedSalesInitialLoaded = false
                     loadThemedSaleGames { games, error, isFinal ->
-                        themedSaleGames = games
-                        topError = error
-                        topBusy = !isFinal
-                        if (isFinal) themedSalesInitialLoaded = true
+                        catalogueUi.themedSaleGames = games
+                        catalogueUi.topError = error
+                        catalogueUi.topBusy = !isFinal
+                        if (isFinal) catalogueUi.themedSalesInitialLoaded = true
                     }
                 }
                 SteamLeaderSection.TOP_SELLERS, SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> {
-                    discountedExtraGames = emptyList()
-                    discountedNextStart = 100
-                    discountedHasMore = true
-                    discountedInitialLoaded = false
+                    catalogueUi.discountedExtraGames = emptyList()
+                    catalogueUi.discountedNextStart = 100
+                    catalogueUi.discountedHasMore = true
+                    catalogueUi.discountedInitialLoaded = false
                     loadPaidTopSellers { games, error, nextStart, hasMore, isFinal ->
-                        topGames = games
-                        discountedNextStart = nextStart
-                        discountedHasMore = hasMore
-                        topError = error
-                        topBusy = !isFinal
-                        if (isFinal) discountedInitialLoaded = true
+                        catalogueUi.topGames = games
+                        catalogueUi.discountedNextStart = nextStart
+                        catalogueUi.discountedHasMore = hasMore
+                        catalogueUi.topError = error
+                        catalogueUi.topBusy = !isFinal
+                        if (isFinal) catalogueUi.discountedInitialLoaded = true
                     }
                 }
             }
         }
         fun loadMoreLeaderGames() {
-            if (loadMoreBusy || topBusy) return
-            loadMoreBusy = true
-            topError = ""
-            when (leaderSection) {
+            if (catalogueUi.loadMoreBusy || catalogueUi.topBusy) return
+            catalogueUi.loadMoreBusy = true
+            catalogueUi.topError = ""
+            when (catalogueUi.leaderSection) {
                 SteamLeaderSection.POPULAR_NEW_RELEASES -> {
-                    val requestedStart = newReleaseNextStart
+                    val requestedStart = catalogueUi.newReleaseNextStart
                     loadPopularNewReleasePage(requestedStart, 30) { page, error, isFinal ->
-                        newReleaseGames = (newReleaseGames + page.games).distinctBy { it.appId }
-                        newReleaseNextStart = page.nextStart
-                        newReleaseHasMore = page.hasMore && page.nextStart > requestedStart
-                        topError = error
-                        loadMoreBusy = !isFinal
+                        catalogueUi.newReleaseGames = (catalogueUi.newReleaseGames + page.games).distinctBy { it.appId }
+                        catalogueUi.newReleaseNextStart = page.nextStart
+                        catalogueUi.newReleaseHasMore = page.hasMore && page.nextStart > requestedStart
+                        catalogueUi.topError = error
+                        catalogueUi.loadMoreBusy = !isFinal
                     }
                 }
                 SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> {
-                    val requestedStart = discountedNextStart
+                    val requestedStart = catalogueUi.discountedNextStart
                     loadDiscountedTopSellerPage(requestedStart) { page, error, isFinal ->
-                        discountedExtraGames = (discountedExtraGames + page.games.filter { it.discountPercent > 0 })
+                        catalogueUi.discountedExtraGames = (catalogueUi.discountedExtraGames + page.games.filter { it.discountPercent > 0 })
                             .distinctBy { it.appId }
-                        discountedNextStart = page.nextStart
-                        discountedHasMore = page.hasMore && page.nextStart > requestedStart
-                        topError = error
-                        loadMoreBusy = !isFinal
+                        catalogueUi.discountedNextStart = page.nextStart
+                        catalogueUi.discountedHasMore = page.hasMore && page.nextStart > requestedStart
+                        catalogueUi.topError = error
+                        catalogueUi.loadMoreBusy = !isFinal
                     }
                 }
-                SteamLeaderSection.TOP_SELLERS, SteamLeaderSection.THEMED_SALES -> loadMoreBusy = false
+                SteamLeaderSection.TOP_SELLERS, SteamLeaderSection.THEMED_SALES -> catalogueUi.loadMoreBusy = false
             }
         }
-        LaunchedEffect(activeTab, settingsOpen, leaderSection, topBusy) {
-            if (activeTab == 4 && !settingsOpen && !topBusy) {
-                val needsLoad = when (leaderSection) {
-                    SteamLeaderSection.POPULAR_NEW_RELEASES -> !newReleaseInitialLoaded
-                    SteamLeaderSection.THEMED_SALES -> !themedSalesInitialLoaded
-                    SteamLeaderSection.TOP_SELLERS, SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> !discountedInitialLoaded
+        LaunchedEffect(activeTab, settingsOpen, catalogueUi.leaderSection, catalogueUi.topBusy) {
+            if (activeTab == 4 && !settingsOpen && !catalogueUi.topBusy) {
+                val needsLoad = when (catalogueUi.leaderSection) {
+                    SteamLeaderSection.POPULAR_NEW_RELEASES -> !catalogueUi.newReleaseInitialLoaded
+                    SteamLeaderSection.THEMED_SALES -> !catalogueUi.themedSalesInitialLoaded
+                    SteamLeaderSection.TOP_SELLERS, SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> !catalogueUi.discountedInitialLoaded
                 }
                 if (needsLoad) refreshTop()
             }
@@ -2001,8 +2001,8 @@ class MainActivity : ComponentActivity() {
                 val key = if (wishlistProfileId != null && candidateOverride != null)
                     "$wishlistProfileId:${candidateOverride.appId}" else null
                 if (key != null) catalogueUi.wishlistSearchStatuses = catalogueUi.wishlistSearchStatuses + (key to "Проверьте ценовой фильтр")
-                else if (leaderboardAppId != null) leaderOfferPrices = leaderOfferPrices +
-                    (leaderboardAppId to (leaderOfferPrices[leaderboardAppId] ?: LeaderOfferPrices()).copy(message = "Проверьте ценовой фильтр"))
+                else if (leaderboardAppId != null) catalogueUi.leaderOfferPrices = catalogueUi.leaderOfferPrices +
+                    (leaderboardAppId to (catalogueUi.leaderOfferPrices[leaderboardAppId] ?: LeaderOfferPrices()).copy(message = "Проверьте ценовой фильтр"))
                 else searchMessage = "Проверьте ценовой фильтр"
                 onFinished?.invoke()
                 return
@@ -2029,8 +2029,8 @@ class MainActivity : ComponentActivity() {
             val backgroundLeaderboardSearch = leaderboardAppId != null
             val backgroundSearch = hiddenWishlistSearch || backgroundLeaderboardSearch
             if (leaderboardAppId != null) {
-                val previous = leaderOfferPrices[leaderboardAppId] ?: LeaderOfferPrices()
-                leaderOfferPrices = leaderOfferPrices + (leaderboardAppId to previous.copy(checking = true, message = "Проверяем Plati и GGSEL…", scopeKey = primaryCacheKey.orEmpty()))
+                val previous = catalogueUi.leaderOfferPrices[leaderboardAppId] ?: LeaderOfferPrices()
+                catalogueUi.leaderOfferPrices = catalogueUi.leaderOfferPrices + (leaderboardAppId to previous.copy(checking = true, message = "Проверяем Plati и GGSEL…", scopeKey = primaryCacheKey.orEmpty()))
             }
 
             val wishlistKey = wishlistProfileId?.let { "$it:${identity?.appId ?: candidateOverride?.appId}" }
@@ -2088,8 +2088,8 @@ class MainActivity : ComponentActivity() {
                         if (primaryCacheKey != null) recordComparison(primaryCacheKey, emptyMap(), setOf("Plati", "GGSEL"),
                             requestedAt, System.currentTimeMillis(), "Требуется подтверждение названия")
                         if (leaderboardAppId != null) {
-                        val previous = leaderOfferPrices[leaderboardAppId] ?: LeaderOfferPrices()
-                        leaderOfferPrices = leaderOfferPrices + (leaderboardAppId to previous.copy(
+                        val previous = catalogueUi.leaderOfferPrices[leaderboardAppId] ?: LeaderOfferPrices()
+                        catalogueUi.leaderOfferPrices = catalogueUi.leaderOfferPrices + (leaderboardAppId to previous.copy(
                             checking = false,
                             message = if (failure.isNotBlank()) "Не удалось подтвердить предложения: $failure" else "Нужен поиск по названию площадки"
                         ))
@@ -2155,7 +2155,7 @@ class MainActivity : ComponentActivity() {
                         leaderBest.mapValues {OfferProductLink.forOffer(it.value)},leaderBest.mapValues {(_,offer)->OfferComparison.proof(offer,identity?.appId ?: 0,offer.canonical.ifBlank {requestedGame})})
                 }
                 if (leaderboardAppId != null) {
-                    leaderOfferPrices = leaderOfferPrices + (leaderboardAppId to LeaderOfferPrices(
+                    catalogueUi.leaderOfferPrices = catalogueUi.leaderOfferPrices + (leaderboardAppId to LeaderOfferPrices(
                         checking = !finished, platiMinimum = cached?.plati?.price, ggselMinimum = cached?.ggsel?.price,
                         checkedAt = cached?.let { maxOf(it.plati.checkedAt, it.ggsel.checkedAt).takeIf { time -> time > 0 } },
                         message = if (cancelled) "Проверка остановлена" else if (failedSources.isNotEmpty()) "Не удалось обновить часть цен" else "",
@@ -2252,13 +2252,13 @@ class MainActivity : ComponentActivity() {
         val newReleasesListState = rememberLazyListState()
         val discountsListState = rememberLazyListState()
         val salesListState = rememberLazyListState()
-        val leaderListState = when (leaderSection) {
+        val leaderListState = when (catalogueUi.leaderSection) {
             SteamLeaderSection.TOP_SELLERS -> bestsellersListState
             SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleasesListState
             SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountsListState
             SteamLeaderSection.THEMED_SALES -> salesListState
         }
-        LaunchedEffect(leaderFilterInput, topAvailabilityFilter) { leaderVisibleLimit = 20 }
+        LaunchedEffect(leaderFilterInput, topAvailabilityFilter) { catalogueUi.leaderVisibleLimit = 20 }
         Column(Modifier.fillMaxSize().background(Color(0xFFF4F6F8))) {
             val aliasGame = pendingAliasGame
             if (aliasGame != null && pendingAliasSuggestions.isNotEmpty()) {
@@ -3268,14 +3268,14 @@ class MainActivity : ComponentActivity() {
                             title = game.title,
                             headerImageUrl = "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${game.appId}/header.jpg"
                         )
-                        leaderDetailsGame = initial
-                        leaderDetailsLoading = true
+                        catalogueUi.leaderDetailsGame = initial
+                        catalogueUi.leaderDetailsLoading = true
                         detailExecutor.execute {
                             val detailed = checkTopSellerRu(initial)
                             runOnUiThread {
-                                if (leaderDetailsGame?.appId == game.appId) {
-                                    leaderDetailsGame = detailed
-                                    leaderDetailsLoading = false
+                                if (catalogueUi.leaderDetailsGame?.appId == game.appId) {
+                                    catalogueUi.leaderDetailsGame = detailed
+                                    catalogueUi.leaderDetailsLoading = false
                                 }
                             }
                         }
@@ -3284,12 +3284,12 @@ class MainActivity : ComponentActivity() {
                 )
             }
             if (activeTab == 4 && !settingsOpen) {
-                val sectionGames = remember(leaderSection, newReleaseGames, topGames, discountedExtraGames, themedSaleGames) {
-                    when (leaderSection) {
-                        SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseGames
-                        SteamLeaderSection.TOP_SELLERS -> topGames
-                        SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> topGames + discountedExtraGames
-                        SteamLeaderSection.THEMED_SALES -> themedSaleGames
+                val sectionGames = remember(catalogueUi.leaderSection, catalogueUi.newReleaseGames, catalogueUi.topGames, catalogueUi.discountedExtraGames, catalogueUi.themedSaleGames) {
+                    when (catalogueUi.leaderSection) {
+                        SteamLeaderSection.POPULAR_NEW_RELEASES -> catalogueUi.newReleaseGames
+                        SteamLeaderSection.TOP_SELLERS -> catalogueUi.topGames
+                        SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> catalogueUi.topGames + catalogueUi.discountedExtraGames
+                        SteamLeaderSection.THEMED_SALES -> catalogueUi.themedSaleGames
                     }
                 }
                 val reviewFiltersActive = (leaderFilterInput.minimumReviewText.toIntOrNull() ?: 0) > 0 ||
@@ -3301,13 +3301,13 @@ class MainActivity : ComponentActivity() {
                             fun attachReviews(games: List<SteamTopSeller>) = games.map { game ->
                                 loaded[game.appId]?.let { game.copy(reviewSummary = it) } ?: game
                             }
-                            topGames = attachReviews(topGames)
-                            newReleaseGames = attachReviews(newReleaseGames)
-                            discountedExtraGames = attachReviews(discountedExtraGames)
+                            catalogueUi.topGames = attachReviews(catalogueUi.topGames)
+                            catalogueUi.newReleaseGames = attachReviews(catalogueUi.newReleaseGames)
+                            catalogueUi.discountedExtraGames = attachReviews(catalogueUi.discountedExtraGames)
                         }
                     }
                 }
-                val countLabel = when (leaderSection) {
+                val countLabel = when (catalogueUi.leaderSection) {
                     SteamLeaderSection.TOP_SELLERS -> "Загружено: ${sectionGames.size} из 100"
                     SteamLeaderSection.POPULAR_NEW_RELEASES -> "Новинок: ${sectionGames.size}"
                     SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> "Со скидкой: ${SteamLeaderSection.DISCOUNTED_TOP_SELLERS.filter(sectionGames).size}"
@@ -3316,8 +3316,8 @@ class MainActivity : ComponentActivity() {
                 val availableLeaderGenres = remember(sectionGames) {
                     sectionGames.asSequence().flatMap { it.genres.asSequence() }.distinct().sorted().toList()
                 }
-                val availabilityFilteredGames = remember(sectionGames, leaderSection, topAvailabilityFilter) {
-                    leaderSection.filter(sectionGames).filter { game ->
+                val availabilityFilteredGames = remember(sectionGames, catalogueUi.leaderSection, topAvailabilityFilter) {
+                    catalogueUi.leaderSection.filter(sectionGames).filter { game ->
                         game.isGame && when (topAvailabilityFilter) {
                             "Доступны в Steam RU" -> game.availability == SteamRuAvailability.AVAILABLE
                             "Недоступны в Steam RU" -> game.availability == SteamRuAvailability.UNAVAILABLE
@@ -3330,35 +3330,35 @@ class MainActivity : ComponentActivity() {
                 }
                 val displayedTopGames=remember(visibleTopGames,catalogueUi.leaderDealSort,catalogueUi.priceCache,
                     catalogueUi.steamQuotes,manualFilters,rulesRevision,ignoredIds,searchTotalPages,
-                    comparisonSavedAliases,priceNow,leaderVisibleLimit) {
+                    comparisonSavedAliases,priceNow,catalogueUi.leaderVisibleLimit) {
                     val keys=visibleTopGames.associate {it.appId to comparisonKey(it.appId,it.title,true)}
                     GameDeals.sort(visibleTopGames,catalogueUi.leaderDealSort,
                         price={game->GameDeals.minimum(catalogueUi.priceCache[keys[game.appId].orEmpty()])},
                         saving={game->GameDeals.saving(catalogueUi.steamQuotes[SteamRuQuotes.key(game.appId)],catalogueUi.priceCache[keys[game.appId].orEmpty()],priceNow)}
-                    ).take(leaderVisibleLimit)
+                    ).take(catalogueUi.leaderVisibleLimit)
                 }
-                val leaderHasMore = when (leaderSection) {
-                    SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseHasMore
-                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedHasMore
+                val leaderHasMore = when (catalogueUi.leaderSection) {
+                    SteamLeaderSection.POPULAR_NEW_RELEASES -> catalogueUi.newReleaseHasMore
+                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> catalogueUi.discountedHasMore
                     SteamLeaderSection.THEMED_SALES, SteamLeaderSection.TOP_SELLERS -> false
                 }
-                val leaderInitialLoaded = when (leaderSection) {
-                    SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseInitialLoaded
-                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedInitialLoaded
-                    SteamLeaderSection.THEMED_SALES -> themedSalesInitialLoaded
-                    SteamLeaderSection.TOP_SELLERS -> discountedInitialLoaded
+                val leaderInitialLoaded = when (catalogueUi.leaderSection) {
+                    SteamLeaderSection.POPULAR_NEW_RELEASES -> catalogueUi.newReleaseInitialLoaded
+                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> catalogueUi.discountedInitialLoaded
+                    SteamLeaderSection.THEMED_SALES -> catalogueUi.themedSalesInitialLoaded
+                    SteamLeaderSection.TOP_SELLERS -> catalogueUi.discountedInitialLoaded
                 }
-                LaunchedEffect(activeTab, settingsOpen, leaderSection, leaderFilterInput, topAvailabilityFilter,
-                    visibleTopGames.size, newReleaseNextStart, discountedNextStart, leaderHasMore,
-                    leaderInitialLoaded, topBusy, loadMoreBusy) {
-                    if (activeTab == 4 && !settingsOpen && leaderInitialLoaded && !topBusy && !loadMoreBusy &&
-                        SteamLeaderFilter.shouldLoadMoreMatching(leaderSection, visibleTopGames.size, leaderHasMore)) {
+                LaunchedEffect(activeTab, settingsOpen, catalogueUi.leaderSection, leaderFilterInput, topAvailabilityFilter,
+                    visibleTopGames.size, catalogueUi.newReleaseNextStart, catalogueUi.discountedNextStart, leaderHasMore,
+                    leaderInitialLoaded, catalogueUi.topBusy, catalogueUi.loadMoreBusy) {
+                    if (activeTab == 4 && !settingsOpen && leaderInitialLoaded && !catalogueUi.topBusy && !catalogueUi.loadMoreBusy &&
+                        SteamLeaderFilter.shouldLoadMoreMatching(catalogueUi.leaderSection, visibleTopGames.size, leaderHasMore)) {
                         loadMoreLeaderGames()
                     }
                 }
-                val sectionHasMore = when (leaderSection) {
-                    SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseHasMore
-                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> discountedHasMore
+                val sectionHasMore = when (catalogueUi.leaderSection) {
+                    SteamLeaderSection.POPULAR_NEW_RELEASES -> catalogueUi.newReleaseHasMore
+                    SteamLeaderSection.DISCOUNTED_TOP_SELLERS -> catalogueUi.discountedHasMore
                     SteamLeaderSection.THEMED_SALES, SteamLeaderSection.TOP_SELLERS -> false
                 }
                 LazyColumn(
@@ -3369,12 +3369,12 @@ class MainActivity : ComponentActivity() {
                 ) {
                     item(key = "leader-header", contentType = "header") {
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                if (topBusy) LinearProgressIndicator(Modifier.fillMaxWidth())
-                if (topError.isNotBlank()) Text("Не удалось загрузить игры. Попробуйте ещё раз.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (catalogueUi.topBusy) LinearProgressIndicator(Modifier.fillMaxWidth())
+                if (catalogueUi.topError.isNotBlank()) Text("Не удалось загрузить игры. Попробуйте ещё раз.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     SteamLeaderSection.values().forEach { section ->
-                        FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = leaderSection == section,
-                            onClick = { leaderSection = section; topError = "" },
+                        FilterChip(colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFFFE2A6), selectedLabelColor = Color(0xFF17212D)), selected = catalogueUi.leaderSection == section,
+                            onClick = { catalogueUi.leaderSection = section; catalogueUi.topError = "" },
                             label = { Text(section.label, maxLines = 1, style = MaterialTheme.typography.labelSmall) })
                     }
                 }
@@ -3382,7 +3382,7 @@ class MainActivity : ComponentActivity() {
                     horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                     Text(countLabel,modifier=Modifier.weight(1f),style=MaterialTheme.typography.labelSmall,
                         color=MaterialTheme.colorScheme.onSurfaceVariant)
-                    TextButton(onClick={refreshTop()},enabled=!topBusy && !loadMoreBusy,
+                    TextButton(onClick={refreshTop()},enabled=!catalogueUi.topBusy && !catalogueUi.loadMoreBusy,
                         modifier=Modifier.testTag("leader-refresh"),
                         contentPadding=PaddingValues(horizontal=6.dp,vertical=0.dp)) {Text("Обновить")}
                 }
@@ -3406,18 +3406,18 @@ class MainActivity : ComponentActivity() {
                 }
                 if (leaderInitialLoaded) {
                     SteamLeaderFilter.paginationStatus(
-                        leaderSection,
+                        catalogueUi.leaderSection,
                         visibleTopGames.size,
                         leaderHasMore,
-                        topBusy || loadMoreBusy
+                        catalogueUi.topBusy || catalogueUi.loadMoreBusy
                     )?.let { status ->
                         Text(status, style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-                if (!topBusy && topError.isBlank() && visibleTopGames.isEmpty()) {
+                if (!catalogueUi.topBusy && catalogueUi.topError.isBlank() && visibleTopGames.isEmpty()) {
                     Text(
-                        when (leaderSection) {
+                        when (catalogueUi.leaderSection) {
                             SteamLeaderSection.DISCOUNTED_TOP_SELLERS ->
                                 "В загруженном топе нет игр с подтверждённой скидкой Steam RU."
                             SteamLeaderSection.THEMED_SALES ->
@@ -3433,7 +3433,7 @@ class MainActivity : ComponentActivity() {
                     itemsIndexed(displayedTopGames, key = { _, game -> game.appId }, contentType = { _, _ -> "game" }) { index, game ->
                     val cacheKey = remember(game.appId, game.title, manualFilters, rulesRevision, ignoredIds,
                         searchTotalPages, comparisonSavedAliases[game.appId]) { comparisonKey(game.appId, game.title, true) }
-                    SteamLeaderCard(index, game, leaderOfferPrices[game.appId]?.takeIf { it.scopeKey == cacheKey },
+                    SteamLeaderCard(index, game, catalogueUi.leaderOfferPrices[game.appId]?.takeIf { it.scopeKey == cacheKey },
                         searchEnabled = manualFilters.valid,
                         cachedPrices = catalogueUi.priceCache[cacheKey],
                         steamQuote=catalogueUi.steamQuotes[SteamRuQuotes.key(game.appId)],
@@ -3454,9 +3454,9 @@ class MainActivity : ComponentActivity() {
                                     activeTab = 0
 
                         },
-                        onDetails = { leaderDetailsGame = game; leaderDetailsLoading = false },
+                        onDetails = { catalogueUi.leaderDetailsGame = game; catalogueUi.leaderDetailsLoading = false },
                         onSearchPrice = {
-                            if (leaderOfferPrices[game.appId]?.checking == true) priceSearches.cancel("leader:${game.appId}")
+                            if (catalogueUi.leaderOfferPrices[game.appId]?.checking == true) priceSearches.cancel("leader:${game.appId}")
                             else startCatalogSearch(
                                 candidateOverride = GameSearchResolver.Candidate(game.appId, game.title),
                                 leaderboardAppId = game.appId
@@ -3466,27 +3466,27 @@ class MainActivity : ComponentActivity() {
                     }
                     item(key = "leader-footer", contentType = "footer") {
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (visibleTopGames.size > leaderVisibleLimit) {
-                    OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { leaderVisibleLimit += 20 }, modifier = Modifier.fillMaxWidth()) {
-                        Text("Показать ещё · ${minOf(leaderVisibleLimit, visibleTopGames.size)} из ${visibleTopGames.size}")
+                if (visibleTopGames.size > catalogueUi.leaderVisibleLimit) {
+                    OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), onClick = { catalogueUi.leaderVisibleLimit += 20 }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Показать ещё · ${minOf(catalogueUi.leaderVisibleLimit, visibleTopGames.size)} из ${visibleTopGames.size}")
                     }
                 }
                 if (sectionHasMore) {
                     OutlinedButton(shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), 
                         onClick = { loadMoreLeaderGames() },
-                        enabled = !loadMoreBusy && !topBusy,
+                        enabled = !catalogueUi.loadMoreBusy && !catalogueUi.topBusy,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(if (loadMoreBusy) "Загружаем…" else "Загрузить ещё")
+                        Text(if (catalogueUi.loadMoreBusy) "Загружаем…" else "Загрузить ещё")
                     }
                 }
                         }
                     }
                 }
             }
-                leaderDetailsGame?.let { game ->
+                catalogueUi.leaderDetailsGame?.let { game ->
                     AlertDialog(
-                        onDismissRequest = { leaderDetailsGame = null },
+                        onDismissRequest = { catalogueUi.leaderDetailsGame = null },
                         title = { Text(game.title) },
                         text = {
                             Column(
@@ -3496,7 +3496,7 @@ class MainActivity : ComponentActivity() {
                                 SteamArtwork(game.headerImageUrl, Modifier.fillMaxWidth().height(176.dp), appId = game.appId)
                                 if (game.description.isNotBlank()) {
                                     Text(Html.fromHtml(game.description, Html.FROM_HTML_MODE_COMPACT).toString().trim())
-                                } else if (leaderDetailsLoading) {
+                                } else if (catalogueUi.leaderDetailsLoading) {
                                     LinearProgressIndicator(Modifier.fillMaxWidth())
                                     Text("Загружаем описание Steam…")
                                 } else {
@@ -3505,7 +3505,7 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                         confirmButton = {
-                            TextButton(onClick = { leaderDetailsGame = null }) { Text("Закрыть") }
+                            TextButton(onClick = { catalogueUi.leaderDetailsGame = null }) { Text("Закрыть") }
                         }
                     )
                 }

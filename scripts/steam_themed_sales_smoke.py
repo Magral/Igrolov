@@ -25,7 +25,7 @@ def get(url: str) -> str:
             last_error = error
             if attempt < 2:
                 time.sleep(attempt + 1)
-    raise RuntimeError(f"Steam endpoint unavailable: {last_error}")
+    raise RuntimeError(f"Steam endpoint unavailable: {last_error}") from last_error
 
 
 def sale_page_game_ids(page: str) -> set[int]:
@@ -91,20 +91,32 @@ def themed_sale_links(payload: dict) -> list[tuple[str, str]]:
 
 featured_url = f"{BASE}/api/featuredcategories/?cc=ru&l=russian"
 featured = json.loads(get(featured_url))
-if not isinstance(featured, dict):
-    raise RuntimeError("Steam featured categories response is not a JSON object")
+if not isinstance(featured, dict) or not any(
+    isinstance(group, dict) and isinstance(group.get("items"), list)
+    for group in featured.values()
+):
+    raise RuntimeError("Steam featured categories response has no catalogue groups")
 
 events = themed_sale_links(featured)
 source = "featuredcategories"
 if not events:
-    fallback = json.loads(get(f"{BASE}/api/discounts_and_events_data/?cc=ru&l=russian"))
-    events = themed_sale_links(fallback)
-    source = "discounts_and_events_data"
+    try:
+        fallback = json.loads(get(f"{BASE}/api/discounts_and_events_data/?cc=ru&l=russian"))
+        events = themed_sale_links(fallback)
+        source = "discounts_and_events_data"
+    except RuntimeError as error:
+        # The primary feed is valid and may legitimately have no sale spotlight.
+        # Match the app's optional fallback: a refused secondary feed cannot
+        # prove there are no events, but does not invalidate the primary feed.
+        if not isinstance(error.__cause__, urllib.error.HTTPError) or error.__cause__.code != 403:
+            raise
+        print("::warning::Steam refused the optional event feed (403). Primary catalogue verified; additional events could not be checked.")
 
-print(f"Steam themed sale source: {source}; active sale pages: {len(events)}")
+print(f"Steam themed sale source: {source}; discovered sale pages: {len(events)}")
 for name, url in events[:5]:
     localized = url + ("&" if "?" in url else "?") + "cc=ru&l=russian"
     page = get(localized)
     app_ids = set(re.findall(r"""(?:data-ds-appid|data-appid)=["']([0-9]{1,10})["']""", page, re.IGNORECASE))
     app_ids.update(sale_page_game_ids(page))
     print(f"- {name}: Steam page reachable; curated game IDs: {len(app_ids)}")
+

@@ -23,7 +23,7 @@ object SteamRuQuoteStore {
         val old=read(context,key)
         val now=System.currentTimeMillis()
         old?.takeIf {it.checkedAt>0 && it.failedAt<=it.checkedAt && now-it.checkedAt in 0..300_000L &&
-            (it.scope.isNotBlank() || it.edition==canonical)}?.let {return it}
+            (it.scope.isNotBlank() || it.edition==(edition ?: canonical))}?.let {return it}
         val future=CompletableFuture<SteamRuQuote>()
         pending.putIfAbsent(key,future)?.let {return it.get()}
         try {

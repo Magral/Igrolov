@@ -16,7 +16,7 @@ object SteamRuQuotes {
         val root=get("https://store.steampowered.com/api/appdetails?appids=$appId&cc=ru&l=russian")
         val entry=root.optJSONObject(appId.toString()) ?: error("Steam RU response missing")
         if(!entry.has("success"))error("Steam RU response incomplete")
-        if(!entry.optBoolean("success"))return SteamRuQuote(available=false,checkedAt=now)
+        if(!entry.optBoolean("success"))return SteamRuQuote(available=false,edition=edition ?: canonical,checkedAt=now)
         val data=entry.optJSONObject("data") ?: error("Steam RU data missing")
         if(data.optString("type")!="game")error("Steam RU game not confirmed")
         val groups=data.optJSONArray("package_groups")
@@ -41,7 +41,7 @@ object SteamRuQuotes {
         }
         val overview=data.optJSONObject("price_overview")
         if(packageId>0) {
-            val sub=subs.firstOrNull {it.optInt("packageid")==packageId} ?: return SteamRuQuote(available=false,edition=edition.orEmpty(),checkedAt=now)
+            val sub=subs.firstOrNull {it.optInt("packageid")==packageId} ?: return SteamRuQuote(available=false,edition=edition ?: canonical,checkedAt=now)
             val cents=sub.optLong("price_in_cents_with_discount",-1)
             if(cents>=0 && overview?.optString("currency")=="RUB")
                 return SteamRuQuote(cents/100.0,true,if(edition.isNullOrBlank()) "" else OfferComparison.scope(appId,canonical,edition),edition.orEmpty(),now)
@@ -54,7 +54,7 @@ object SteamRuQuotes {
         val cents=overview?.optLong("final",-1) ?: -1
         // The app's price can be displayed, but is not proof of a particular edition.
         return if(cents>=0)SteamRuQuote(cents/100.0,true,edition=canonical,checkedAt=now)
-            else SteamRuQuote(available=false,checkedAt=now)
+            else SteamRuQuote(available=false,edition=canonical,checkedAt=now)
     }
     fun encode(q:SteamRuQuote)=JSONObject().put("price",q.price ?: JSONObject.NULL).put("available",q.available ?: JSONObject.NULL)
         .put("scope",q.scope).put("edition",q.edition).put("checked",q.checkedAt).put("failed",q.failedAt).toString()

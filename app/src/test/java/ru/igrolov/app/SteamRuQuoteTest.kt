@@ -20,6 +20,7 @@ class SteamRuQuoteTest {
     @Test fun unavailableRuAndMissingEditionNeverSubstituteBaseOrAnotherCountry() {
         val unavailable=SteamRuQuotes.fetch(1,title,20,royal,100) {JSONObject("""{"1":{"success":false}}""")}
         assertEquals(false,unavailable.available);assertNull(unavailable.price)
+        assertEquals(royal,unavailable.edition)
         val missing=SteamRuQuotes.fetch(1,title,30,royal,100) {JSONObject(app(prices))}
         assertEquals(false,missing.available);assertNull(missing.price)
     }
