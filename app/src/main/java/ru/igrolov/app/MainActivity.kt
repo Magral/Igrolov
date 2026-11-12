@@ -1405,6 +1405,15 @@ class MainActivity : ComponentActivity() {
         item { Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) { content() } }
     }
 
+    private fun loadDealQuote(catalogueUi:CatalogueUiState,appId:Int,title:String,edition:SteamEditionReference.Edition?) {
+            detailExecutor.execute {
+                val quote=runCatching {SteamRuQuoteStore.lookup(this@MainActivity,appId,title,edition?.packageId ?: 0,edition?.name)}.getOrNull()
+                if(quote!=null)runOnUiThread {
+                    catalogueUi.steamQuotes=catalogueUi.steamQuotes+(SteamRuQuotes.key(appId,edition?.packageId ?: 0) to quote)
+                }
+            }
+        }
+
     private class CatalogueUiState(prefs: android.content.SharedPreferences, context: android.content.Context) {
         var wishlistProfile by mutableStateOf(if (prefs.getString("wishlist_profiles", null).isNullOrBlank())
             prefs.getString("wishlist_profile", "") ?: "" else "")
@@ -1427,6 +1436,8 @@ class MainActivity : ComponentActivity() {
         var wishlistSearchStatuses by mutableStateOf<Map<String, String>>(emptyMap())
         var priceCache by mutableStateOf(OfferPriceCacheStore.readAll(context))
         var steamQuotes by mutableStateOf(SteamRuQuoteStore.readAll(context))
+        var leaderDealSort by mutableStateOf(CatalogFilterSettings.decode(context.getSharedPreferences("catalogue_filters",0).getString("leaders",null)).sort)
+        var wishlistDealSort by mutableStateOf(CatalogFilterSettings.decode(context.getSharedPreferences("catalogue_filters",0).getString("wishlist",null)).sort)
         var priceBatch by mutableStateOf(PriceCheckBatch())
     }
 
@@ -1787,13 +1798,11 @@ class MainActivity : ComponentActivity() {
         var leaderVisibleLimit by remember { mutableIntStateOf(20) }
         var leaderFilterInput by remember { mutableStateOf(savedLeaderFilters.input) }
         var wishlistFilterInput by remember { mutableStateOf(savedWishlistFilters.input) }
-        var leaderDealSort by remember {mutableStateOf(savedLeaderFilters.sort)}
-        var wishlistDealSort by remember {mutableStateOf(savedWishlistFilters.sort)}
-        LaunchedEffect(leaderFilterInput,topAvailabilityFilter,leaderDealSort) {
-            catalogueFilterPrefs.edit().putString("leaders",CatalogFilterSettings.encode(leaderFilterInput,topAvailabilityFilter,leaderDealSort)).apply()
+        LaunchedEffect(leaderFilterInput,topAvailabilityFilter,catalogueUi.leaderDealSort) {
+            catalogueFilterPrefs.edit().putString("leaders",CatalogFilterSettings.encode(leaderFilterInput,topAvailabilityFilter,catalogueUi.leaderDealSort)).apply()
         }
-        LaunchedEffect(wishlistFilterInput,wishlistDealSort) {
-            catalogueFilterPrefs.edit().putString("wishlist",CatalogFilterSettings.encode(wishlistFilterInput,sort=wishlistDealSort)).apply()
+        LaunchedEffect(wishlistFilterInput,catalogueUi.wishlistDealSort) {
+            catalogueFilterPrefs.edit().putString("wishlist",CatalogFilterSettings.encode(wishlistFilterInput,sort=catalogueUi.wishlistDealSort)).apply()
         }
         var wishlistGenreBackfillAttempt by remember { mutableStateOf("") }
         var leaderOfferPrices by remember { mutableStateOf<Map<Int, LeaderOfferPrices>>(emptyMap()) }
@@ -1970,14 +1979,6 @@ class MainActivity : ComponentActivity() {
             catalogueUi.priceCache = catalogueUi.priceCache + (key to saved)
             return saved
         }
-        fun loadDealQuote(appId:Int,title:String,edition:SteamEditionReference.Edition?) {
-            detailExecutor.execute {
-                val quote=runCatching {SteamRuQuoteStore.lookup(this@MainActivity,appId,title,edition?.packageId ?: 0,edition?.name)}.getOrNull()
-                if(quote!=null)runOnUiThread {
-                    catalogueUi.steamQuotes=catalogueUi.steamQuotes+(SteamRuQuotes.key(appId,edition?.packageId ?: 0) to quote)
-                }
-            }
-        }
         fun stopPriceBatch() {
             if (!catalogueUi.priceBatch.running) return
             val active = catalogueUi.priceBatch.active
@@ -2142,7 +2143,7 @@ class MainActivity : ComponentActivity() {
                 recordedSources=completedSources
                 if(!requestedQuote && identity!=null && bestByMarketplace.isNotEmpty() && newlyCompleted.isNotEmpty()) {
                     requestedQuote=true
-                    loadDealQuote(identity.appId,bestByMarketplace.values.first().canonical.ifBlank {requestedGame},requestedEdition)
+                    loadDealQuote(catalogueUi,identity.appId,bestByMarketplace.values.first().canonical.ifBlank {requestedGame},requestedEdition)
                 }
                 val cached = primaryCacheKey?.let {
                     if(newlyCompleted.isEmpty())catalogueUi.priceCache[it]
@@ -3204,7 +3205,7 @@ class MainActivity : ComponentActivity() {
                     genresLoading = catalogueUi.wishlistGenresLoading,
                     searchingKeys = catalogueUi.wishlistSearchingKeys, searchStatuses = catalogueUi.wishlistSearchStatuses,
                     searchEnabled = manualFilters.valid,
-                    dealSort=wishlistDealSort,onDealSort={wishlistDealSort=it},
+                    dealSort=catalogueUi.wishlistDealSort,onDealSort={catalogueUi.wishlistDealSort=it},
                     steamQuote={game->catalogueUi.steamQuotes[SteamRuQuotes.key(game.appId)]},
                     batchRunning=catalogueUi.priceBatch.running,
                     onCheckPrices={games->
@@ -3327,16 +3328,14 @@ class MainActivity : ComponentActivity() {
                 val visibleTopGames = remember(availabilityFilteredGames, leaderFilterInput) {
                     SteamLeaderFilter.apply(availabilityFilteredGames, leaderFilterInput.toFilters())
                 }
-                val dealKeys=remember(visibleTopGames,manualFilters,rulesRevision,ignoredIds,searchTotalPages,comparisonSavedAliases) {
-                    visibleTopGames.associate {it.appId to comparisonKey(it.appId,it.title,true)}
-                }
-                val orderedTopGames=remember(visibleTopGames,leaderDealSort,catalogueUi.priceCache,catalogueUi.steamQuotes,dealKeys,priceNow) {
-                    GameDeals.sort(visibleTopGames,leaderDealSort,
-                        price={game->GameDeals.minimum(catalogueUi.priceCache[dealKeys[game.appId].orEmpty()])},
-                        saving={game->GameDeals.saving(catalogueUi.steamQuotes[SteamRuQuotes.key(game.appId)],catalogueUi.priceCache[dealKeys[game.appId].orEmpty()],priceNow)})
-                }
-                val displayedTopGames = remember(orderedTopGames, leaderVisibleLimit) {
-                    orderedTopGames.take(leaderVisibleLimit)
+                val displayedTopGames=remember(visibleTopGames,catalogueUi.leaderDealSort,catalogueUi.priceCache,
+                    catalogueUi.steamQuotes,manualFilters,rulesRevision,ignoredIds,searchTotalPages,
+                    comparisonSavedAliases,priceNow,leaderVisibleLimit) {
+                    val keys=visibleTopGames.associate {it.appId to comparisonKey(it.appId,it.title,true)}
+                    GameDeals.sort(visibleTopGames,catalogueUi.leaderDealSort,
+                        price={game->GameDeals.minimum(catalogueUi.priceCache[keys[game.appId].orEmpty()])},
+                        saving={game->GameDeals.saving(catalogueUi.steamQuotes[SteamRuQuotes.key(game.appId)],catalogueUi.priceCache[keys[game.appId].orEmpty()],priceNow)}
+                    ).take(leaderVisibleLimit)
                 }
                 val leaderHasMore = when (leaderSection) {
                     SteamLeaderSection.POPULAR_NEW_RELEASES -> newReleaseHasMore
@@ -3398,7 +3397,7 @@ class MainActivity : ComponentActivity() {
                     onReset = { topAvailabilityFilter = "Все игры" }
                 )
                 Text("Показано: ${visibleTopGames.size}", style = MaterialTheme.typography.labelMedium)
-                DealSortControl(leaderDealSort,{leaderDealSort=it},"leaders-deal-sort")
+                DealSortControl(catalogueUi.leaderDealSort,{catalogueUi.leaderDealSort=it},"leaders-deal-sort")
                 if(displayedTopGames.isNotEmpty())OutlinedButton(onClick={
                     catalogueUi.priceBatch=PriceCheckBatch.start(displayedTopGames.map {PriceCheckTarget(it.appId,it.title)},manualFilters,searchTotalPages)
                 },enabled=manualFilters.valid && !catalogueUi.priceBatch.running,
