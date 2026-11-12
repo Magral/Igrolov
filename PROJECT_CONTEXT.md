@@ -93,16 +93,16 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-11-12T12:04:55.196Z
+- Обновлено (UTC): 2026-11-12T12:10:14.342Z
 - Ветка: `main`.
-- HEAD: [`014d91463df1`](https://github.com/Magral/Igrolov/commit/014d91463df1dc722cd8fb48532f67f35b77b8ee).
+- HEAD: [`e0cafc32895a`](https://github.com/Magral/Igrolov/commit/e0cafc32895a93d3df176c01a8e67ba35b7f22d9).
 - Последний опубликованный стабильный GitHub Release: [v1.11.0](https://github.com/Magral/Igrolov/releases/tag/v1.11.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [e0cafc3](https://github.com/Magral/Igrolov/commit/e0cafc32895a93d3df176c01a8e67ba35b7f22d9) — fix: isolate catalogue state and cache unavailable Steam RU editions
 - [014d914](https://github.com/Magral/Igrolov/commit/014d91463df1dc722cd8fb48532f67f35b77b8ee) — fix: reduce Compose screen state captures for Android 8 compatibility
 - [63da2d5](https://github.com/Magral/Igrolov/commit/63da2d59735c031462475d092ba8fb073eed13d8) — feat: compare verified game deals and show Steam RU prices in monitoring
 - [a3b0755](https://github.com/Magral/Igrolov/commit/a3b0755b9e9a9393cc9bd5ad87f6dba5121334ac) — fix: retry changed monitoring records before reporting a full background success
-- [6ee33d3](https://github.com/Magral/Igrolov/commit/6ee33d386d2903347e3cb7d5354050202d16fc30) — feat: show actual background monitoring outcomes separately from manual checks
 <!-- AUTO_CONTEXT_END -->
 
 
