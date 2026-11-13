@@ -93,17 +93,17 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-11-13T15:04:30.534Z
+- Обновлено (UTC): 2026-11-13T15:11:13.776Z
 - Ветка: `main`.
-- HEAD: [`371925be8c56`](https://github.com/Magral/Igrolov/commit/371925be8c567d22ff7872315bbb8eb7cf13a7a4).
+- HEAD: [`11c0a34c02c5`](https://github.com/Magral/Igrolov/commit/11c0a34c02c5d841a1c09b722554c248468ac04c).
 - Последний опубликованный стабильный GitHub Release: [v1.12.0](https://github.com/Magral/Igrolov/releases/tag/v1.12.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [11c0a34](https://github.com/Magral/Igrolov/commit/11c0a34c02c5d841a1c09b722554c248468ac04c) — release: Игролов 1.12.1 — согласовать проверку версии при обновлении
 - [371925b](https://github.com/Magral/Igrolov/commit/371925be8c567d22ff7872315bbb8eb7cf13a7a4) — release: Игролов 1.12.1 — отмена устаревших загрузок обложек
 - [bf17ab7](https://github.com/Magral/Igrolov/commit/bf17ab79bf4f40933c0dd6024fb1c9cfd0645a1e) — fix: cancel obsolete artwork fallback jobs (#11)
 - [13197b2](https://github.com/Magral/Igrolov/commit/13197b22571285a9d0de886d6763b4bba63d0e4c) — release: Игролов 1.12.0 — выгодные предложения и Steam RU в мониторинге
 - [c7e6cc6](https://github.com/Magral/Igrolov/commit/c7e6cc6b9ca9ec880cf8484200de1fcdd7d4771a) — docs: record verified Steam RU monitoring and deal sorting [skip ci]
-- [e0cafc3](https://github.com/Magral/Igrolov/commit/e0cafc32895a93d3df176c01a8e67ba35b7f22d9) — fix: isolate catalogue state and cache unavailable Steam RU editions
 <!-- AUTO_CONTEXT_END -->
 
 
