@@ -122,3 +122,8 @@ grep -F 'OK (3 tests)' device-results/background-monitor.txt
 adb shell am force-stop ru.igrolov.app
 adb shell am instrument -w -r -e class ru.igrolov.app.GameDealsUiTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/game-deals.txt
 grep -F 'OK (1 test)' device-results/game-deals.txt
+
+# Cover fallback recovery and cancellation when a composed card changes identity.
+adb shell am force-stop ru.igrolov.app
+adb shell am instrument -w -r -e class ru.igrolov.app.ArtworkLifecycleUiTest ru.igrolov.app.test/androidx.test.runner.AndroidJUnitRunner | tee device-results/artwork-lifecycle.txt
+grep -F 'OK (2 tests)' device-results/artwork-lifecycle.txt
