@@ -93,17 +93,17 @@
 
 <!-- AUTO_CONTEXT_START -->
 ### Автоматически проверенные данные GitHub
-- Обновлено (UTC): 2026-11-12T12:24:33.223Z
+- Обновлено (UTC): 2026-11-13T15:03:25.197Z
 - Ветка: `main`.
-- HEAD: [`13197b225712`](https://github.com/Magral/Igrolov/commit/13197b22571285a9d0de886d6763b4bba63d0e4c).
-- Последний опубликованный стабильный GitHub Release: [v1.11.0](https://github.com/Magral/Igrolov/releases/tag/v1.11.0); APK-файлы: есть вложение APK.
+- HEAD: [`bf17ab79bf4f`](https://github.com/Magral/Igrolov/commit/bf17ab79bf4f40933c0dd6024fb1c9cfd0645a1e).
+- Последний опубликованный стабильный GitHub Release: [v1.12.0](https://github.com/Magral/Igrolov/releases/tag/v1.12.0); APK-файлы: есть вложение APK.
 
 Последние коммиты (сообщения коммитов, не подтверждение тестирования):
+- [bf17ab7](https://github.com/Magral/Igrolov/commit/bf17ab79bf4f40933c0dd6024fb1c9cfd0645a1e) — fix: cancel obsolete artwork fallback jobs (#11)
 - [13197b2](https://github.com/Magral/Igrolov/commit/13197b22571285a9d0de886d6763b4bba63d0e4c) — release: Игролов 1.12.0 — выгодные предложения и Steam RU в мониторинге
 - [c7e6cc6](https://github.com/Magral/Igrolov/commit/c7e6cc6b9ca9ec880cf8484200de1fcdd7d4771a) — docs: record verified Steam RU monitoring and deal sorting [skip ci]
 - [e0cafc3](https://github.com/Magral/Igrolov/commit/e0cafc32895a93d3df176c01a8e67ba35b7f22d9) — fix: isolate catalogue state and cache unavailable Steam RU editions
 - [014d914](https://github.com/Magral/Igrolov/commit/014d91463df1dc722cd8fb48532f67f35b77b8ee) — fix: reduce Compose screen state captures for Android 8 compatibility
-- [63da2d5](https://github.com/Magral/Igrolov/commit/63da2d59735c031462475d092ba8fb073eed13d8) — feat: compare verified game deals and show Steam RU prices in monitoring
 <!-- AUTO_CONTEXT_END -->
 
 
